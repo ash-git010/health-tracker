@@ -91,7 +91,7 @@ export function GoalsScreen({ onSaved }: { onSaved?: () => void }) {
       />
 
       {preview && (
-        <div style={{ marginTop: '1.5rem', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '8px' }}>
+        <div style={{ marginTop: '1.5rem', padding: '0.75rem', border: '1px solid var(--border)', borderRadius: '8px' }}>
           <strong style={{ fontSize: '0.9rem' }}>That works out to</strong>
           <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
             {preview.protein}g protein · {preview.carbs}g carbs · {preview.fat}g fat

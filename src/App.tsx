@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
 import { GoalsScreen } from './features/goals/GoalsScreen'
+import { FoodListScreen } from './features/foods/FoodListScreen'
 import { getGoals } from './data/goals'
+
+type Tab = 'today' | 'foods' | 'goals'
 
 export default function App() {
   const [hasGoals, setHasGoals] = useState<boolean | null>(null)
+  const [tab, setTab] = useState<Tab>('today')
 
   useEffect(() => {
     getGoals().then((g) => setHasGoals(!!g))
@@ -21,10 +25,43 @@ export default function App() {
   }
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <h1 style={{ fontSize: '1.3rem' }}>Health Tracker</h1>
-      <p>Goals are set. Next up: food list and logging.</p>
-      <GoalsScreen />
+    <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: '4.5rem' }}>
+      <div style={{ padding: '1rem' }}>
+        {tab === 'today' && <p>Today's log — coming next session.</p>}
+        {tab === 'foods' && <FoodListScreen />}
+        {tab === 'goals' && <GoalsScreen />}
+      </div>
+
+      <nav
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          display: 'flex',
+          borderTop: '1px solid var(--border)',
+          background: 'var(--bg)',
+        }}
+      >
+        {(['today', 'foods', 'goals'] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={{
+              flex: 1,
+              padding: '1rem 0',
+              border: 'none',
+              background: 'none',
+              fontSize: '0.9rem',
+              fontWeight: tab === t ? 600 : 400,
+              opacity: tab === t ? 1 : 0.6,
+              textTransform: 'capitalize',
+            }}
+          >
+            {t}
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }
