@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { GoalsScreen } from './features/goals/GoalsScreen'
 import { FoodListScreen } from './features/foods/FoodListScreen'
 import { getGoals } from './data/goals'
+import { TodayScreen } from './features/log/TodayScreen'
 
 type Tab = 'today' | 'foods' | 'goals'
 
@@ -27,7 +28,7 @@ export default function App() {
   return (
     <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: '4.5rem' }}>
       <div style={{ padding: '1rem' }}>
-        {tab === 'today' && <p>Today's log — coming next session.</p>}
+        {tab === 'today' && <TodayScreen />}
         {tab === 'foods' && <FoodListScreen />}
         {tab === 'goals' && <GoalsScreen />}
       </div>
