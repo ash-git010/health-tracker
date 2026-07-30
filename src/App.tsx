@@ -3,8 +3,9 @@ import { GoalsScreen } from './features/goals/GoalsScreen'
 import { FoodListScreen } from './features/foods/FoodListScreen'
 import { getGoals } from './data/goals'
 import { TodayScreen } from './features/log/TodayScreen'
+import { SettingsScreen } from './features/settings/SettingsScreen'
 
-type Tab = 'today' | 'foods' | 'goals'
+type Tab = 'today' | 'foods' | 'goals' | 'settings'
 
 export default function App() {
   const [hasGoals, setHasGoals] = useState<boolean | null>(null)
@@ -31,6 +32,7 @@ export default function App() {
         {tab === 'today' && <TodayScreen />}
         {tab === 'foods' && <FoodListScreen />}
         {tab === 'goals' && <GoalsScreen />}
+        {tab === 'settings' && <SettingsScreen />}
       </div>
 
       <nav
@@ -44,7 +46,7 @@ export default function App() {
           background: 'var(--bg)',
         }}
       >
-        {(['today', 'foods', 'goals'] as Tab[]).map((t) => (
+        {(['today', 'foods', 'goals', 'settings'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
