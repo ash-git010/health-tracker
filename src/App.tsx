@@ -3,7 +3,7 @@ import { GoalsScreen } from './features/goals/GoalsScreen'
 import { SettingsScreen } from './features/settings/SettingsScreen'
 import { NameScreen } from './features/onboarding/NameScreen'
 import { HubScreen } from './features/hub/HubScreen'
-import { SECTIONS, getSection } from './sections'
+import { getSection } from './sections'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
 
