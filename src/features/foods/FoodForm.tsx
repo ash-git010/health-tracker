@@ -26,6 +26,10 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
   const [fat, setFat] = useState<NumOrEmpty>(seed.fat ?? '')
   const [fiber, setFiber] = useState<NumOrEmpty>(seed.fiber ?? '')
   const [sugar, setSugar] = useState<NumOrEmpty>(seed.sugar ?? '')
+  const [pieceGrams, setPieceGrams] = useState<NumOrEmpty>(seed.pieceGrams ?? '')
+  const [pieceLabel, setPieceLabel] = useState(seed.pieceLabel ?? '')
+  const [packWeight, setPackWeight] = useState<NumOrEmpty>('')
+  const [packCount, setPackCount] = useState<NumOrEmpty>('')
   const [saving, setSaving] = useState(false)
 
   const num = (v: NumOrEmpty) => (typeof v === 'number' ? v : 0)
@@ -42,6 +46,17 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
     typeof kcal === 'number' && kcal > 0 ? Math.abs(derivedKcal - kcal) / kcal : 0
   const showKcalWarning = kcalGap > 0.15
 
+  const canCalculate =
+    typeof packWeight === 'number' &&
+    packWeight > 0 &&
+    typeof packCount === 'number' &&
+    packCount > 0
+
+  function calculatePiece() {
+    if (!canCalculate) return
+    setPieceGrams(Math.round(((packWeight as number) / (packCount as number)) * 10) / 10)
+  }
+
   async function handleSave() {
     if (!canSave || saving) return
     setSaving(true)
@@ -56,6 +71,8 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
       fat: num(fat),
       fiber: typeof fiber === 'number' ? fiber : undefined,
       sugar: typeof sugar === 'number' ? sugar : undefined,
+      pieceGrams: typeof pieceGrams === 'number' && pieceGrams > 0 ? pieceGrams : undefined,
+      pieceLabel: pieceLabel.trim() || undefined,
     }
 
     if (existing?.id) {
@@ -91,6 +108,52 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
       <NumberField label="Fat" value={fat} onChange={setFat} suffix="g" min={0} />
       <NumberField label="Fibre (optional)" value={fiber} onChange={setFiber} suffix="g" min={0} />
       <NumberField label="Sugar (optional)" value={sugar} onChange={setSugar} suffix="g" min={0} />
+
+      <h3 style={{ marginTop: '1.5rem' }}>Pieces (optional)</h3>
+      <p className="muted">
+        For things you count rather than weigh — tortillas, slices, eggs.
+      </p>
+
+      <TextField
+        label="What one piece is called"
+        value={pieceLabel}
+        onChange={setPieceLabel}
+        placeholder="tortilla"
+      />
+
+      <div className="card" style={{ marginBottom: '0.875rem' }}>
+        <div className="field-label">Work it out from the package</div>
+        <NumberField
+          label="Package weight"
+          value={packWeight}
+          onChange={setPackWeight}
+          suffix={unit}
+          min={0}
+        />
+        <NumberField
+          label="Pieces inside"
+          value={packCount}
+          onChange={setPackCount}
+          min={0}
+        />
+        <Button size="sm" disabled={!canCalculate} onClick={calculatePiece}>
+          Calculate
+        </Button>
+      </div>
+
+      <NumberField
+        label={`Weight of one ${pieceLabel || 'piece'}`}
+        value={pieceGrams}
+        onChange={setPieceGrams}
+        suffix={unit}
+        min={0}
+      />
+
+      {typeof pieceGrams === 'number' && pieceGrams > 0 && typeof kcal === 'number' && (
+        <p className="muted">
+          One {pieceLabel || 'piece'} ≈ {Math.round((kcal * pieceGrams) / 100)} kcal
+        </p>
+      )}
 
       {showKcalWarning && (
         <p className="warn">

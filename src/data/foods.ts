@@ -33,6 +33,19 @@ export function macrosForAmount(food: Food, amount: number) {
   }
 }
 
+export function amountInBaseUnit(
+  food: Food,
+  amount: number,
+  mode: 'base' | 'piece'
+): number {
+  if (mode === 'piece' && food.pieceGrams) return amount * food.pieceGrams
+  return amount
+}
+
+export function hasPieces(food: Food): boolean {
+  return typeof food.pieceGrams === 'number' && food.pieceGrams > 0
+}
+
 function round1(n: number): number {
   return Math.round(n * 10) / 10
 }

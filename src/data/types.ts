@@ -21,6 +21,8 @@ export interface Food {
   fat: number
   fiber?: number
   sugar?: number
+  pieceGrams?: number
+  pieceLabel?: string
   createdAt: string
 }
 

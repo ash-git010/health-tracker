@@ -6,6 +6,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.6',
+    date: '2026-07-31',
+    changes: [
+      'Search the Open Food Facts database by name — useful when a product has no barcode',
+      'Add foods measured in pieces (tortillas, slices, eggs) and log by count instead of weight',
+      'Fixed calories not being read from products that only list kilojoules',
+    ],
+  },
+  {
     version: '0.5',
     date: '2026-07-31',
     changes: [
