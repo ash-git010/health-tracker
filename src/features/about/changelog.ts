@@ -6,6 +6,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.7',
+    date: '2026-08-01',
+    changes: [
+      'Track your weight over time, with 7 and 30 day change',
+      'Optional height, with BMI calculated automatically',
+      'Report bugs and suggest ideas from the Settings screen',
+    ],
+  },
+  {
     version: '0.6',
     date: '2026-07-31',
     changes: [

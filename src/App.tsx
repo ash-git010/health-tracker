@@ -6,8 +6,9 @@ import { SettingsScreen } from './features/settings/SettingsScreen'
 import { NameScreen } from './features/onboarding/NameScreen'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
+import { BodyScreen } from './features/body/BodyScreen'
 
-type Tab = 'today' | 'foods' | 'goals' | 'settings'
+type Tab = 'today' | 'foods' | 'body' | 'goals' | 'settings'
 type Stage = 'checking' | 'name' | 'goals' | 'ready'
 
 export default function App() {
@@ -70,12 +71,13 @@ export default function App() {
       <main style={{ padding: '1rem' }}>
         {tab === 'today' && <TodayScreen />}
         {tab === 'foods' && <FoodListScreen />}
+        {tab === 'body' && <BodyScreen />}
         {tab === 'goals' && <GoalsScreen />}
         {tab === 'settings' && <SettingsScreen />}
       </main>
 
       <nav className="tabbar">
-        {(['today', 'foods', 'goals', 'settings'] as Tab[]).map((t) => (
+        {(['today', 'foods', 'body', 'goals', 'settings'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
