@@ -1,38 +1,55 @@
 import { useEffect, useState } from 'react'
 import { GoalsScreen } from './features/goals/GoalsScreen'
-import { FoodListScreen } from './features/foods/FoodListScreen'
-import { TodayScreen } from './features/log/TodayScreen'
 import { SettingsScreen } from './features/settings/SettingsScreen'
 import { NameScreen } from './features/onboarding/NameScreen'
+import { HubScreen } from './features/hub/HubScreen'
+import { SECTIONS, getSection } from './sections'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
-import { BodyScreen } from './features/body/BodyScreen'
 
-type Tab = 'today' | 'foods' | 'body' | 'goals' | 'settings'
 type Stage = 'checking' | 'name' | 'goals' | 'ready'
+
+const LAST_SECTION_KEY = 'upkeep:lastSection'
 
 export default function App() {
   const [stage, setStage] = useState<Stage>('checking')
   const [name, setName] = useState('')
-  const [tab, setTab] = useState<Tab>('today')
+  const [sectionId, setSectionId] = useState<string | null>(null)
+  const [tabId, setTabId] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     async function check() {
       const [profile, goals] = await Promise.all([getProfile(), getGoals()])
       setName(profile?.name ?? '')
+
       if (!profile) setStage('name')
       else if (!goals) setStage('goals')
-      else setStage('ready')
+      else {
+        const last = localStorage.getItem(LAST_SECTION_KEY)
+        if (last && getSection(last)) openSection(last)
+        setStage('ready')
+      }
     }
     check()
   }, [])
 
+  function openSection(id: string) {
+    const section = getSection(id)
+    if (!section) return
+    setSectionId(id)
+    setTabId(section.tabs[0].id)
+    localStorage.setItem(LAST_SECTION_KEY, id)
+  }
+
+  function goHome() {
+    setSectionId(null)
+    setShowSettings(false)
+    localStorage.removeItem(LAST_SECTION_KEY)
+  }
+
   if (stage === 'checking') {
-    return (
-      <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>
-        Loading…
-      </p>
-    )
+    return <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>Loading…</p>
   }
 
   if (stage === 'name') {
@@ -50,43 +67,67 @@ export default function App() {
   if (stage === 'goals') {
     return (
       <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-        <h1>Nice to meet you!, {name}</h1>
+        <h1>Nice to meet you, {name}</h1>
         <p className="muted">Set your daily goals to get started.</p>
         <GoalsScreen onSaved={() => setStage('ready')} />
       </div>
     )
   }
 
+  const section = sectionId ? getSection(sectionId) : undefined
+  const tab = section?.tabs.find((t) => t.id === tabId) ?? section?.tabs[0]
+
   return (
-    <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: '4rem' }}>
+    <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: section ? '4rem' : 0 }}>
       <header className="app-header">
         <div className="row">
-          <div className="wordmark grow">
+          <button
+            onClick={goHome}
+            className="wordmark grow"
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}
+          >
             Up<span>keep</span>
-          </div>
-          {name && <span className="muted">{name}</span>}
+            {section && <span className="muted"> · {section.title}</span>}
+          </button>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="btn btn-sm btn-ghost"
+            aria-label="Settings"
+          >
+            ⚙
+          </button>
         </div>
       </header>
 
       <main style={{ padding: '1rem' }}>
-        {tab === 'today' && <TodayScreen />}
-        {tab === 'foods' && <FoodListScreen />}
-        {tab === 'body' && <BodyScreen />}
-        {tab === 'goals' && <GoalsScreen />}
-        {tab === 'settings' && <SettingsScreen />}
+        {showSettings ? (
+          <SettingsScreen />
+        ) : section && tab ? (
+          tab.render()
+        ) : (
+          <HubScreen name={name} onPick={openSection} />
+        )}
       </main>
 
-      <nav className="tabbar">
-        {(['today', 'foods', 'body', 'goals', 'settings'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            aria-current={tab === t ? 'page' : undefined}
-          >
-            {t}
-          </button>
-        ))}
-      </nav>
+      {section && !showSettings && section.tabs.length > 1 && (
+        <nav className="tabbar">
+          {section.tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTabId(t.id)}
+              aria-current={tab?.id === t.id ? 'page' : undefined}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+      )}
     </div>
   )
 }

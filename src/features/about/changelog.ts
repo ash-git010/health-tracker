@@ -6,6 +6,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.9',
+    date: '2026-08-01',
+    changes: [
+      'New home screen — pick what you want to track',
+      'The app remembers your last section and opens straight into it',
+      'Settings and feedback now reachable from anywhere via the gear icon',
+      'Placeholders added for workouts and routines, coming soon',
+    ],
+  },
+  {
     version: '0.7',
     date: '2026-08-01',
     changes: [
