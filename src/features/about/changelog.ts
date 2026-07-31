@@ -6,6 +6,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.9',
+    date: '2026-08-01',
+    changes: [
+      'Search now includes common whole foods — apples, eggs, chicken, rice — not just packaged products',
+      'Many common foods come with piece weights, so you can log "1 apple" instead of weighing it',
+      'Branded search results are now filtered to products sold in your country',
+    ],
+  },
+  {
     version: '0.8',
     date: '2026-08-01',
     changes: [
