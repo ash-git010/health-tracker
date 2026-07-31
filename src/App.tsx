@@ -49,7 +49,7 @@ export default function App() {
   if (stage === 'goals') {
     return (
       <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-        <h1>Nice to meet you, {name}</h1>
+        <h1>Nice to meet you!, {name}</h1>
         <p className="muted">Set your daily goals to get started.</p>
         <GoalsScreen onSaved={() => setStage('ready')} />
       </div>
