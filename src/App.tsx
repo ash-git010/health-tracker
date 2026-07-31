@@ -81,17 +81,7 @@ export default function App() {
     <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: section ? '4rem' : 0 }}>
       <header className="app-header">
         <div className="row">
-          <button
-            onClick={goHome}
-            className="wordmark grow"
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              textAlign: 'left',
-              cursor: 'pointer',
-            }}
-          >
+          <button onClick={goHome} className="btn-plain wordmark grow">
             Up<span>keep</span>
             {section && <span className="muted"> · {section.title}</span>}
           </button>

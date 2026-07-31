@@ -18,16 +18,8 @@ export function HubScreen({ name, onPick }: Props) {
         <button
           key={section.id}
           onClick={() => onPick(section.id)}
-          style={{
-            display: 'block',
-            width: '100%',
-            textAlign: 'left',
-            padding: 0,
-            marginBottom: '0.75rem',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-          }}
+          className="btn-plain"
+          style={{ display: 'block', width: '100%', marginBottom: '0.75rem' }}
         >
           <Card>
             <div className="row">
