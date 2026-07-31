@@ -9,8 +9,6 @@ import { getProfile } from './data/profile'
 
 type Stage = 'checking' | 'name' | 'goals' | 'ready'
 
-const LAST_SECTION_KEY = 'upkeep:lastSection'
-
 export default function App() {
   const [stage, setStage] = useState<Stage>('checking')
   const [name, setName] = useState('')
@@ -25,11 +23,7 @@ export default function App() {
 
       if (!profile) setStage('name')
       else if (!goals) setStage('goals')
-      else {
-        const last = localStorage.getItem(LAST_SECTION_KEY)
-        if (last && getSection(last)) openSection(last)
-        setStage('ready')
-      }
+      else setStage('ready')
     }
     check()
   }, [])
@@ -39,17 +33,19 @@ export default function App() {
     if (!section) return
     setSectionId(id)
     setTabId(section.tabs[0].id)
-    localStorage.setItem(LAST_SECTION_KEY, id)
   }
 
   function goHome() {
     setSectionId(null)
     setShowSettings(false)
-    localStorage.removeItem(LAST_SECTION_KEY)
   }
 
   if (stage === 'checking') {
-    return <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>Loading…</p>
+    return (
+      <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>
+        Loading…
+      </p>
+    )
   }
 
   if (stage === 'name') {
