@@ -6,7 +6,7 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
-    version: '0.9',
+    version: '0.8',
     date: '2026-08-01',
     changes: [
       'New home screen — pick what you want to track',
