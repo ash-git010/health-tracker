@@ -4,10 +4,12 @@ import { getProfile, saveName } from '../../data/profile'
 import { Button, ScreenHeader } from '../../components/ui'
 import { TextField } from '../../components/TextField'
 import { AboutScreen } from '../about/AboutScreen'
+import { FeedbackScreen } from '../about/FeedbackScreen'
 
 export function SettingsScreen() {
   const [status, setStatus] = useState('')
   const [showAbout, setShowAbout] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
 
   async function handleExport() {
     downloadBackup(await exportAll())
@@ -25,6 +27,7 @@ export function SettingsScreen() {
   }
 
   if (showAbout) return <AboutScreen onBack={() => setShowAbout(false)} />
+  if (showFeedback) return <FeedbackScreen onBack={() => setShowFeedback(false)} />
 
   return (
     <div className="stack">
@@ -59,8 +62,13 @@ export function SettingsScreen() {
       {status && <p className="muted">{status}</p>}
 
       <h3 style={{ marginTop: '1rem' }}>App</h3>
+
       <Button onClick={() => setShowAbout(true)} block>
         About Upkeep
+      </Button>
+
+      <Button onClick={() => setShowFeedback(true)} block>
+        Report a problem or suggest something
       </Button>
     </div>
   )

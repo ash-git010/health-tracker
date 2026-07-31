@@ -36,6 +36,7 @@ export function FoodSearch({ onPicked, onCancel }: Props) {
       })
       .catch((err) => {
         if (err.name === 'AbortError') return
+        console.error('Search failed:', err)
         setError('Search is unavailable right now. Try a barcode or add it manually.')
         setLoading(false)
       })
@@ -48,7 +49,8 @@ export function FoodSearch({ onPicked, onCancel }: Props) {
     try {
       const full = await lookupBarcode(hit.code)
       onPicked(full.found && full.food ? full.food : hitToFood(hit))
-    } catch {
+    } catch (err) {
+      console.error('Product lookup failed, using search data:', err)
       onPicked(hitToFood(hit))
     }
   }
