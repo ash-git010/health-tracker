@@ -46,3 +46,9 @@ export interface BodyMeasurement {
   heightCm?: number
   createdAt: string
 }
+
+export interface Profile {
+  id: number
+  name: string
+  createdAt: string
+}

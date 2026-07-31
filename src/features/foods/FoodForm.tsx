@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { TextField } from '../../components/TextField'
 import { NumberField } from '../../components/NumberField'
+import { Button, ScreenHeader } from '../../components/ui'
 import { addFood, updateFood, type FoodInput } from '../../data/foods'
 import type { Food, Unit } from '../../data/types'
 
@@ -38,9 +39,7 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
 
   const derivedKcal = num(protein) * 4 + num(carbs) * 4 + num(fat) * 9
   const kcalGap =
-    typeof kcal === 'number' && kcal > 0
-      ? Math.abs(derivedKcal - kcal) / kcal
-      : 0
+    typeof kcal === 'number' && kcal > 0 ? Math.abs(derivedKcal - kcal) / kcal : 0
   const showKcalWarning = kcalGap > 0.15
 
   async function handleSave() {
@@ -70,31 +69,21 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
   }
 
   return (
-    <div>
-      <h2 style={{ fontSize: '1.1rem' }}>
-        {existing ? 'Edit food' : 'New food'}
-      </h2>
+    <div className="stack">
+      <ScreenHeader title={existing ? 'Edit food' : 'New food'} />
 
       <TextField label="Name" value={name} onChange={setName} placeholder="Oats" />
       <TextField label="Brand (optional)" value={brand} onChange={setBrand} />
 
-      <label style={{ display: 'block', marginBottom: '1rem' }}>
-        <span style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
-          Measured in
-        </span>
-        <select
-          value={unit}
-          onChange={(e) => setUnit(e.target.value as Unit)}
-          style={{ width: '100%', padding: '0.6rem', fontSize: '1rem' }}
-        >
+      <label className="field">
+        <span className="field-label">Measured in</span>
+        <select value={unit} onChange={(e) => setUnit(e.target.value as Unit)}>
           <option value="g">Grams (solids)</option>
           <option value="ml">Millilitres (liquids)</option>
         </select>
       </label>
 
-      <p style={{ fontSize: '0.85rem', opacity: 0.7, marginTop: '1.5rem' }}>
-        Values per 100{unit}
-      </p>
+      <h3 style={{ marginTop: '1.25rem' }}>Values per 100{unit}</h3>
 
       <NumberField label="Calories" value={kcal} onChange={setKcal} suffix="kcal" min={0} />
       <NumberField label="Protein" value={protein} onChange={setProtein} suffix="g" min={0} />
@@ -104,27 +93,20 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
       <NumberField label="Sugar (optional)" value={sugar} onChange={setSugar} suffix="g" min={0} />
 
       {showKcalWarning && (
-        <p style={{ fontSize: '0.85rem', color: 'var(--warn)' }}>
+        <p className="warn">
           Heads up: the macros work out to about {Math.round(derivedKcal)} kcal, but you
-          entered {kcal}. Worth double-checking — though high-fibre foods do differ legitimately.
+          entered {kcal}. Worth double-checking — though high-fibre foods do differ
+          legitimately.
         </p>
       )}
 
-      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
-        <button onClick={onCancel} style={{ flex: 1, padding: '0.9rem' }}>
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={!canSave || saving}
-          style={{
-            flex: 2,
-            padding: '0.9rem',
-            opacity: canSave && !saving ? 1 : 0.5,
-          }}
-        >
-          {existing ? 'Save changes' : 'Add food'}
-        </button>
+      <div className="row" style={{ marginTop: '1.25rem' }}>
+        <Button onClick={onCancel}>Cancel</Button>
+        <span className="grow">
+          <Button variant="primary" block onClick={handleSave} disabled={!canSave || saving}>
+            {existing ? 'Save changes' : 'Add food'}
+          </Button>
+        </span>
       </div>
     </div>
   )

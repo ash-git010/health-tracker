@@ -1,8 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { exportAll, importAll, downloadBackup } from '../../data/backup'
+import { getProfile, saveName } from '../../data/profile'
+import { Button, ScreenHeader } from '../../components/ui'
+import { TextField } from '../../components/TextField'
+import { AboutScreen } from '../about/AboutScreen'
 
 export function SettingsScreen() {
   const [status, setStatus] = useState('')
+  const [showAbout, setShowAbout] = useState(false)
 
   async function handleExport() {
     downloadBackup(await exportAll())
@@ -19,32 +24,26 @@ export function SettingsScreen() {
     }
   }
 
-  return (
-    <div>
-      <h2 style={{ fontSize: '1.1rem' }}>Settings</h2>
+  if (showAbout) return <AboutScreen onBack={() => setShowAbout(false)} />
 
-      <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-        Your data is stored on this device only. Export regularly — clearing browser
-        data will erase everything.
+  return (
+    <div className="stack">
+      <ScreenHeader title="Settings" />
+
+      <h3>Name</h3>
+      <NameEditor />
+
+      <h3 style={{ marginTop: '1rem' }}>Your data</h3>
+      <p className="muted">
+        Stored on this device only. Export regularly — clearing browser data erases
+        everything.
       </p>
 
-      <button onClick={handleExport} style={{ width: '100%', padding: '0.9rem', marginTop: '1rem' }}>
+      <Button onClick={handleExport} block>
         Export backup
-      </button>
+      </Button>
 
-      <label
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: '0.9rem',
-          marginTop: '0.5rem',
-          border: '1px solid var(--border)',
-          borderRadius: '6px',
-          background: 'var(--surface)',
-          textAlign: 'center',
-          cursor: 'pointer',
-        }}
-      >
+      <label className="btn btn-block" style={{ cursor: 'pointer' }}>
         Restore from backup
         <input
           type="file"
@@ -57,7 +56,44 @@ export function SettingsScreen() {
         />
       </label>
 
-      {status && <p style={{ fontSize: '0.9rem', marginTop: '1rem' }}>{status}</p>}
+      {status && <p className="muted">{status}</p>}
+
+      <h3 style={{ marginTop: '1rem' }}>App</h3>
+      <Button onClick={() => setShowAbout(true)} block>
+        About Upkeep
+      </Button>
     </div>
+  )
+}
+
+function NameEditor() {
+  const [value, setValue] = useState('')
+  const [loaded, setLoaded] = useState(false)
+  const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    getProfile().then((p) => {
+      setValue(p?.name ?? '')
+      setLoaded(true)
+    })
+  }, [])
+
+  if (!loaded) return null
+
+  return (
+    <>
+      <TextField label="What we call you" value={value} onChange={setValue} />
+      <Button
+        block
+        disabled={!value.trim()}
+        onClick={async () => {
+          await saveName(value)
+          setDone(true)
+          setTimeout(() => setDone(false), 2000)
+        }}
+      >
+        {done ? 'Saved' : 'Update name'}
+      </Button>
+    </>
   )
 }

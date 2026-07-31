@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Button, ScreenHeader } from '../../components/ui'
 
 interface Props {
   onDetected: (barcode: string) => void
@@ -70,12 +71,14 @@ export function BarcodeScanner({ onDetected, onCancel }: Props) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <h2 style={{ fontSize: '1.1rem', flex: 1 }}>Scan barcode</h2>
-        <button onClick={onCancel} style={{ padding: '0.4rem 0.8rem' }}>
-          Cancel
-        </button>
-      </div>
+      <ScreenHeader
+        title="Scan barcode"
+        action={
+          <Button size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+        }
+      />
 
       {supported && !error && (
         <video
@@ -84,41 +87,44 @@ export function BarcodeScanner({ onDetected, onCancel }: Props) {
           muted
           style={{
             width: '100%',
-            borderRadius: '8px',
-            marginTop: '0.75rem',
+            borderRadius: 'var(--radius)',
             background: '#000',
+            marginBottom: '0.5rem',
           }}
         />
       )}
 
       {!supported && (
-        <p style={{ fontSize: '0.9rem', marginTop: '0.75rem' }}>
-          This browser can't scan barcodes. Type the number below instead.
+        <p className="warn">
+          Camera scanning works on Android only — Safari doesn't support it, so iPhones
+          and iPads need to use the number field below.
         </p>
       )}
 
-      {error && <p style={{ fontSize: '0.9rem', color: 'var(--warn)' }}>{error}</p>}
+      {error && <p className="warn">{error}</p>}
 
-      <p style={{ fontSize: '0.9rem', opacity: 0.7, marginTop: '1rem' }}>
-        Or enter the barcode number:
-      </p>
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={manual}
-          placeholder="4000521006709"
-          onChange={(e) => setManual(e.target.value.replace(/\D/g, ''))}
-          style={{ flex: 1, padding: '0.6rem' }}
-        />
-        <button
-          onClick={() => manual.length >= 8 && onDetected(manual)}
-          disabled={manual.length < 8}
-          style={{ padding: '0.6rem 1rem', opacity: manual.length >= 8 ? 1 : 0.5 }}
-        >
-          Look up
-        </button>
-      </div>
+      {supported && !error && (
+        <p className="muted">Point the camera at the barcode. It'll pick it up on its own.</p>
+      )}
+
+      <label className="field" style={{ marginTop: '1rem' }}>
+        <span className="field-label">Or enter the barcode number</span>
+        <span className="row">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={manual}
+            placeholder="4000521006709"
+            onChange={(e) => setManual(e.target.value.replace(/\D/g, ''))}
+          />
+          <Button
+            onClick={() => manual.length >= 8 && onDetected(manual)}
+            disabled={manual.length < 8}
+          >
+            Look up
+          </Button>
+        </span>
+      </label>
     </div>
   )
 }

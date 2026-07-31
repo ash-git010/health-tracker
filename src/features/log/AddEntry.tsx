@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { listFoods, macrosForAmount } from '../../data/foods'
 import { logFood, MEALS, type Meal } from '../../data/log'
+import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 import type { Food } from '../../data/types'
 
 interface Props {
@@ -36,12 +37,14 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
   if (!selected) {
     return (
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <h2 style={{ fontSize: '1.1rem', flex: 1 }}>Pick a food</h2>
-          <button onClick={onCancel} style={{ padding: '0.4rem 0.8rem' }}>
-            Cancel
-          </button>
-        </div>
+        <ScreenHeader
+          title="Pick a food"
+          action={
+            <Button size="sm" onClick={onCancel}>
+              Cancel
+            </Button>
+          }
+        />
 
         <input
           type="text"
@@ -49,27 +52,26 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
           placeholder="Search…"
           onChange={(e) => setSearch(e.target.value)}
           autoFocus
-          style={{ width: '100%', padding: '0.6rem', margin: '0.75rem 0' }}
+          style={{ marginBottom: '0.75rem' }}
         />
 
-        {filtered.length === 0 && (
-          <p style={{ opacity: 0.7 }}>No foods found. Add some in the Foods tab.</p>
-        )}
+        {filtered.length === 0 && <Empty>No foods found. Add some in the Foods tab.</Empty>}
 
         {filtered.map((food) => (
           <button
             key={food.id}
+            className="btn btn-block"
             onClick={() => setSelected(food)}
             style={{
-              display: 'block',
-              width: '100%',
+              justifyContent: 'flex-start',
               textAlign: 'left',
-              padding: '0.75rem',
               marginBottom: '0.5rem',
+              padding: '0.75rem',
+              display: 'block',
             }}
           >
             <strong>{food.name}</strong>
-            <span style={{ fontSize: '0.85rem', opacity: 0.7, display: 'block' }}>
+            <span className="muted" style={{ display: 'block', fontWeight: 400 }}>
               {food.kcal} kcal per 100{food.unit}
             </span>
           </button>
@@ -80,73 +82,60 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <h2 style={{ fontSize: '1.1rem', flex: 1 }}>{selected.name}</h2>
-        <button onClick={() => setSelected(null)} style={{ padding: '0.4rem 0.8rem' }}>
-          Back
-        </button>
-      </div>
+      <ScreenHeader
+        title={selected.name}
+        action={
+          <Button size="sm" onClick={() => setSelected(null)}>
+            Back
+          </Button>
+        }
+      />
 
-      <label style={{ display: 'block', margin: '1rem 0 0.25rem', fontSize: '0.9rem' }}>
-        Amount
+      <label className="field">
+        <span className="field-label">Amount</span>
+        <span className="row">
+          <input
+            type="number"
+            inputMode="decimal"
+            value={amount}
+            autoFocus
+            onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
+          />
+          <span className="muted" style={{ minWidth: '2rem' }}>
+            {selected.unit}
+          </span>
+        </span>
       </label>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <input
-          type="number"
-          inputMode="decimal"
-          value={amount}
-          autoFocus
-          onChange={(e) =>
-            setAmount(e.target.value === '' ? '' : Number(e.target.value))
-          }
-          style={{ flex: 1, padding: '0.6rem' }}
-        />
-        <span>{selected.unit}</span>
-      </div>
 
-      <label style={{ display: 'block', margin: '1rem 0 0.25rem', fontSize: '0.9rem' }}>
-        Meal
+      <label className="field">
+        <span className="field-label">Meal</span>
+        <select
+          value={meal}
+          onChange={(e) => setMeal(e.target.value as Meal)}
+          style={{ textTransform: 'capitalize' }}
+        >
+          {MEALS.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
       </label>
-      <select
-        value={meal}
-        onChange={(e) => setMeal(e.target.value as Meal)}
-        style={{ width: '100%', padding: '0.6rem', textTransform: 'capitalize' }}
-      >
-        {MEALS.map((m) => (
-          <option key={m} value={m} style={{ textTransform: 'capitalize' }}>
-            {m}
-          </option>
-        ))}
-      </select>
 
       {preview && (
-        <div
-          style={{
-            marginTop: '1.25rem',
-            padding: '0.75rem',
-            border: '1px solid var(--border)',
-            borderRadius: '8px',
-          }}
-        >
-          <strong>{preview.kcal} kcal</strong>
-          <div style={{ fontSize: '0.9rem', opacity: 0.85, marginTop: '0.25rem' }}>
+        <Card style={{ marginTop: '1.25rem' }}>
+          <strong style={{ fontSize: '1.1rem' }}>{preview.kcal} kcal</strong>
+          <div className="muted" style={{ marginTop: '0.25rem' }}>
             P {preview.protein}g · C {preview.carbs}g · F {preview.fat}g
           </div>
-        </div>
+        </Card>
       )}
 
-      <button
-        onClick={handleAdd}
-        disabled={!preview}
-        style={{
-          width: '100%',
-          padding: '0.9rem',
-          marginTop: '1.25rem',
-          opacity: preview ? 1 : 0.5,
-        }}
-      >
-        Add to log
-      </button>
+      <div style={{ marginTop: '1.25rem' }}>
+        <Button variant="primary" block onClick={handleAdd} disabled={!preview}>
+          Add to log
+        </Button>
+      </div>
     </div>
   )
 }
