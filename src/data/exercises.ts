@@ -1,5 +1,4 @@
 import { db } from './db'
-import seed from './seed/exercises.json'
 import type { Exercise } from './types'
 
 interface SeedExercise {
@@ -12,8 +11,6 @@ interface SeedExercise {
   steps: string[]
 }
 
-const SEED = seed as SeedExercise[]
-
 export interface ExerciseOption {
   key: string
   name: string
@@ -25,19 +22,29 @@ export interface ExerciseOption {
   custom: boolean
 }
 
-const seedOptions: ExerciseOption[] = SEED.map((e) => ({
-  key: e.id,
-  name: e.name,
-  bodyPart: e.bodyPart,
-  equipment: e.equipment,
-  target: e.target,
-  secondary: e.secondary,
-  steps: e.steps,
-  custom: false,
-}))
+let seedCache: ExerciseOption[] | null = null
+
+async function loadSeed(): Promise<ExerciseOption[]> {
+  if (!seedCache) {
+    const mod = await import('./seed/exercises.json')
+    const raw = mod.default as SeedExercise[]
+    seedCache = raw.map((e) => ({
+      key: e.id,
+      name: e.name,
+      bodyPart: e.bodyPart,
+      equipment: e.equipment,
+      target: e.target,
+      secondary: e.secondary,
+      steps: e.steps,
+      custom: false,
+    }))
+  }
+  return seedCache
+}
 
 export async function allExercises(): Promise<ExerciseOption[]> {
-  const custom = await db.exercises.toArray()
+  const [seedOptions, custom] = await Promise.all([loadSeed(), db.exercises.toArray()])
+
   const customOptions: ExerciseOption[] = custom.map((e) => ({
     key: `custom:${e.id}`,
     name: e.name,

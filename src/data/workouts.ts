@@ -23,9 +23,13 @@ export async function listWorkouts(limit = 50): Promise<Workout[]> {
   return all
 }
 
-export async function activeWorkout(): Promise<Workout | undefined> {
-  const all = await db.workouts.orderBy('startedAt').reverse().limit(5).toArray()
-  return all.find((w) => !w.finishedAt)
+export async function activeWorkout(): Promise<Workout | null> {
+  const all = await db.workouts.toArray()
+  return (
+    all
+      .filter((w) => !w.finishedAt)
+      .sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0] ?? null
+  )
 }
 
 export async function deleteWorkout(id: number): Promise<void> {

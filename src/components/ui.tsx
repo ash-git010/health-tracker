@@ -8,6 +8,7 @@ export function Button({
   block,
   disabled,
   type = 'button',
+  style,
 }: {
   children: ReactNode
   onClick?: () => void
@@ -16,6 +17,7 @@ export function Button({
   block?: boolean
   disabled?: boolean
   type?: 'button' | 'submit'
+  style?: CSSProperties
 }) {
   const classes = ['btn']
   if (variant === 'primary') classes.push('btn-primary')
@@ -24,7 +26,13 @@ export function Button({
   if (block) classes.push('btn-block')
 
   return (
-    <button type={type} className={classes.join(' ')} onClick={onClick} disabled={disabled}>
+    <button
+      type={type}
+      className={classes.join(' ')}
+      onClick={onClick}
+      disabled={disabled}
+      style={style}
+    >
       {children}
     </button>
   )

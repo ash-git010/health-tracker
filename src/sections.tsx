@@ -35,10 +35,10 @@ export const SECTIONS: Section[] = [
     id: 'workouts',
     title: 'Workouts',
     blurb: 'Exercises, routines and lifting progress',
-    ready: false,
+    ready: true,
     tabs: [
       { path: 'log', label: 'Log' },
-      { path: 'routines', label: 'Routines' },
+      { path: 'history', label: 'History' },
       { path: 'exercises', label: 'Exercises' },
     ],
   },

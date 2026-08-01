@@ -16,10 +16,12 @@ import { SettingsScreen } from './features/settings/SettingsScreen'
 import { AboutScreen } from './features/about/AboutScreen'
 import { FeedbackScreen } from './features/about/FeedbackScreen'
 import { NameScreen } from './features/onboarding/NameScreen'
-import { WorkoutPlaceholder } from './features/workouts/WorkoutPlaceholder'
 import { RoutinePlaceholder } from './features/routines/RoutinePlaceholder'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
+import { ActiveWorkoutScreen } from './features/workouts/ActiveWorkoutScreen'
+import { WorkoutHistoryScreen } from './features/workouts/WorkoutHistoryScreen'
+import { ExerciseLibraryScreen } from './features/workouts/ExerciseLibraryScreen'
 
 type Stage = 'checking' | 'name' | 'goals' | 'ready'
 
@@ -90,9 +92,9 @@ export default function App() {
           <Route path="body/weight/log" element={<MeasurementFormScreen />} />
 
           <Route path="workouts" element={<Navigate to="/workouts/log" replace />} />
-          <Route path="workouts/log" element={<WorkoutPlaceholder name="Workout log" />} />
-          <Route path="workouts/routines" element={<WorkoutPlaceholder name="Routines" />} />
-          <Route path="workouts/exercises" element={<WorkoutPlaceholder name="Exercise library" />} />
+          <Route path="workouts/log" element={<ActiveWorkoutScreen />} />
+          <Route path="workouts/history" element={<WorkoutHistoryScreen />} />
+          <Route path="workouts/exercises" element={<ExerciseLibraryScreen />} />
 
           <Route path="routines" element={<Navigate to="/routines/today" replace />} />
           <Route path="routines/today" element={<RoutinePlaceholder />} />
