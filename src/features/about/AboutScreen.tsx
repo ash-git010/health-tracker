@@ -16,6 +16,9 @@ export function AboutScreen() {
         }
       />
 
+      <p className="muted" style={{ margin: '0.5rem 0 0' }}>
+          Version {CHANGELOG[0].version}
+      </p>
       <Card>
         <p style={{ margin: 0 }}>
           Upkeep is a personal health tracker — food, macros, and body measurements,
@@ -25,10 +28,6 @@ export function AboutScreen() {
           Everything is stored on this device. Nothing is uploaded anywhere.
         </p>
       </Card>
-
-      <p className="muted" style={{ margin: '0.5rem 0 0' }}>
-          Version {CHANGELOG[0].version}
-        </p>
 
       <h3>Installing on Android</h3>
       <Card>
