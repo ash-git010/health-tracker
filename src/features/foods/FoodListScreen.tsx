@@ -4,15 +4,14 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { listFoods, deleteFood, hasPieces } from '../../data/foods'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 import type { Food } from '../../data/types'
+import { fuzzySearch } from '../../data/search'
 
 export function FoodListScreen() {
   const foods = useLiveQuery(() => listFoods(), [])
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
 
-  const filtered = (foods ?? []).filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = fuzzySearch(foods ?? [], search, (f) => `${f.name} ${f.brand ?? ''}`)
 
   async function handleDelete(food: Food) {
     if (!food.id) return

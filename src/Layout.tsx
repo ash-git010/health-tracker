@@ -11,7 +11,7 @@ export function Layout() {
   const isSettings = sectionId === 'settings'
 
   return (
-    <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: section ? '4rem' : 0 }}>
+    <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: section ? '5rem' : 0 }}>
       <header className="app-header">
         <div className="row">
           <button onClick={() => navigate('/')} className="btn-plain wordmark grow">
@@ -20,7 +20,7 @@ export function Layout() {
           </button>
           <button
             onClick={() => navigate(isSettings ? '/' : '/settings')}
-            className="btn btn-sm btn-ghost"
+            className="icon-btn"
             aria-label="Settings"
           >
             ⚙

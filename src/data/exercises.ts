@@ -1,5 +1,6 @@
 import { db } from './db'
 import type { Exercise } from './types'
+import { fuzzySearch } from './search'
 
 interface SeedExercise {
   id: string
@@ -69,21 +70,13 @@ export function searchExercises(
   bodyPart?: string,
   equipment?: string
 ): ExerciseOption[] {
-  const q = query.trim().toLowerCase()
+  const filtered = list.filter((e) => {
+    if (bodyPart && e.bodyPart !== bodyPart) return false
+    if (equipment && e.equipment !== equipment) return false
+    return true
+  })
 
-  return list
-    .filter((e) => {
-      if (bodyPart && e.bodyPart !== bodyPart) return false
-      if (equipment && e.equipment !== equipment) return false
-      if (!q) return true
-      return e.name.toLowerCase().includes(q) || e.target.toLowerCase().includes(q)
-    })
-    .sort((a, b) => {
-      if (!q) return a.name.localeCompare(b.name)
-      const aStarts = a.name.toLowerCase().startsWith(q) ? 0 : 1
-      const bStarts = b.name.toLowerCase().startsWith(q) ? 0 : 1
-      return aStarts - bStarts || a.name.localeCompare(b.name)
-    })
+  return fuzzySearch(filtered, query, (e) => `${e.name} ${e.target} ${e.equipment}`)
 }
 
 export function bodyParts(list: ExerciseOption[]): string[] {

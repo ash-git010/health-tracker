@@ -1,4 +1,5 @@
 import type { FoodInput } from './foods'
+import { fuzzySearch } from './search'
 
 export interface CommonFood extends Omit<FoodInput, 'brand'> {
   keywords?: string
@@ -78,24 +79,6 @@ export const COMMON_FOODS: CommonFood[] = [
 ]
 
 export function searchCommonFoods(query: string, limit = 8): CommonFood[] {
-  const q = query.trim().toLowerCase()
-  if (q.length < 2) return []
-
-  const scored = COMMON_FOODS.map((food) => {
-    const name = food.name.toLowerCase()
-    const haystack = `${name} ${food.keywords ?? ''}`.toLowerCase()
-
-    let score = 0
-    if (name.startsWith(q)) score = 100
-    else if (name.includes(q)) score = 60
-    else if (haystack.includes(q)) score = 30
-
-    return { food, score }
-  })
-
-  return scored
-    .filter((s) => s.score > 0)
-    .sort((a, b) => b.score - a.score || a.food.name.length - b.food.name.length)
-    .map((s) => s.food)
-    .slice(0, limit)
+  if (query.trim().length < 2) return []
+  return fuzzySearch(COMMON_FOODS, query, (f) => `${f.name} ${f.keywords ?? ''}`, limit)
 }
