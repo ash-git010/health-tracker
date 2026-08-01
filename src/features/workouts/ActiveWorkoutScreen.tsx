@@ -5,6 +5,7 @@ import {
   activeWorkout,
   startWorkout,
   finishWorkout,
+  deleteWorkout,
   getSets,
   addSet,
   updateSet,
@@ -89,18 +90,31 @@ export function ActiveWorkoutScreen() {
       <ScreenHeader
         title={workout.name}
         action={
-          <Button
-            size="sm"
-            variant="primary"
-            onClick={async () => {
-              if (confirm('Finish this workout?')) {
-                await finishWorkout(workout.id!)
-                navigate('/workouts/history')
-              }
-            }}
-          >
-            Finish
-          </Button>
+          <span className="row">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={async () => {
+                if (confirm('Discard this workout? Everything logged will be deleted.')) {
+                  await deleteWorkout(workout.id!)
+                }
+              }}
+            >
+              Discard
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={async () => {
+                if (confirm('Finish this workout?')) {
+                  await finishWorkout(workout.id!)
+                  navigate('/workouts/history')
+                }
+              }}
+            >
+              Finish
+            </Button>
+          </span>
         }
       />
 
