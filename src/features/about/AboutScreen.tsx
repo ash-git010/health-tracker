@@ -26,6 +26,10 @@ export function AboutScreen() {
         </p>
       </Card>
 
+      <p className="muted" style={{ margin: '0.5rem 0 0' }}>
+          Version {CHANGELOG[0].version}
+        </p>
+
       <h3>Installing on Android</h3>
       <Card>
         <ol style={{ margin: 0, paddingLeft: '1.1rem' }}>

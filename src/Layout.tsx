@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom'
 import { getSection } from './sections'
+import { UpdatePrompt } from './components/UpdatePrompt'
 
 export function Layout() {
   const navigate = useNavigate()
@@ -46,6 +47,7 @@ export function Layout() {
           ))}
         </nav>
       )}
+      <UpdatePrompt />
     </div>
   )
 }
