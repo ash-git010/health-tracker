@@ -34,9 +34,21 @@ export function ChartsScreen() {
 
   const todaySums = sumEntries(todayEntries ?? [])
   const macroData = [
-    { name: 'Protein', value: Math.round(todaySums.protein * 4) },
-    { name: 'Carbs', value: Math.round(todaySums.carbs * 4) },
-    { name: 'Fat', value: Math.round(todaySums.fat * 9) },
+    {
+      name: 'Protein',
+      value: Math.round(todaySums.protein * 4),
+      grams: Math.round(todaySums.protein),
+    },
+    {
+      name: 'Carbs',
+      value: Math.round(todaySums.carbs * 4),
+      grams: Math.round(todaySums.carbs),
+    },
+    {
+      name: 'Fat',
+      value: Math.round(todaySums.fat * 9),
+      grams: Math.round(todaySums.fat),
+    },
   ].filter((d) => d.value > 0)
 
   const avgKcal =
@@ -92,7 +104,7 @@ export function ChartsScreen() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(v) => `${v} kcal`}
+                  formatter={(v, _name, item) => `${item.payload.grams}g · ${v} kcal`}
                   contentStyle={{
                     background: 'var(--surface)',
                     border: '1px solid var(--border)',
@@ -116,7 +128,7 @@ export function ChartsScreen() {
                     marginRight: 4,
                   }}
                 />
-                {d.name}
+                {d.name} {d.grams}g
               </span>
             ))}
           </div>
