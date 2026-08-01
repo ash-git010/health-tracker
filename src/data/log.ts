@@ -46,3 +46,45 @@ export function sumEntries(entries: LogEntry[]) {
     { kcal: 0, protein: 0, carbs: 0, fat: 0 }
   )
 }
+
+export async function getEntriesInRange(
+  startDate: string,
+  endDate: string
+): Promise<LogEntry[]> {
+  return db.logEntries.where('date').between(startDate, endDate, true, true).toArray()
+}
+
+export interface DayTotals {
+  date: string
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
+  logged: boolean
+}
+
+export async function getDailyTotals(dates: string[]): Promise<DayTotals[]> {
+  if (dates.length === 0) return []
+
+  const entries = await getEntriesInRange(dates[0], dates[dates.length - 1])
+  const byDate = new Map<string, LogEntry[]>()
+
+  for (const entry of entries) {
+    const list = byDate.get(entry.date) ?? []
+    list.push(entry)
+    byDate.set(entry.date, list)
+  }
+
+  return dates.map((date) => {
+    const dayEntries = byDate.get(date) ?? []
+    const sums = sumEntries(dayEntries)
+    return {
+      date,
+      kcal: Math.round(sums.kcal),
+      protein: Math.round(sums.protein),
+      carbs: Math.round(sums.carbs),
+      fat: Math.round(sums.fat),
+      logged: dayEntries.length > 0,
+    }
+  })
+}

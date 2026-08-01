@@ -6,6 +6,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.9.1',
+    date: '2026-08-01',
+    changes: [
+      'New Charts tab in Meals — macro breakdown, calorie and protein trends',
+      'Switch between 7, 14 and 30 day views',
+      'Summary showing average intake and how often you hit your protein minimum',
+    ],
+  },
+  {
     version: '0.9',
     date: '2026-08-01',
     changes: [

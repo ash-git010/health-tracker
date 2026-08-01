@@ -24,3 +24,15 @@ export function formatDay(iso: string): string {
     month: 'short',
   })
 }
+
+export function lastNDays(n: number, endISO = todayISO()): string[] {
+  const days: string[] = []
+  for (let i = n - 1; i >= 0; i--) {
+    days.push(addDays(endISO, -i))
+  }
+  return days
+}
+
+export function shortDay(iso: string): string {
+  return new Date(iso + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short' })
+}

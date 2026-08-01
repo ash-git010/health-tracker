@@ -5,6 +5,7 @@ import { GoalsScreen } from './features/goals/GoalsScreen'
 import { BodyScreen } from './features/body/BodyScreen'
 import { WorkoutPlaceholder } from './features/workouts/WorkoutPlaceholder'
 import { RoutinePlaceholder } from './features/routines/RoutinePlaceholder'
+import { ChartsScreen } from './features/log/ChartsScreen'
 
 export interface SectionTab {
   id: string
@@ -30,6 +31,7 @@ export const SECTIONS: Section[] = [
       { id: 'today', label: 'Today', render: () => <TodayScreen /> },
       { id: 'foods', label: 'Foods', render: () => <FoodListScreen /> },
       { id: 'goals', label: 'Goals', render: () => <GoalsScreen /> },
+      { id: 'charts', label: 'Charts', render: () => <ChartsScreen /> },
     ],
   },
   {
