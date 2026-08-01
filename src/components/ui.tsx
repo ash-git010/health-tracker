@@ -38,6 +38,22 @@ export function Button({
   )
 }
 
+export function Fab({
+  onClick,
+  label = 'Add',
+  children = '+',
+}: {
+  onClick: () => void
+  label?: string
+  children?: ReactNode
+}) {
+  return (
+    <button className="fab" onClick={onClick} aria-label={label}>
+      {children}
+    </button>
+  )
+}
+
 export function Card({ children, style }: { children: ReactNode; style?: CSSProperties }) {
   return (
     <div className="card" style={style}>

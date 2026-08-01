@@ -13,7 +13,7 @@ import {
   workoutVolume,
 } from '../../data/workouts'
 import { ExercisePicker } from './ExercisePicker'
-import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
+import { Button, Card, Empty, Fab, ScreenHeader } from '../../components/ui'
 import type { SetType, WorkoutSet } from '../../data/types'
 
 const SET_TYPES: { value: SetType; label: string }[] = [
@@ -126,9 +126,7 @@ export function ActiveWorkoutScreen() {
         />
       ))}
 
-      <Button block onClick={() => setPicking(true)} style={{ marginTop: '1rem' }}>
-        Add exercise
-      </Button>
+      <Fab label="Add exercise" onClick={() => setPicking(true)} />
     </div>
   )
 }

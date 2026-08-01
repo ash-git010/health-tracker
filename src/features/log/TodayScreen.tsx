@@ -4,7 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { getEntriesForDate, deleteEntry, sumEntries, MEALS, type Meal } from '../../data/log'
 import { getGoals, macroGramsFromGoals } from '../../data/goals'
 import { todayISO, addDays, formatDay } from '../../data/dates'
-import { Button, Card } from '../../components/ui'
+import { Button, Card, Fab } from '../../components/ui'
 
 export function TodayScreen() {
   const [date, setDate] = useState(todayISO())
@@ -105,6 +105,7 @@ export function TodayScreen() {
           </div>
         )
       })}
+      <Fab label="Add food" onClick={() => addTo('snack')} />
     </div>
   )
 }

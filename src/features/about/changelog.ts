@@ -6,6 +6,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.3',
+    date: '2026-08-02',
+    changes: [
+      'Search now handles typos, partial words and any word order',
+      'Quick-add buttons that stay on screen while you scroll',
+      'Fixed the bottom bar overlapping the gesture area on some phones',
+      'Barcode scanning now works on iPhone, though slower than Android',
+    ],
+  },
+  {
     version: '0.9.2',
     date: '2026-08-01',
     changes: [

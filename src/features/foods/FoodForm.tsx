@@ -163,7 +163,7 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
         </p>
       )}
 
-      <div className="row" style={{ marginTop: '1.25rem' }}>
+      <div className="form-actions">
         <Button onClick={onCancel}>Cancel</Button>
         <span className="grow">
           <Button variant="primary" block onClick={handleSave} disabled={!canSave || saving}>
