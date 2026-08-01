@@ -50,3 +50,30 @@ export function weightChange(entries: BodyMeasurement[], days: number): number |
 
   return Math.round((newest.weightKg - older.weightKg) * 10) / 10
 }
+
+export interface WeightPoint {
+  date: string
+  weightKg: number
+  trend: number
+}
+
+export function toChartPoints(entries: BodyMeasurement[], days: number): WeightPoint[] {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - days)
+  const cutoffISO = cutoff.toISOString().slice(0, 10)
+
+  const inRange = entries
+    .filter((e) => e.date >= cutoffISO)
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  return inRange.map((e, i) => {
+    const window = inRange.slice(Math.max(0, i - 6), i + 1)
+    const avg = window.reduce((sum, w) => sum + w.weightKg, 0) / window.length
+    return {
+      date: e.date,
+      weightKg: e.weightKg,
+      trend: Math.round(avg * 10) / 10,
+    }
+  })
+}

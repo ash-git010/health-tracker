@@ -6,16 +6,19 @@ import {
   deleteMeasurement,
   bmi,
   weightChange,
+  toChartPoints,
 } from '../../data/measurements'
 import { todayISO, formatDay } from '../../data/dates'
 import { NumberField } from '../../components/NumberField'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
 
 type NumOrEmpty = number | ''
 
 export function BodyScreen() {
   const entries = useLiveQuery(() => listMeasurements(), [])
   const [adding, setAdding] = useState(false)
+  const [range, setRange] = useState(30)
 
   const latest = entries?.[0]
   const change7 = entries ? weightChange(entries, 7) : null
@@ -66,6 +69,76 @@ export function BodyScreen() {
             </div>
           )}
         </Card>
+      )}
+
+      {entries && entries.length >= 2 && (
+        <>
+          <div className="row" style={{ marginBottom: '0.5rem' }}>
+            <h3 className="grow" style={{ margin: 0 }}>
+              Trend
+            </h3>
+            {[30, 90, 365].map((n) => (
+              <button
+                key={n}
+                onClick={() => setRange(n)}
+                className={`btn btn-sm${range === n ? ' btn-primary' : ''}`}
+              >
+                {n === 365 ? '1y' : `${n}d`}
+              </button>
+            ))}
+          </div>
+
+          <Card style={{ marginBottom: '1.25rem' }}>
+            <div style={{ height: 200 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={toChartPoints(entries, range)}
+                  margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
+                >
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(d) => shortDate(d)}
+                    tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                    axisLine={false}
+                    tickLine={false}
+                    minTickGap={30}
+                  />
+                  <YAxis
+                    domain={['dataMin - 1', 'dataMax + 1']}
+                    tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    formatter={(v, name) => [`${v} kg`, name === 'trend' ? 'Trend' : 'Weight']}
+                    contentStyle={{
+                      background: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="weightKg"
+                    stroke="var(--text-muted)"
+                    strokeWidth={1}
+                    dot={{ r: 2 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="trend"
+                    stroke="var(--accent)"
+                    strokeWidth={2.5}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="muted" style={{ margin: '0.5rem 0 0', textAlign: 'center' }}>
+              Thin line: each weigh-in · Thick line: 7-entry average
+            </p>
+          </Card>
+        </>
       )}
 
       {entries && entries.length > 0 && <h3>History</h3>}
@@ -166,4 +239,11 @@ function MeasurementForm({ onDone, onCancel }: { onDone: () => void; onCancel: (
       </Button>
     </div>
   )
+}
+
+function shortDate(iso: string): string {
+  return new Date(iso + 'T12:00:00').toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+  })
 }
