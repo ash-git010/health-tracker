@@ -1,5 +1,7 @@
 export type Unit = 'g' | 'ml'
 
+export type SetType = 'normal' | 'warmup' | 'drop' | 'failure'
+
 export interface Goals {
   id: number
   dailyCalories: number
@@ -52,5 +54,40 @@ export interface BodyMeasurement {
 export interface Profile {
   id: number
   name: string
+  createdAt: string
+}
+
+export interface Exercise {
+  id?: number
+  seedId?: string
+  name: string
+  bodyPart: string
+  equipment: string
+  target: string
+  secondary: string[]
+  steps: string[]
+  custom: boolean
+  createdAt: string
+}
+
+export interface Workout {
+  id?: number
+  date: string
+  name: string
+  startedAt: string
+  finishedAt?: string
+  notes?: string
+}
+
+export interface WorkoutSet {
+  id?: number
+  workoutId: number
+  exerciseKey: string
+  exerciseName: string
+  order: number
+  setNumber: number
+  weightKg: number
+  reps: number
+  type: SetType
   createdAt: string
 }
