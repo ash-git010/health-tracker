@@ -42,13 +42,13 @@ export function AboutScreen() {
       <h3>Barcode scanning</h3>
       <Card>
         <p style={{ margin: 0 }}>
-          Camera scanning works on <strong>Android</strong> only. iPhones and iPads
-          can't scan, because Safari doesn't support the browser API that does it —
-          and every iOS browser uses Safari underneath.
+          Camera scanning works on Android and iPhone. On iPhone, add Upkeep to your
+          home screen first — Safari handles camera access better that way.
+          NOTE: Scanning may take up to 3-5 seconds on iPhones due to the limitations of Safari
         </p>
         <p className="muted" style={{ margin: '0.5rem 0 0' }}>
-          On iOS, type the barcode number by hand instead. Product data comes from
-          Open Food Facts, a free community database.
+          You can also type the barcode number by hand. Product data comes from Open
+          Food Facts, a free community database.
         </p>
       </Card>
 

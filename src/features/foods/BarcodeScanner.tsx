@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { BrowserMultiFormatReader } from '@zxing/browser'
+import { DecodeHintType, BarcodeFormat } from '@zxing/library'
 import { Button, ScreenHeader } from '../../components/ui'
 
 interface Props {
@@ -6,68 +8,102 @@ interface Props {
   onCancel: () => void
 }
 
+type Engine = 'native' | 'zxing'
+
 export function BarcodeScanner({ onDetected, onCancel }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const detectedRef = useRef(false)
   const [error, setError] = useState('')
   const [manual, setManual] = useState('')
+  const [starting, setStarting] = useState(true)
 
-  const supported = 'BarcodeDetector' in window
+  const engine: Engine = 'BarcodeDetector' in window ? 'native' : 'zxing'
 
   useEffect(() => {
-    if (!supported) return
-
     let stream: MediaStream | null = null
     let timer: number | undefined
-    let stopped = false
+    let controls: { stop: () => void } | null = null
+    let cancelled = false
+
+    function report(code: string) {
+      if (detectedRef.current || cancelled) return
+      detectedRef.current = true
+      onDetected(code)
+    }
+
+    async function startNative() {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      })
+      if (cancelled) {
+        stream.getTracks().forEach((t) => t.stop())
+        return
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+
+      const Detector = (window as any).BarcodeDetector
+      const detector = new Detector({
+        formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'],
+      })
+
+      timer = window.setInterval(async () => {
+        if (!videoRef.current || cancelled) return
+        try {
+          const codes = await detector.detect(videoRef.current)
+          if (codes.length > 0 && codes[0].rawValue) report(codes[0].rawValue)
+        } catch {
+          // a failed frame is normal
+        }
+      }, 400)
+    }
+
+    async function startZxing() {
+      const hints = new Map()
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.UPC_A,
+        BarcodeFormat.UPC_E,
+      ])
+
+      const reader = new BrowserMultiFormatReader(hints)
+
+      controls = await reader.decodeFromConstraints(
+        { video: { facingMode: 'environment' } },
+        videoRef.current!,
+        (result) => {
+          if (result) report(result.getText())
+        }
+      )
+    }
 
     async function start() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
-        })
-        if (stopped) {
-          stream.getTracks().forEach((t) => t.stop())
-          return
-        }
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          await videoRef.current.play()
-        }
-
-        const Detector = (window as any).BarcodeDetector
-        const detector = new Detector({
-          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'],
-        })
-
-        timer = window.setInterval(async () => {
-          if (!videoRef.current || stopped) return
-          try {
-            const codes = await detector.detect(videoRef.current)
-            if (codes.length > 0 && codes[0].rawValue) {
-              stopped = true
-              onDetected(codes[0].rawValue)
-            }
-          } catch {
-            // a failed frame is normal, keep scanning
-          }
-        }, 400)
+        if (engine === 'native') await startNative()
+        else await startZxing()
       } catch (err) {
+        if (cancelled) return
         setError(
           err instanceof Error && err.name === 'NotAllowedError'
             ? 'Camera permission denied. Enter the number manually below.'
             : 'Could not start the camera. Enter the number manually below.'
         )
       }
+      if (!cancelled) setStarting(false)
     }
 
     start()
 
     return () => {
-      stopped = true
+      cancelled = true
       if (timer) clearInterval(timer)
+      controls?.stop()
       stream?.getTracks().forEach((t) => t.stop())
     }
-  }, [supported, onDetected])
+  }, [engine, onDetected])
 
   return (
     <div>
@@ -80,11 +116,12 @@ export function BarcodeScanner({ onDetected, onCancel }: Props) {
         }
       />
 
-      {supported && !error && (
+      {!error && (
         <video
           ref={videoRef}
           playsInline
           muted
+          autoPlay
           style={{
             width: '100%',
             borderRadius: 'var(--radius)',
@@ -94,17 +131,14 @@ export function BarcodeScanner({ onDetected, onCancel }: Props) {
         />
       )}
 
-      {!supported && (
-        <p className="warn">
-          Camera scanning works on Android only — Safari doesn't support it, so iPhones
-          and iPads need to use the number field below.
-        </p>
-      )}
-
       {error && <p className="warn">{error}</p>}
 
-      {supported && !error && (
-        <p className="muted">Point the camera at the barcode. It'll pick it up on its own.</p>
+      {!error && (
+        <p className="muted">
+          {starting
+            ? 'Starting the camera…'
+            : 'Point the camera at the barcode. It will pick it up on its own.'}
+        </p>
       )}
 
       <label className="field" style={{ marginTop: '1rem' }}>
