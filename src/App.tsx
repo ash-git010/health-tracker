@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { GoalsScreen } from './features/goals/GoalsScreen'
 import { SettingsScreen } from './features/settings/SettingsScreen'
 import { NameScreen } from './features/onboarding/NameScreen'
@@ -6,6 +6,9 @@ import { HubScreen } from './features/hub/HubScreen'
 import { getSection } from './sections'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
+import { useHistoryNav, type NavState } from './components/useHistoryState'
+
+
 
 type Stage = 'checking' | 'name' | 'goals' | 'ready'
 
@@ -27,6 +30,14 @@ export default function App() {
     }
     check()
   }, [])
+
+  const handlePop = useCallback((s: NavState) => {
+    setSectionId(s.sectionId)
+    setTabId(s.tabId)
+    setShowSettings(s.showSettings)
+  }, [])
+
+  useHistoryNav({ sectionId, tabId, showSettings }, handlePop)
 
   function openSection(id: string) {
     const section = getSection(id)
