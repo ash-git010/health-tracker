@@ -6,7 +6,7 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
-    version: '1.3',
+    version: '0.9.3',
     date: '2026-08-02',
     changes: [
       'Search now handles typos, partial words and any word order',
