@@ -1,32 +1,25 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { getEntriesForDate, deleteEntry, sumEntries, MEALS, type Meal } from '../../data/log'
 import { getGoals, macroGramsFromGoals } from '../../data/goals'
 import { todayISO, addDays, formatDay } from '../../data/dates'
 import { Button, Card } from '../../components/ui'
-import { AddEntry } from './AddEntry'
 
 export function TodayScreen() {
   const [date, setDate] = useState(todayISO())
-  const [adding, setAdding] = useState<Meal | null>(null)
+  const navigate = useNavigate()
 
   const entries = useLiveQuery(() => getEntriesForDate(date), [date])
   const goals = useLiveQuery(() => getGoals(), [])
 
-  if (adding) {
-    return (
-      <AddEntry
-        date={date}
-        defaultMeal={adding}
-        onDone={() => setAdding(null)}
-        onCancel={() => setAdding(null)}
-      />
-    )
-  }
-
   const totals = sumEntries(entries ?? [])
   const targets = goals ? macroGramsFromGoals(goals) : null
   const proteinMet = goals ? totals.protein >= goals.minProteinGrams : true
+
+  function addTo(meal: Meal) {
+    navigate('/meals/today/add', { state: { meal, date } })
+  }
 
   return (
     <div>
@@ -88,7 +81,7 @@ export function TodayScreen() {
               {mealEntries.length > 0 && (
                 <span className="muted">{Math.round(mealTotal.kcal)} kcal</span>
               )}
-              <Button size="sm" onClick={() => setAdding(meal)}>
+              <Button size="sm" onClick={() => addTo(meal)}>
                 +
               </Button>
             </div>

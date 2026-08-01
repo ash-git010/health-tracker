@@ -1,25 +1,23 @@
+import { Link } from 'react-router-dom'
 import { SECTIONS } from '../../sections'
 import { Card } from '../../components/ui'
 
-interface Props {
-  name: string
-  onPick: (sectionId: string) => void
-}
-
-export function HubScreen({ name, onPick }: Props) {
+export function HubScreen({ name }: { name: string }) {
   return (
-    <div style={{ padding: '1.5rem 1rem' }}>
-      <h1 style={{ marginBottom: '0.25rem' }}>{greeting()}, {name}</h1>
+    <div>
+      <h1 style={{ marginBottom: '0.25rem' }}>
+        {greeting()}, {name}
+      </h1>
       <p className="muted" style={{ marginBottom: '1.5rem' }}>
         What are you tracking?
       </p>
 
       {SECTIONS.map((section) => (
-        <button
+        <Link
           key={section.id}
-          onClick={() => onPick(section.id)}
+          to={`/${section.id}`}
           className="btn-plain"
-          style={{ display: 'block', width: '100%', marginBottom: '0.75rem' }}
+          style={{ display: 'block', marginBottom: '0.75rem', textDecoration: 'none' }}
         >
           <Card>
             <div className="row">
@@ -32,7 +30,7 @@ export function HubScreen({ name, onPick }: Props) {
               {section.blurb}
             </div>
           </Card>
-        </button>
+        </Link>
       ))}
     </div>
   )

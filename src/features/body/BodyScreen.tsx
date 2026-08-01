@@ -1,41 +1,37 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import {
   listMeasurements,
-  saveMeasurement,
   deleteMeasurement,
   bmi,
   weightChange,
   toChartPoints,
 } from '../../data/measurements'
-import { todayISO, formatDay } from '../../data/dates'
-import { NumberField } from '../../components/NumberField'
+import { formatDay } from '../../data/dates'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
-
-type NumOrEmpty = number | ''
 
 export function BodyScreen() {
   const entries = useLiveQuery(() => listMeasurements(), [])
-  const [adding, setAdding] = useState(false)
   const [range, setRange] = useState(30)
 
   const latest = entries?.[0]
   const change7 = entries ? weightChange(entries, 7) : null
   const change30 = entries ? weightChange(entries, 30) : null
 
-  if (adding) {
-    return <MeasurementForm onDone={() => setAdding(false)} onCancel={() => setAdding(false)} />
-  }
-
   return (
     <div>
       <ScreenHeader
         title="Body"
         action={
-          <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
+          <Link
+            to="/body/weight/log"
+            className="btn btn-sm btn-primary"
+            style={{ textDecoration: 'none' }}
+          >
             Log weight
-          </Button>
+          </Link>
         }
       />
 
@@ -170,75 +166,6 @@ export function BodyScreen() {
 function formatChange(kg: number): string {
   if (kg === 0) return 'no change'
   return kg > 0 ? `+${kg} kg` : `${kg} kg`
-}
-
-function MeasurementForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
-  const [date, setDate] = useState(todayISO())
-  const [weight, setWeight] = useState<NumOrEmpty>('')
-  const [height, setHeight] = useState<NumOrEmpty>('')
-  const [saving, setSaving] = useState(false)
-
-  const existing = useLiveQuery(async () => {
-    const all = await listMeasurements()
-    return all.find((e) => e.date === date)
-  }, [date])
-
-  const canSave = typeof weight === 'number' && weight > 0 && !saving
-
-  async function handleSave() {
-    if (!canSave) return
-    setSaving(true)
-    await saveMeasurement({
-      date,
-      weightKg: weight as number,
-      heightCm: typeof height === 'number' && height > 0 ? height : undefined,
-    })
-    setSaving(false)
-    onDone()
-  }
-
-  return (
-    <div className="stack">
-      <ScreenHeader
-        title="Log weight"
-        action={
-          <Button size="sm" onClick={onCancel}>
-            Cancel
-          </Button>
-        }
-      />
-
-      <label className="field">
-        <span className="field-label">Date</span>
-        <input
-          type="date"
-          value={date}
-          max={todayISO()}
-          onChange={(e) => setDate(e.target.value)}
-        />
-      </label>
-
-      {existing && (
-        <p className="muted">
-          There's already an entry for this date ({existing.weightKg} kg). Saving will
-          replace it.
-        </p>
-      )}
-
-      <NumberField label="Weight" value={weight} onChange={setWeight} suffix="kg" min={0} />
-      <NumberField
-        label="Height (optional)"
-        value={height}
-        onChange={setHeight}
-        suffix="cm"
-        min={0}
-      />
-
-      <Button variant="primary" block onClick={handleSave} disabled={!canSave}>
-        Save
-      </Button>
-    </div>
-  )
 }
 
 function shortDate(iso: string): string {

@@ -1,55 +1,42 @@
-import { useCallback, useEffect, useState } from 'react'
-import { GoalsScreen } from './features/goals/GoalsScreen'
-import { SettingsScreen } from './features/settings/SettingsScreen'
-import { NameScreen } from './features/onboarding/NameScreen'
+import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Layout } from './Layout'
 import { HubScreen } from './features/hub/HubScreen'
-import { getSection } from './sections'
+import { TodayScreen } from './features/log/TodayScreen'
+import { AddEntryScreen } from './features/log/AddEntryScreen'
+import { FoodListScreen } from './features/foods/FoodListScreen'
+import { FoodFormScreen } from './features/foods/FoodFormScreen'
+import { FoodSearchScreen } from './features/foods/FoodSearchScreen'
+import { BarcodeScanScreen } from './features/foods/BarcodeScanScreen'
+import { GoalsScreen } from './features/goals/GoalsScreen'
+import { ChartsScreen } from './features/log/ChartsScreen'
+import { BodyScreen } from './features/body/BodyScreen'
+import { MeasurementFormScreen } from './features/body/MeasurementFormScreen'
+import { SettingsScreen } from './features/settings/SettingsScreen'
+import { AboutScreen } from './features/about/AboutScreen'
+import { FeedbackScreen } from './features/about/FeedbackScreen'
+import { NameScreen } from './features/onboarding/NameScreen'
+import { WorkoutPlaceholder } from './features/workouts/WorkoutPlaceholder'
+import { RoutinePlaceholder } from './features/routines/RoutinePlaceholder'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
-import { useHistoryNav, type NavState } from './components/useHistoryState'
-
-
 
 type Stage = 'checking' | 'name' | 'goals' | 'ready'
 
 export default function App() {
   const [stage, setStage] = useState<Stage>('checking')
   const [name, setName] = useState('')
-  const [sectionId, setSectionId] = useState<string | null>(null)
-  const [tabId, setTabId] = useState('')
-  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     async function check() {
       const [profile, goals] = await Promise.all([getProfile(), getGoals()])
       setName(profile?.name ?? '')
-
       if (!profile) setStage('name')
       else if (!goals) setStage('goals')
       else setStage('ready')
     }
     check()
   }, [])
-
-  const handlePop = useCallback((s: NavState) => {
-    setSectionId(s.sectionId)
-    setTabId(s.tabId)
-    setShowSettings(s.showSettings)
-  }, [])
-
-  useHistoryNav({ sectionId, tabId, showSettings }, handlePop)
-
-  function openSection(id: string) {
-    const section = getSection(id)
-    if (!section) return
-    setSectionId(id)
-    setTabId(section.tabs[0].id)
-  }
-
-  function goHome() {
-    setSectionId(null)
-    setShowSettings(false)
-  }
 
   if (stage === 'checking') {
     return (
@@ -81,50 +68,43 @@ export default function App() {
     )
   }
 
-  const section = sectionId ? getSection(sectionId) : undefined
-  const tab = section?.tabs.find((t) => t.id === tabId) ?? section?.tabs[0]
-
   return (
-    <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: section ? '4rem' : 0 }}>
-      <header className="app-header">
-        <div className="row">
-          <button onClick={goHome} className="btn-plain wordmark grow">
-            Up<span>keep</span>
-            {section && <span className="muted"> · {section.title}</span>}
-          </button>
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="btn btn-sm btn-ghost"
-            aria-label="Settings"
-          >
-            ⚙
-          </button>
-        </div>
-      </header>
+    <BrowserRouter basename="/health-tracker">
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<HubScreen name={name} />} />
 
-      <main style={{ padding: '1rem' }}>
-        {showSettings ? (
-          <SettingsScreen />
-        ) : section && tab ? (
-          tab.render()
-        ) : (
-          <HubScreen name={name} onPick={openSection} />
-        )}
-      </main>
+          <Route path="meals" element={<Navigate to="/meals/today" replace />} />
+          <Route path="meals/today" element={<TodayScreen />} />
+          <Route path="meals/today/add" element={<AddEntryScreen />} />
+          <Route path="meals/foods" element={<FoodListScreen />} />
+          <Route path="meals/foods/new" element={<FoodFormScreen />} />
+          <Route path="meals/foods/:id/edit" element={<FoodFormScreen />} />
+          <Route path="meals/foods/search" element={<FoodSearchScreen />} />
+          <Route path="meals/foods/scan" element={<BarcodeScanScreen />} />
+          <Route path="meals/goals" element={<GoalsScreen />} />
+          <Route path="meals/charts" element={<ChartsScreen />} />
 
-      {section && !showSettings && section.tabs.length > 1 && (
-        <nav className="tabbar">
-          {section.tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTabId(t.id)}
-              aria-current={tab?.id === t.id ? 'page' : undefined}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-      )}
-    </div>
+          <Route path="body" element={<Navigate to="/body/weight" replace />} />
+          <Route path="body/weight" element={<BodyScreen />} />
+          <Route path="body/weight/log" element={<MeasurementFormScreen />} />
+
+          <Route path="workouts" element={<Navigate to="/workouts/log" replace />} />
+          <Route path="workouts/log" element={<WorkoutPlaceholder name="Workout log" />} />
+          <Route path="workouts/routines" element={<WorkoutPlaceholder name="Routines" />} />
+          <Route path="workouts/exercises" element={<WorkoutPlaceholder name="Exercise library" />} />
+
+          <Route path="routines" element={<Navigate to="/routines/today" replace />} />
+          <Route path="routines/today" element={<RoutinePlaceholder />} />
+          <Route path="routines/manage" element={<RoutinePlaceholder />} />
+
+          <Route path="settings" element={<SettingsScreen />} />
+          <Route path="settings/about" element={<AboutScreen />} />
+          <Route path="settings/feedback" element={<FeedbackScreen />} />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }

@@ -1,16 +1,6 @@
-import type { ReactNode } from 'react'
-import { TodayScreen } from './features/log/TodayScreen'
-import { FoodListScreen } from './features/foods/FoodListScreen'
-import { GoalsScreen } from './features/goals/GoalsScreen'
-import { BodyScreen } from './features/body/BodyScreen'
-import { WorkoutPlaceholder } from './features/workouts/WorkoutPlaceholder'
-import { RoutinePlaceholder } from './features/routines/RoutinePlaceholder'
-import { ChartsScreen } from './features/log/ChartsScreen'
-
 export interface SectionTab {
-  id: string
+  path: string
   label: string
-  render: () => ReactNode
 }
 
 export interface Section {
@@ -28,10 +18,10 @@ export const SECTIONS: Section[] = [
     blurb: 'Calories, macros and your food list',
     ready: true,
     tabs: [
-      { id: 'today', label: 'Today', render: () => <TodayScreen /> },
-      { id: 'foods', label: 'Foods', render: () => <FoodListScreen /> },
-      { id: 'goals', label: 'Goals', render: () => <GoalsScreen /> },
-      { id: 'charts', label: 'Charts', render: () => <ChartsScreen /> },
+      { path: 'today', label: 'Today' },
+      { path: 'foods', label: 'Foods' },
+      { path: 'goals', label: 'Goals' },
+      { path: 'charts', label: 'Charts' },
     ],
   },
   {
@@ -39,7 +29,7 @@ export const SECTIONS: Section[] = [
     title: 'Body',
     blurb: 'Weight and measurements over time',
     ready: true,
-    tabs: [{ id: 'weight', label: 'Weight', render: () => <BodyScreen /> }],
+    tabs: [{ path: 'weight', label: 'Weight' }],
   },
   {
     id: 'workouts',
@@ -47,17 +37,9 @@ export const SECTIONS: Section[] = [
     blurb: 'Exercises, routines and lifting progress',
     ready: false,
     tabs: [
-      { id: 'log', label: 'Log', render: () => <WorkoutPlaceholder name="Workout log" /> },
-      {
-        id: 'routines',
-        label: 'Routines',
-        render: () => <WorkoutPlaceholder name="Routines" />,
-      },
-      {
-        id: 'exercises',
-        label: 'Exercises',
-        render: () => <WorkoutPlaceholder name="Exercise library" />,
-      },
+      { path: 'log', label: 'Log' },
+      { path: 'routines', label: 'Routines' },
+      { path: 'exercises', label: 'Exercises' },
     ],
   },
   {
@@ -66,8 +48,8 @@ export const SECTIONS: Section[] = [
     blurb: 'Skin, hair and daily habits',
     ready: false,
     tabs: [
-      { id: 'today', label: 'Today', render: () => <RoutinePlaceholder /> },
-      { id: 'manage', label: 'Manage', render: () => <RoutinePlaceholder /> },
+      { path: 'today', label: 'Today' },
+      { path: 'manage', label: 'Manage' },
     ],
   },
 ]

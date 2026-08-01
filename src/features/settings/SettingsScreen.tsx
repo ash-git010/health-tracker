@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { exportAll, importAll, downloadBackup } from '../../data/backup'
 import { getProfile, saveName } from '../../data/profile'
 import { Button, ScreenHeader } from '../../components/ui'
 import { TextField } from '../../components/TextField'
-import { AboutScreen } from '../about/AboutScreen'
-import { FeedbackScreen } from '../about/FeedbackScreen'
 
 export function SettingsScreen() {
   const [status, setStatus] = useState('')
-  const [showAbout, setShowAbout] = useState(false)
-  const [showFeedback, setShowFeedback] = useState(false)
 
   async function handleExport() {
     downloadBackup(await exportAll())
@@ -25,9 +22,6 @@ export function SettingsScreen() {
       setStatus(`Import failed: ${err instanceof Error ? err.message : 'unknown error'}`)
     }
   }
-
-  if (showAbout) return <AboutScreen onBack={() => setShowAbout(false)} />
-  if (showFeedback) return <FeedbackScreen onBack={() => setShowFeedback(false)} />
 
   return (
     <div className="stack">
@@ -63,13 +57,13 @@ export function SettingsScreen() {
 
       <h3 style={{ marginTop: '1rem' }}>App</h3>
 
-      <Button onClick={() => setShowAbout(true)} block>
+      <Link to="/settings/about" className="btn btn-block" style={{ textDecoration: 'none' }}>
         About Upkeep
-      </Button>
+      </Link>
 
-      <Button onClick={() => setShowFeedback(true)} block>
+      <Link to="/settings/feedback" className="btn btn-block" style={{ textDecoration: 'none' }}>
         Report a problem or suggest something
-      </Button>
+      </Link>
     </div>
   )
 }

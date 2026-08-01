@@ -139,7 +139,8 @@ input:focus, select:focus {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.tabbar button {
+.tabbar button,
+.tabbar a {
   flex: 1;
   padding: 0.75rem 0;
   font: inherit;
@@ -149,9 +150,15 @@ input:focus, select:focus {
   color: var(--text-muted);
   cursor: pointer;
   text-transform: capitalize;
+  text-align: center;
+  text-decoration: none;
 }
 
-.tabbar button[aria-current="page"] { color: var(--accent); font-weight: 600; }
+.tabbar button[aria-current="page"],
+.tabbar a.active {
+  color: var(--accent);
+  font-weight: 600;
+}
 
 .list-item {
   display: flex;

@@ -6,6 +6,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '0.9.2',
+    date: '2026-08-01',
+    changes: [
+      'The back button now works properly throughout the app',
+      'Refreshing keeps you on the screen you were viewing',
+      'Weight trend chart with a 7-entry rolling average',
+    ],
+  },
+  {
     version: '0.9.1',
     date: '2026-08-01',
     changes: [

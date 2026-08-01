@@ -1,13 +1,16 @@
+import { useNavigate } from 'react-router-dom'
 import { CHANGELOG } from './changelog'
 import { Card, ScreenHeader } from '../../components/ui'
 
-export function AboutScreen({ onBack }: { onBack: () => void }) {
+export function AboutScreen() {
+  const navigate = useNavigate()
+
   return (
     <div className="stack">
       <ScreenHeader
         title="About Upkeep"
         action={
-          <button className="btn btn-sm btn-ghost" onClick={onBack}>
+          <button className="btn btn-sm btn-ghost" onClick={() => navigate('/settings')}>
             Back
           </button>
         }

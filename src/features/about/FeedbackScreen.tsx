@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { sendFeedback } from '../../data/feedback'
 import { TextField } from '../../components/TextField'
 import { Button, Card, ScreenHeader } from '../../components/ui'
 
-export function FeedbackScreen({ onBack }: { onBack: () => void }) {
+export function FeedbackScreen() {
+  const navigate = useNavigate()
   const [kind, setKind] = useState<'bug' | 'suggestion'>('bug')
   const [title, setTitle] = useState('')
   const [details, setDetails] = useState('')
@@ -33,7 +35,7 @@ export function FeedbackScreen({ onBack }: { onBack: () => void }) {
         <ScreenHeader
           title="Thanks"
           action={
-            <Button size="sm" onClick={onBack}>
+            <Button size="sm" onClick={() => navigate('/settings')}>
               Back
             </Button>
           }
@@ -55,7 +57,7 @@ export function FeedbackScreen({ onBack }: { onBack: () => void }) {
       <ScreenHeader
         title="Report a problem"
         action={
-          <Button size="sm" onClick={onBack}>
+          <Button size="sm" onClick={() => navigate('/settings')}>
             Back
           </Button>
         }
