@@ -6,6 +6,37 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.0',
+    date: '2026-08-02',
+    changes: [
+      'Workouts are here — log sets, build routines, track your lifts',
+      'A library of over 1,300 exercises with instructions, searchable by name, muscle or equipment',
+      'Tick off each set as you go, with last session\'s numbers shown for reference',
+      'Rest timer that counts down under the exercise, with a beep when time\'s up',
+      'Save any workout as a routine, organised into folders, and start from it next time',
+      'Name your workout at the end rather than the start',
+      'Workout history with full detail — tap any session to review or edit it',
+    ],
+  },
+  {
+    version: '0.9.5',
+    date: '2026-08-02',
+    changes: [
+      'Bigger tap targets throughout — buttons and controls are easier to hit',
+      'The workout summary stays pinned while you scroll through exercises',
+      'Filter exercises by body part while searching',
+    ],
+  },
+  {
+    version: '0.9.4',
+    date: '2026-08-02',
+    changes: [
+      'Updates now install automatically instead of waiting for a manual refresh',
+      'A prompt appears when a new version is ready',
+      'New app icon — remove and reinstall from your home screen to see it',
+    ],
+  },
+  {
     version: '0.9.3',
     date: '2026-08-02',
     changes: [
