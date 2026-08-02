@@ -48,3 +48,12 @@ and `basename` in App.tsx both depend on that path.
 
 Workout routines and templates, rest timer, workout charts, skin and hair routines,
 progress overview section, backend and user accounts.
+
+## Testing
+
+No browser or Playwright in this container. Do not attempt screenshots or
+browser-based verification. Verify with `npm run build` only — the user tests
+on a real phone via the forwarded dev server.
+
+- Never use `git stash`, `git checkout .`, `git reset`, or anything that discards
+  uncommitted work. Ask before any git command that isn't `status`, `diff`, or `log`.

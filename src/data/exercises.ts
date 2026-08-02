@@ -1,6 +1,7 @@
 import { db } from './db'
 import type { Exercise } from './types'
 import { fuzzySearch } from './search'
+import { POPULAR_EXERCISES } from './exercisePopularity'
 
 interface SeedExercise {
   id: string
@@ -21,14 +22,34 @@ export interface ExerciseOption {
   secondary: string[]
   steps: string[]
   custom: boolean
+  imageUrl?: string
+  popularity: number
 }
 
 let seedCache: ExerciseOption[] | null = null
+
+// For each popular movement, boost only the shortest matching seed name —
+// almost always the base exercise rather than an equipment/angle variant.
+function computePopularity(names: { key: string; name: string }[]): Map<string, number> {
+  const boosts = new Map<string, number>()
+
+  for (const [popularName, boost] of Object.entries(POPULAR_EXERCISES)) {
+    const matches = names.filter((n) => n.name.toLowerCase().includes(popularName))
+    if (matches.length === 0) continue
+
+    const shortest = matches.reduce((a, b) => (b.name.length < a.name.length ? b : a))
+    boosts.set(shortest.key, Math.max(boosts.get(shortest.key) ?? 0, boost))
+  }
+
+  return boosts
+}
 
 async function loadSeed(): Promise<ExerciseOption[]> {
   if (!seedCache) {
     const mod = await import('./seed/exercises.json')
     const raw = mod.default as SeedExercise[]
+    const popularity = computePopularity(raw.map((e) => ({ key: e.id, name: e.name })))
+
     seedCache = raw.map((e) => ({
       key: e.id,
       name: e.name,
@@ -38,6 +59,8 @@ async function loadSeed(): Promise<ExerciseOption[]> {
       secondary: e.secondary,
       steps: e.steps,
       custom: false,
+      imageUrl: undefined,
+      popularity: popularity.get(e.id) ?? 0,
     }))
   }
   return seedCache
@@ -55,6 +78,8 @@ export async function allExercises(): Promise<ExerciseOption[]> {
     secondary: e.secondary,
     steps: e.steps,
     custom: true,
+    imageUrl: undefined,
+    popularity: 0,
   }))
 
   return [...customOptions, ...seedOptions]
@@ -76,7 +101,17 @@ export function searchExercises(
     return true
   })
 
-  return fuzzySearch(filtered, query, (e) => `${e.name} ${e.target} ${e.equipment}`)
+  if (!query.trim()) {
+    return [...filtered].sort((a, b) => b.popularity - a.popularity || a.name.localeCompare(b.name))
+  }
+
+  return fuzzySearch(
+    filtered,
+    query,
+    (e) => `${e.name} ${e.target} ${e.equipment}`,
+    undefined,
+    (e) => e.popularity
+  )
 }
 
 export function bodyParts(list: ExerciseOption[]): string[] {

@@ -1,4 +1,4 @@
-import type { ReactNode, CSSProperties } from 'react'
+import { useState, type ReactNode, type CSSProperties } from 'react'
 
 export function Button({
   children,
@@ -75,4 +75,34 @@ export function ScreenHeader({ title, action }: { title: string; action?: ReactN
 
 export function Empty({ children }: { children: ReactNode }) {
   return <p className="muted" style={{ padding: '1.5rem 0', textAlign: 'center' }}>{children}</p>
+}
+
+export function InlineRename({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial: string
+  onSave: (name: string) => void
+  onCancel: () => void
+}) {
+  const [name, setName] = useState(initial)
+
+  return (
+    <div className="row" style={{ marginBottom: '0.75rem' }}>
+      <input
+        type="text"
+        value={name}
+        autoFocus
+        onChange={(e) => setName(e.target.value)}
+        style={{ flex: 1 }}
+      />
+      <Button size="sm" variant="primary" onClick={() => name.trim() && onSave(name.trim())}>
+        Save
+      </Button>
+      <Button size="sm" onClick={onCancel}>
+        Cancel
+      </Button>
+    </div>
+  )
 }

@@ -89,5 +89,24 @@ export interface WorkoutSet {
   weightKg: number
   reps: number
   type: SetType
+  restSeconds: number
+  completed: boolean
   createdAt: string
+}
+
+export interface Routine {
+  id?: number
+  name: string
+  folder?: string
+  createdAt: string
+}
+
+export interface RoutineExercise {
+  id?: number
+  routineId: number
+  exerciseKey: string
+  exerciseName: string
+  order: number
+  targetSets: number
+  restSeconds: number
 }

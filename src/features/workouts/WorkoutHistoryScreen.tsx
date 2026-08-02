@@ -1,5 +1,6 @@
+import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { listWorkouts, getSets, deleteWorkout, workoutVolume } from '../../data/workouts'
+import { listWorkouts, getSets, deleteWorkout, workoutVolume, completedSets } from '../../data/workouts'
 import { formatDay } from '../../data/dates'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 
@@ -34,16 +35,19 @@ function WorkoutRow({
   const sets = useLiveQuery(() => getSets(id), [id])
   const volume = workoutVolume(sets ?? [])
   const exercises = new Set((sets ?? []).map((s) => s.exerciseKey)).size
+  const navigate = useNavigate()
 
   return (
-    <Card style={{ marginBottom: '0.5rem' }}>
-      <div className="row">
-        <strong className="grow">{name}</strong>
-        <span className="muted">{formatDay(date)}</span>
-      </div>
-      <div className="muted" style={{ marginTop: '0.2rem' }}>
-        {exercises} exercises · {(sets ?? []).length} sets · {Math.round(volume)} kg
-        {!done && ' · in progress'}
+    <Card style={{ marginBottom: '0.5rem', cursor: 'pointer' }}>
+      <div onClick={() => navigate(`/workouts/history/${id}`)}>
+        <div className="row">
+          <strong className="grow">{name}</strong>
+          <span className="muted">{formatDay(date)}</span>
+        </div>
+        <div className="muted" style={{ marginTop: '0.2rem' }}>
+          {exercises} exercises · {completedSets(sets ?? []).length} sets · {Math.round(volume)} kg
+          {!done && ' · in progress'}
+        </div>
       </div>
       <Button
         size="sm"

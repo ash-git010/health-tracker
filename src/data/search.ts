@@ -16,22 +16,32 @@ export function fuzzyScore(text: string, query: string): number {
   const words = haystack.split(/[\s\-/(),]+/).filter(Boolean)
 
   let score = 0
+  const matchedWords = new Set<number>()
 
   for (const token of tokens) {
     let best = 0
+    let bestWordIndex = -1
 
-    for (const word of words) {
-      if (word === token) best = Math.max(best, 100)
-      else if (word.startsWith(token)) best = Math.max(best, 70)
-      else if (word.includes(token)) best = Math.max(best, 40)
-      else if (token.length >= 4 && isNearMatch(word, token)) best = Math.max(best, 25)
-    }
+    words.forEach((word, i) => {
+      let s = 0
+      if (word === token) s = 100
+      else if (word.startsWith(token)) s = 70
+      else if (word.includes(token)) s = 40
+      else if (token.length >= 4 && isNearMatch(word, token)) s = 25
+
+      if (s > best) {
+        best = s
+        bestWordIndex = i
+      }
+    })
 
     if (best === 0) return 0
     score += best
+    if (bestWordIndex >= 0) matchedWords.add(bestWordIndex)
   }
 
-  return score - haystack.length * 0.05
+  const unmatchedWordCount = words.length - matchedWords.size
+  return score - unmatchedWordCount * 25
 }
 
 function isNearMatch(word: string, token: string): boolean {
@@ -65,7 +75,8 @@ export function fuzzySearch<T>(
   items: T[],
   query: string,
   getText: (item: T) => string,
-  limit?: number
+  limit?: number,
+  getBoost?: (item: T) => number
 ): T[] {
   if (!query.trim()) {
     const sorted = [...items].sort((a, b) => getText(a).localeCompare(getText(b)))
@@ -75,6 +86,7 @@ export function fuzzySearch<T>(
   const scored: Scored<T>[] = items
     .map((item) => ({ item, score: fuzzyScore(getText(item), query) }))
     .filter((s) => s.score > 0)
+    .map((s) => (getBoost ? { ...s, score: s.score + getBoost(s.item) } : s))
     .sort((a, b) => b.score - a.score)
 
   const result = scored.map((s) => s.item)

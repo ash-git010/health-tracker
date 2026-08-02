@@ -8,14 +8,27 @@ interface Props {
   onCancel: () => void
 }
 
+const BODY_PART_CHIPS: { key: string; label: string; parts: string[] | null }[] = [
+  { key: 'all', label: 'All', parts: null },
+  { key: 'chest', label: 'Chest', parts: ['chest'] },
+  { key: 'back', label: 'Back', parts: ['back'] },
+  { key: 'legs', label: 'Legs', parts: ['upper legs', 'lower legs'] },
+  { key: 'shoulders', label: 'Shoulders', parts: ['shoulders'] },
+  { key: 'arms', label: 'Arms', parts: ['upper arms', 'lower arms'] },
+  { key: 'core', label: 'Core', parts: ['waist', 'neck'] },
+  { key: 'cardio', label: 'Cardio', parts: ['cardio'] },
+]
+
 export function ExercisePicker({ onPick, onCancel }: Props) {
   const exercises = useLiveQuery(() => allExercises(), [])
   const [query, setQuery] = useState('')
+  const [chip, setChip] = useState('all')
 
-  const filtered = useMemo(
-    () => searchExercises(exercises ?? [], query).slice(0, 40),
-    [exercises, query]
-  )
+  const filtered = useMemo(() => {
+    const parts = BODY_PART_CHIPS.find((c) => c.key === chip)?.parts ?? null
+    const base = parts ? (exercises ?? []).filter((e) => parts.includes(e.bodyPart)) : exercises ?? []
+    return searchExercises(base, query).slice(0, 40)
+  }, [exercises, query, chip])
 
   return (
     <div>
@@ -27,6 +40,18 @@ export function ExercisePicker({ onPick, onCancel }: Props) {
           </Button>
         }
       />
+
+      <div className="chip-row">
+        {BODY_PART_CHIPS.map((c) => (
+          <button
+            key={c.key}
+            className={`chip${chip === c.key ? ' active' : ''}`}
+            onClick={() => setChip(c.key)}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
 
       <input
         type="text"

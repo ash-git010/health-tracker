@@ -38,6 +38,7 @@ export const SECTIONS: Section[] = [
     ready: true,
     tabs: [
       { path: 'log', label: 'Log' },
+      { path: 'routines', label: 'Routines' },
       { path: 'history', label: 'History' },
       { path: 'exercises', label: 'Exercises' },
     ],

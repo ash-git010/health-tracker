@@ -19,9 +19,14 @@ import { NameScreen } from './features/onboarding/NameScreen'
 import { RoutinePlaceholder } from './features/routines/RoutinePlaceholder'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
+import { unlockAudio } from './data/audio'
 import { ActiveWorkoutScreen } from './features/workouts/ActiveWorkoutScreen'
+import { FinishWorkoutScreen } from './features/workouts/FinishWorkoutScreen'
 import { WorkoutHistoryScreen } from './features/workouts/WorkoutHistoryScreen'
+import { WorkoutDetailScreen } from './features/workouts/WorkoutDetailScreen'
 import { ExerciseLibraryScreen } from './features/workouts/ExerciseLibraryScreen'
+import { RoutineListScreen } from './features/workouts/RoutineListScreen'
+import { RoutineFormScreen } from './features/workouts/RoutineFormScreen'
 
 type Stage = 'checking' | 'name' | 'goals' | 'ready'
 
@@ -38,6 +43,15 @@ export default function App() {
       else setStage('ready')
     }
     check()
+  }, [])
+
+  useEffect(() => {
+    function handleFirstTap() {
+      unlockAudio()
+      window.removeEventListener('pointerdown', handleFirstTap)
+    }
+    window.addEventListener('pointerdown', handleFirstTap)
+    return () => window.removeEventListener('pointerdown', handleFirstTap)
   }, [])
 
   if (stage === 'checking') {
@@ -93,7 +107,12 @@ export default function App() {
 
           <Route path="workouts" element={<Navigate to="/workouts/log" replace />} />
           <Route path="workouts/log" element={<ActiveWorkoutScreen />} />
+          <Route path="workouts/finish" element={<FinishWorkoutScreen />} />
+          <Route path="workouts/routines" element={<RoutineListScreen />} />
+          <Route path="workouts/routines/new" element={<RoutineFormScreen />} />
+          <Route path="workouts/routines/:id/edit" element={<RoutineFormScreen />} />
           <Route path="workouts/history" element={<WorkoutHistoryScreen />} />
+          <Route path="workouts/history/:id" element={<WorkoutDetailScreen />} />
           <Route path="workouts/exercises" element={<ExerciseLibraryScreen />} />
 
           <Route path="routines" element={<Navigate to="/routines/today" replace />} />

@@ -1,5 +1,16 @@
 import Dexie, { type Table } from 'dexie'
-import type { Goals, Food, LogEntry, BodyMeasurement, Profile, Exercise, Workout, WorkoutSet } from './types'
+import type {
+  Goals,
+  Food,
+  LogEntry,
+  BodyMeasurement,
+  Profile,
+  Exercise,
+  Workout,
+  WorkoutSet,
+  Routine,
+  RoutineExercise,
+} from './types'
 
 export class HealthDB extends Dexie {
   goals!: Table<Goals, number>
@@ -10,6 +21,8 @@ export class HealthDB extends Dexie {
   exercises!: Table<Exercise, number>
   workouts!: Table<Workout, number>
   workoutSets!: Table<WorkoutSet, number>
+  routines!: Table<Routine, number>
+  routineExercises!: Table<RoutineExercise, number>
 
   constructor() {
     super('HealthTrackerDB')
@@ -29,6 +42,11 @@ export class HealthDB extends Dexie {
       exercises: '++id, name, bodyPart, equipment',
       workouts: '++id, date',
       workoutSets: '++id, workoutId, exerciseKey, [exerciseKey+createdAt]',
+    })
+
+    this.version(4).stores({
+      routines: '++id, name, folder, createdAt',
+      routineExercises: '++id, routineId, [routineId+order]',
     })
   }
 }
