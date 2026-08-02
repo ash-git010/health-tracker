@@ -98,7 +98,7 @@ input:focus, select:focus {
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 .btn-ghost { background: transparent; border-color: transparent; }
-.btn-sm { padding: 0.35rem 0.6rem; font-size: 0.8125rem; }
+.btn-sm { padding: 0.35rem 0.6rem; font-size: 0.8125rem; min-height: 44px; }
 .btn-block { width: 100%; }
 
 .btn-plain {
@@ -223,6 +223,19 @@ input:focus, select:focus {
 .tabbar a.active {
   color: var(--accent);
   font-weight: 600;
+}
+
+.set-row { margin-bottom: 0.4rem; }
+
+.set-row input,
+.set-row select {
+  min-height: 44px;
+  padding: 0.5rem;
+}
+
+.set-row select {
+  width: auto;
+  font-size: 0.8125rem;
 }
 
 .list-item {

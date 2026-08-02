@@ -218,7 +218,7 @@ function SetRow({
   }
 
   return (
-    <div className="row" style={{ marginBottom: '0.4rem' }}>
+    <div className="row set-row">
       <span className="muted" style={{ width: '1.5rem' }}>
         {index + 1}
       </span>
@@ -230,7 +230,7 @@ function SetRow({
         placeholder={hint ? String(hint.weightKg) : 'kg'}
         onChange={(e) => setWeight(e.target.value)}
         onBlur={() => save({ weightKg: Number(weight) || 0 })}
-        style={{ flex: 1, padding: '0.4rem' }}
+        style={{ flex: 1 }}
       />
 
       <span className="muted">×</span>
@@ -242,13 +242,13 @@ function SetRow({
         placeholder={hint ? String(hint.reps) : 'reps'}
         onChange={(e) => setReps(e.target.value)}
         onBlur={() => save({ reps: Number(reps) || 0 })}
-        style={{ flex: 1, padding: '0.4rem' }}
+        style={{ flex: 1 }}
       />
 
       <select
+        aria-label="Set type"
         value={set.type}
         onChange={(e) => save({ type: e.target.value as SetType })}
-        style={{ width: 'auto', padding: '0.4rem', fontSize: '0.75rem' }}
       >
         {SET_TYPES.map((t) => (
           <option key={t.value} value={t.value}>
@@ -257,9 +257,13 @@ function SetRow({
         ))}
       </select>
 
-      <Button size="sm" variant="ghost" onClick={() => set.id && deleteSet(set.id)}>
+      <button
+        className="icon-btn"
+        aria-label={`Delete set ${index + 1}`}
+        onClick={() => set.id && deleteSet(set.id)}
+      >
         ×
-      </Button>
+      </button>
     </div>
   )
 }
