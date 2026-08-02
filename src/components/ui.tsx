@@ -9,6 +9,7 @@ export function Button({
   disabled,
   type = 'button',
   style,
+  className,
 }: {
   children: ReactNode
   onClick?: () => void
@@ -18,12 +19,14 @@ export function Button({
   disabled?: boolean
   type?: 'button' | 'submit'
   style?: CSSProperties
+  className?: string
 }) {
   const classes = ['btn']
   if (variant === 'primary') classes.push('btn-primary')
   if (variant === 'ghost') classes.push('btn-ghost')
   if (size === 'sm') classes.push('btn-sm')
   if (block) classes.push('btn-block')
+  if (className) classes.push(className)
 
   return (
     <button

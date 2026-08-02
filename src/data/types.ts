@@ -77,6 +77,7 @@ export interface Workout {
   startedAt: string
   finishedAt?: string
   notes?: string
+  routineId?: number
 }
 
 export interface WorkoutSet {

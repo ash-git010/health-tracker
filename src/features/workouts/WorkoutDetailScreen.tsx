@@ -11,8 +11,9 @@ import {
   workoutVolume,
   completedSets,
 } from '../../data/workouts'
-import { saveWorkoutAsRoutine } from '../../data/routines'
+import { saveWorkoutAsRoutine, getRoutine } from '../../data/routines'
 import { formatDay } from '../../data/dates'
+import { formatRestLabel } from './rest'
 import { Button, Card, Empty, InlineRename, ScreenHeader } from '../../components/ui'
 import type { SetType, WorkoutSet } from '../../data/types'
 
@@ -31,6 +32,10 @@ export function WorkoutDetailScreen() {
 
   const workout = useLiveQuery(() => getWorkout(workoutId), [workoutId])
   const sets = useLiveQuery(() => getSets(workoutId), [workoutId])
+  const routine = useLiveQuery(
+    () => (workout?.routineId ? getRoutine(workout.routineId) : Promise.resolve(null)),
+    [workout?.routineId]
+  )
 
   if (workout === undefined || sets === undefined) return <Empty>Loading…</Empty>
   if (!workout) return <Empty>Workout not found.</Empty>
@@ -91,6 +96,9 @@ export function WorkoutDetailScreen() {
       {grouped.map((group) => (
         <Card key={group.key} style={{ marginBottom: '0.75rem' }}>
           <strong>{group.name}</strong>
+          <div className="muted" style={{ fontSize: '0.8125rem' }}>
+            Rest: {formatRestLabel(group.sets[0]?.restSeconds ?? 90)}
+          </div>
           <div style={{ marginTop: '0.5rem' }}>
             {group.sets.map((set, i) => (
               <SetRow key={set.id} set={set} index={i} />
@@ -100,9 +108,15 @@ export function WorkoutDetailScreen() {
       ))}
 
       <div className="row" style={{ marginTop: '1rem' }}>
-        <Button block onClick={handleSaveAsRoutine}>
-          Save as routine
-        </Button>
+        {workout.routineId ? (
+          <span className="muted grow" style={{ alignSelf: 'center' }}>
+            Saved as {routine?.name ?? '…'}
+          </span>
+        ) : (
+          <Button block onClick={handleSaveAsRoutine}>
+            Save as routine
+          </Button>
+        )}
         <Button variant="ghost" block onClick={handleDelete}>
           Delete
         </Button>

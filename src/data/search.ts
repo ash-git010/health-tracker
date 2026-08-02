@@ -3,17 +3,35 @@ export interface Scored<T> {
   score: number
 }
 
+// Separators (hyphens/slashes/underscores) are normalised to spaces so "push-up"
+// tokenises the same as "push up", and also compared fully stripped so "pushup"
+// matches "push-up" even though it has no word boundary at all.
+function normalizeSeparators(text: string): string {
+  return text.toLowerCase().replace(/[-_/]+/g, ' ')
+}
+
+function stripSeparators(text: string): string {
+  return text.replace(/[^a-z0-9]/g, '')
+}
+
 export function fuzzyScore(text: string, query: string): number {
-  const haystack = text.toLowerCase()
-  const q = query.trim().toLowerCase()
+  const haystack = normalizeSeparators(text)
+  const q = normalizeSeparators(query.trim())
   if (!q) return 1
 
   if (haystack === q) return 1000
   if (haystack.startsWith(q)) return 500
   if (haystack.includes(q)) return 300
 
+  const haystackStripped = stripSeparators(haystack)
+  const qStripped = stripSeparators(q)
+  if (qStripped) {
+    if (haystackStripped === qStripped) return 900
+    if (haystackStripped.includes(qStripped) || qStripped.includes(haystackStripped)) return 400
+  }
+
   const tokens = q.split(/\s+/).filter(Boolean)
-  const words = haystack.split(/[\s\-/(),]+/).filter(Boolean)
+  const words = haystack.split(/[\s(),]+/).filter(Boolean)
 
   let score = 0
   const matchedWords = new Set<number>()

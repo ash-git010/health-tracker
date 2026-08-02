@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useLiveQuery } from 'dexie-react-hooks'
 import {
   getRoutine,
   getRoutineExercises,
@@ -8,25 +7,21 @@ import {
   updateRoutine,
   deleteRoutine,
   setRoutineExercises,
-  routineFolders,
   type RoutineExerciseInput,
 } from '../../data/routines'
 import { ExercisePicker } from './ExercisePicker'
+import { FolderPicker } from './FolderPicker'
 import { TextField } from '../../components/TextField'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
-
-const NEW_FOLDER = '__new_folder__'
 
 export function RoutineFormScreen() {
   const { id } = useParams()
   const routineId = id ? Number(id) : undefined
   const navigate = useNavigate()
-  const folders = useLiveQuery(() => routineFolders(), [])
 
   const [loading, setLoading] = useState(!!routineId)
   const [name, setName] = useState('')
   const [folder, setFolder] = useState('')
-  const [addingFolder, setAddingFolder] = useState(false)
   const [exercises, setExercises] = useState<RoutineExerciseInput[]>([])
   const [picking, setPicking] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -113,50 +108,7 @@ export function RoutineFormScreen() {
 
       <TextField label="Name" value={name} onChange={setName} placeholder="Push day" />
 
-      <label className="field">
-        <span className="field-label">Folder</span>
-        {addingFolder ? (
-          <div className="row">
-            <input
-              type="text"
-              autoFocus
-              value={folder}
-              placeholder="e.g. Push/Pull/Legs"
-              onChange={(e) => setFolder(e.target.value)}
-              style={{ flex: 1 }}
-            />
-            <Button
-              size="sm"
-              onClick={() => {
-                setAddingFolder(false)
-                setFolder('')
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        ) : (
-          <select
-            value={folder}
-            onChange={(e) => {
-              if (e.target.value === NEW_FOLDER) {
-                setAddingFolder(true)
-                setFolder('')
-              } else {
-                setFolder(e.target.value)
-              }
-            }}
-          >
-            <option value="">No folder</option>
-            {(folders ?? []).map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-            <option value={NEW_FOLDER}>New folder…</option>
-          </select>
-        )}
-      </label>
+      <FolderPicker value={folder} onChange={setFolder} />
 
       <h3 style={{ marginTop: '1.25rem' }}>Exercises</h3>
 

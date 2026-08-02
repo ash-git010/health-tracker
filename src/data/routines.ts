@@ -1,5 +1,5 @@
 import { db } from './db'
-import { getSets, startWorkout, renameWorkout, addSet } from './workouts'
+import { getSets, startWorkout, renameWorkout, addSet, setWorkoutRoutineId } from './workouts'
 import type { Routine, RoutineExercise } from './types'
 
 export type RoutineExerciseInput = Pick<
@@ -83,6 +83,7 @@ export async function saveWorkoutAsRoutine(
 
   const routineId = await createRoutine(name, folder)
   await setRoutineExercises(routineId, exercises)
+  await setWorkoutRoutineId(workoutId, routineId)
   return routineId
 }
 
@@ -90,7 +91,7 @@ export async function startWorkoutFromRoutine(routineId: number): Promise<number
   const routine = await getRoutine(routineId)
   const exercises = await getRoutineExercises(routineId)
 
-  const workoutId = await startWorkout()
+  const workoutId = await startWorkout(routineId)
   if (routine?.name) await renameWorkout(workoutId, routine.name)
 
   for (const ex of exercises) {

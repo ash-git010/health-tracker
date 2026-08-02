@@ -2,12 +2,17 @@ import { db } from './db'
 import { todayISO } from './dates'
 import type { Workout, WorkoutSet, SetType } from './types'
 
-export async function startWorkout(): Promise<number> {
+export async function startWorkout(routineId?: number): Promise<number> {
   return db.workouts.add({
     date: todayISO(),
     name: '',
     startedAt: new Date().toISOString(),
+    ...(routineId ? { routineId } : {}),
   })
+}
+
+export async function setWorkoutRoutineId(id: number, routineId: number): Promise<void> {
+  await db.workouts.update(id, { routineId })
 }
 
 export async function finishWorkout(

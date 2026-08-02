@@ -1,15 +1,25 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { activeWorkout, finishWorkout, defaultWorkoutName } from '../../data/workouts'
+import { activeWorkout, finishWorkout, deleteWorkout, defaultWorkoutName } from '../../data/workouts'
+import { saveWorkoutAsRoutine, getRoutine } from '../../data/routines'
 import { formatDay } from '../../data/dates'
-import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
+import { FolderPicker } from './FolderPicker'
+import { TextField } from '../../components/TextField'
+import { Button, Empty, ScreenHeader } from '../../components/ui'
 
 export function FinishWorkoutScreen() {
   const navigate = useNavigate()
   const workout = useLiveQuery(() => activeWorkout(), [])
+  const savedRoutine = useLiveQuery(
+    () => (workout?.routineId ? getRoutine(workout.routineId) : Promise.resolve(null)),
+    [workout?.routineId]
+  )
   const [name, setName] = useState<string | null>(null)
   const [notes, setNotes] = useState<string | null>(null)
+  const [saveAsRoutine, setSaveAsRoutine] = useState(false)
+  const [routineName, setRoutineName] = useState<string | null>(null)
+  const [routineFolder, setRoutineFolder] = useState('')
   const [saving, setSaving] = useState(false)
 
   if (workout === undefined) return <Empty>Loading…</Empty>
@@ -17,6 +27,7 @@ export function FinishWorkoutScreen() {
 
   const displayName = name ?? (workout.name || defaultWorkoutName())
   const displayNotes = notes ?? (workout.notes ?? '')
+  const displayRoutineName = routineName ?? displayName
   const durationSeconds = Math.max(
     0,
     Math.floor((Date.now() - new Date(workout.startedAt).getTime()) / 1000)
@@ -25,6 +36,13 @@ export function FinishWorkoutScreen() {
   async function handleSave() {
     if (!displayName.trim() || saving) return
     setSaving(true)
+    if (saveAsRoutine && !workout!.routineId && displayRoutineName.trim()) {
+      await saveWorkoutAsRoutine(
+        workout!.id!,
+        displayRoutineName.trim(),
+        routineFolder.trim() || undefined
+      )
+    }
     await finishWorkout(workout!.id!, {
       name: displayName.trim(),
       notes: displayNotes.trim() || undefined,
@@ -32,9 +50,22 @@ export function FinishWorkoutScreen() {
     navigate(`/workouts/history/${workout!.id}`)
   }
 
+  async function handleDiscard() {
+    if (!confirm('Discard this workout? Everything logged will be deleted.')) return
+    await deleteWorkout(workout!.id!)
+    navigate('/workouts/log')
+  }
+
   return (
     <div className="stack">
-      <ScreenHeader title="Finish workout" />
+      <ScreenHeader
+        title="Finish workout"
+        action={
+          <Button size="sm" variant="ghost" onClick={() => navigate('/workouts/log')}>
+            Cancel
+          </Button>
+        }
+      />
 
       <label className="field">
         <span className="field-label">Name</span>
@@ -51,19 +82,51 @@ export function FinishWorkoutScreen() {
         />
       </label>
 
-      <Card>
-        <div className="row">
-          <span className="grow muted">Date</span>
-          <strong>{formatDay(workout.date)}</strong>
-        </div>
-        <div className="row">
-          <span className="grow muted">Duration</span>
-          <strong>{formatDuration(durationSeconds)}</strong>
-        </div>
-      </Card>
+      {workout.routineId ? (
+        <p className="muted">Saved as {savedRoutine?.name ?? '…'}</p>
+      ) : (
+        <>
+          <label className="toggle-row">
+            <span>
+              <span className="toggle-row-title">Save as routine</span>
+              <span className="muted">Reuse these exercises for future workouts</span>
+            </span>
+            <input
+              type="checkbox"
+              checked={saveAsRoutine}
+              onChange={(e) => setSaveAsRoutine(e.target.checked)}
+            />
+          </label>
+
+          {saveAsRoutine && (
+            <>
+              <TextField
+                label="Routine name"
+                value={displayRoutineName}
+                onChange={setRoutineName}
+                placeholder={displayName}
+              />
+              <FolderPicker value={routineFolder} onChange={setRoutineFolder} />
+            </>
+          )}
+        </>
+      )}
+
+      <div className="row">
+        <span className="grow muted">Date</span>
+        <span className="muted">{formatDay(workout.date)}</span>
+      </div>
+      <div className="row">
+        <span className="grow muted">Duration</span>
+        <span className="muted">{formatDuration(durationSeconds)}</span>
+      </div>
 
       <Button variant="primary" block onClick={handleSave} disabled={!displayName.trim() || saving}>
         Save
+      </Button>
+
+      <Button variant="ghost" className="btn-warn" block onClick={handleDiscard}>
+        Discard workout
       </Button>
     </div>
   )

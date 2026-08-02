@@ -16,9 +16,10 @@ import {
   completedSets,
   isSetCompleted,
 } from '../../data/workouts'
-import { listRoutines, startWorkoutFromRoutine, saveWorkoutAsRoutine } from '../../data/routines'
+import { listRoutines, startWorkoutFromRoutine } from '../../data/routines'
 import { playBeep } from '../../data/audio'
 import { ExercisePicker } from './ExercisePicker'
+import { REST_OPTIONS, formatTime, formatRestLabel } from './rest'
 import { Button, Card, Empty, Fab } from '../../components/ui'
 import type { SetType, WorkoutSet } from '../../data/types'
 
@@ -27,16 +28,6 @@ const SET_TYPES: { value: SetType; label: string }[] = [
   { value: 'warmup', label: 'Warm-up' },
   { value: 'drop', label: 'Drop' },
   { value: 'failure', label: 'Failure' },
-]
-
-const REST_OPTIONS: { label: string; seconds: number }[] = [
-  { label: '30s', seconds: 30 },
-  { label: '60s', seconds: 60 },
-  { label: '90s', seconds: 90 },
-  { label: '2min', seconds: 120 },
-  { label: '3min', seconds: 180 },
-  { label: '5min', seconds: 300 },
-  { label: 'Off', seconds: 0 },
 ]
 
 const SET_COL = '2rem'
@@ -53,7 +44,6 @@ export function ActiveWorkoutScreen() {
   const workout = useLiveQuery(() => activeWorkout(), [])
   const routines = useLiveQuery(() => listRoutines(), [])
   const [picking, setPicking] = useState(false)
-  const [routineSaved, setRoutineSaved] = useState(false)
   const [timer, setTimer] = useState<RestTimer | null>(null)
   const [now, setNow] = useState(() => Date.now())
 
@@ -163,21 +153,6 @@ export function ActiveWorkoutScreen() {
   const setCount = completedSets(sets ?? []).length
   const elapsedSeconds = Math.max(0, Math.floor((now - new Date(workout.startedAt).getTime()) / 1000))
 
-  async function handleSaveAsRoutine() {
-    const count = grouped.length
-    if (count === 0 || routineSaved) return
-
-    const message = `This will save the ${count} exercise${
-      count === 1 ? '' : 's'
-    } logged so far as a routine.\n\nName this routine:`
-    const name = prompt(message, workout!.name)
-    if (!name || !name.trim()) return
-
-    await saveWorkoutAsRoutine(workout!.id!, name.trim())
-    setRoutineSaved(true)
-    alert('Saved as routine')
-  }
-
   async function handleDiscard() {
     if (!confirm('Discard this workout? Everything logged will be deleted.')) return
     await deleteWorkout(workout!.id!)
@@ -187,9 +162,6 @@ export function ActiveWorkoutScreen() {
     <div>
       <div className="workout-sticky">
         <div className="row" style={{ marginBottom: '0.75rem', justifyContent: 'flex-end' }}>
-          <Button size="sm" onClick={handleSaveAsRoutine} disabled={routineSaved}>
-            {routineSaved ? 'Saved as routine' : 'Save as routine'}
-          </Button>
           <Button size="sm" variant="ghost" onClick={handleDiscard}>
             Discard
           </Button>
@@ -564,12 +536,6 @@ function groupByExercise(sets: WorkoutSet[]) {
   return [...map.values()].sort((a, b) => a.order - b.order)
 }
 
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
 function formatDuration(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600)
   const m = Math.floor((totalSeconds % 3600) / 60)
@@ -582,10 +548,4 @@ function setLabel(type: SetType, seqNumber: number): string {
   if (type === 'drop') return 'D'
   if (type === 'failure') return 'F'
   return String(seqNumber)
-}
-
-function formatRestLabel(seconds: number): string {
-  const match = REST_OPTIONS.find((o) => o.seconds === seconds)
-  if (match) return match.label
-  return formatTime(seconds)
 }
