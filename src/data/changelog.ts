@@ -13,6 +13,7 @@ export const CHANGELOG: Release[] = [
       'Steps can note which product you use',
       'Streaks for each routine, with skip days that don\'t break them',
       'Group routines by morning, evening or anytime, and create your own types',
+      'Home screen now shows your week at a glance',
     ],
   },
   {
