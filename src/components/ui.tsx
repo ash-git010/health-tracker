@@ -1,4 +1,5 @@
 import { useState, type ReactNode, type CSSProperties } from 'react'
+import { ChevronLeft } from 'lucide-react'
 
 export function Button({
   children,
@@ -83,7 +84,7 @@ export function ScreenHeader({
           onClick={onBack}
           style={{ marginLeft: '-0.5rem' }}
         >
-          ‹
+          <ChevronLeft size={22} />
         </button>
       )}
       <h2 className="grow" style={{ margin: 0 }}>

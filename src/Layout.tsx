@@ -1,4 +1,5 @@
 import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom'
+import { ChevronLeft, Settings } from 'lucide-react'
 import { getSection } from './sections'
 import { UpdatePrompt } from './components/UpdatePrompt'
 
@@ -28,7 +29,7 @@ export function Layout() {
                 aria-label="Home"
                 style={{ marginLeft: '-0.5rem' }}
               >
-                ‹
+                <ChevronLeft size={22} />
               </button>
               <h2 className="grow" style={{ margin: 0 }}>
                 {section?.title ?? (isSettings ? 'Settings' : '')}
@@ -41,7 +42,7 @@ export function Layout() {
             aria-label="Settings"
             style={{ marginRight: '-0.5rem' }}
           >
-            ⚙
+            <Settings size={20} />
           </button>
         </div>
       </header>
