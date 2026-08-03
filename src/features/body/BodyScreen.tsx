@@ -12,6 +12,7 @@ import {
 } from '../../data/measurements'
 import { formatDay } from '../../data/dates'
 import { Card, Empty, ScreenHeader } from '../../components/ui'
+import { useConfirm } from '../../components/DialogProvider'
 
 const RANGES = [
   { days: 30, label: '30d' },
@@ -22,6 +23,7 @@ const RANGES = [
 export function BodyScreen() {
   const entries = useLiveQuery(() => listMeasurements(), [])
   const [range, setRange] = useState(30)
+  const confirm = useConfirm()
 
   const latest = entries?.[0]
   const change7 = entries ? weightChange(entries, 7) : null
@@ -157,10 +159,15 @@ export function BodyScreen() {
           <button
             className="icon-btn"
             aria-label={`Delete entry from ${formatDay(e.date)}`}
-            onClick={() => {
-              if (e.id && confirm(`Delete the entry from ${formatDay(e.date)}?`)) {
-                deleteMeasurement(e.id)
-              }
+            onClick={async () => {
+              if (!e.id) return
+              const ok = await confirm({
+                title: 'Delete this entry?',
+                message: `Weigh-in from ${formatDay(e.date)}.`,
+                confirmLabel: 'Delete',
+                destructive: true,
+              })
+              if (ok) await deleteMeasurement(e.id)
             }}
           >
             <X size={16} />

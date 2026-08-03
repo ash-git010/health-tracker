@@ -24,6 +24,8 @@ import { REST_OPTIONS, formatTime, formatRestLabel } from './rest'
 import { EquipmentIcon } from '../../components/EquipmentIcon'
 import { Button, Card, Empty, Fab } from '../../components/ui'
 import type { SetType, WorkoutSet } from '../../data/types'
+import { useConfirm } from '../../components/DialogProvider'
+
 
 const SET_TYPES: { value: SetType; label: string }[] = [
   { value: 'normal', label: 'Normal' },
@@ -49,6 +51,7 @@ export function ActiveWorkoutScreen() {
   const [picking, setPicking] = useState(false)
   const [timer, setTimer] = useState<RestTimer | null>(null)
   const [now, setNow] = useState(() => Date.now())
+  const confirm = useConfirm()
 
   const sets = useLiveQuery(
     () => (workout?.id ? getSets(workout.id) : Promise.resolve([])),
@@ -158,8 +161,13 @@ export function ActiveWorkoutScreen() {
   const elapsedSeconds = Math.max(0, Math.floor((now - new Date(workout.startedAt).getTime()) / 1000))
 
   async function handleDiscard() {
-    if (!confirm('Discard this workout? Everything logged will be deleted.')) return
-    await deleteWorkout(workout!.id!)
+    const ok = await confirm({
+      title: 'Discard this workout?',
+      message: 'Everything logged in this session will be deleted.',
+      confirmLabel: 'Discard',
+      destructive: true,
+    })
+    if (ok) await deleteWorkout(workout!.id!)
   }
 
   return (
@@ -270,6 +278,7 @@ function ExerciseBlock({
   onSkipTimer: () => void
 }) {
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const [previous, setPrevious] = useState<WorkoutSet[]>([])
   const [equipment, setEquipment] = useState<string | undefined>()
   const [menu, setMenu] = useState<'none' | 'actions' | 'rest'>('none')
@@ -301,13 +310,18 @@ function ExerciseBlock({
     })
   }
 
-  async function handleRemove() {
-    if (!confirm(`Remove ${exerciseName} and all its sets?`)) return
-    await removeExerciseFromWorkout(workoutId, exerciseKey)
-  }
-
   async function setRest(seconds: number) {
     await setRestSecondsForExercise(workoutId, exerciseKey, seconds)
+  }
+
+  async function handleRemove() {
+    const ok = await confirm({
+      title: `Remove ${exerciseName}?`,
+      message: 'All its sets in this workout will be deleted.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    })
+    if (ok) await removeExerciseFromWorkout(workoutId, exerciseKey)
   }
 
   let setNumber = 0

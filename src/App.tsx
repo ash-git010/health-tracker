@@ -30,6 +30,8 @@ import { ExerciseDetailScreen } from './features/workouts/ExerciseDetailScreen'
 import { ExerciseFormScreen } from './features/workouts/ExerciseFormScreen'
 import { RoutineListScreen } from './features/workouts/RoutineListScreen'
 import { RoutineFormScreen } from './features/workouts/RoutineFormScreen'
+import { DialogProvider } from './components/DialogProvider'
+import { SaveAsRoutineScreen } from './features/workouts/SaveAsRoutineScreen'
 
 type Stage = 'checking' | 'name' | 'goals' | 'ready'
 
@@ -88,50 +90,53 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter basename="/health-tracker">
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<HubScreen name={name} />} />
+    <DialogProvider>
+      <BrowserRouter basename="/health-tracker">
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<HubScreen name={name} />} />
 
-          <Route path="meals" element={<Navigate to="/meals/today" replace />} />
-          <Route path="meals/today" element={<TodayScreen />} />
-          <Route path="meals/today/add" element={<AddEntryScreen />} />
-          <Route path="meals/foods" element={<FoodListScreen />} />
-          <Route path="meals/foods/new" element={<FoodFormScreen />} />
-          <Route path="meals/foods/:id/edit" element={<FoodFormScreen />} />
-          <Route path="meals/foods/search" element={<FoodSearchScreen />} />
-          <Route path="meals/foods/scan" element={<BarcodeScanScreen />} />
-          <Route path="meals/goals" element={<GoalsScreen />} />
-          <Route path="meals/charts" element={<ChartsScreen />} />
+            <Route path="meals" element={<Navigate to="/meals/today" replace />} />
+            <Route path="meals/today" element={<TodayScreen />} />
+            <Route path="meals/today/add" element={<AddEntryScreen />} />
+            <Route path="meals/foods" element={<FoodListScreen />} />
+            <Route path="meals/foods/new" element={<FoodFormScreen />} />
+            <Route path="meals/foods/:id/edit" element={<FoodFormScreen />} />
+            <Route path="meals/foods/search" element={<FoodSearchScreen />} />
+            <Route path="meals/foods/scan" element={<BarcodeScanScreen />} />
+            <Route path="meals/goals" element={<GoalsScreen />} />
+            <Route path="meals/charts" element={<ChartsScreen />} />
 
-          <Route path="body" element={<Navigate to="/body/weight" replace />} />
-          <Route path="body/weight" element={<BodyScreen />} />
-          <Route path="body/weight/log" element={<MeasurementFormScreen />} />
+            <Route path="body" element={<Navigate to="/body/weight" replace />} />
+            <Route path="body/weight" element={<BodyScreen />} />
+            <Route path="body/weight/log" element={<MeasurementFormScreen />} />
 
-          <Route path="workouts" element={<Navigate to="/workouts/log" replace />} />
-          <Route path="workouts/log" element={<ActiveWorkoutScreen />} />
-          <Route path="workouts/finish" element={<FinishWorkoutScreen />} />
-          <Route path="workouts/routines" element={<RoutineListScreen />} />
-          <Route path="workouts/routines/new" element={<RoutineFormScreen />} />
-          <Route path="workouts/routines/:id/edit" element={<RoutineFormScreen />} />
-          <Route path="workouts/history" element={<WorkoutHistoryScreen />} />
-          <Route path="workouts/history/:id" element={<WorkoutDetailScreen />} />
-          <Route path="workouts/progress" element={<WorkoutProgressScreen />} />
-          <Route path="workouts/exercises" element={<ExerciseLibraryScreen />} />
-          <Route path="workouts/exercises/new" element={<ExerciseFormScreen />} />
-          <Route path="workouts/exercises/:key" element={<ExerciseDetailScreen />} />
+            <Route path="workouts" element={<Navigate to="/workouts/log" replace />} />
+            <Route path="workouts/log" element={<ActiveWorkoutScreen />} />
+            <Route path="workouts/finish" element={<FinishWorkoutScreen />} />
+            <Route path="workouts/routines" element={<RoutineListScreen />} />
+            <Route path="workouts/routines/new" element={<RoutineFormScreen />} />
+            <Route path="workouts/routines/:id/edit" element={<RoutineFormScreen />} />
+            <Route path="workouts/history" element={<WorkoutHistoryScreen />} />
+            <Route path="workouts/history/:id" element={<WorkoutDetailScreen />} />
+            <Route path="workouts/history/:id/save-as-routine" element={<SaveAsRoutineScreen />} />
+            <Route path="workouts/progress" element={<WorkoutProgressScreen />} />
+            <Route path="workouts/exercises" element={<ExerciseLibraryScreen />} />
+            <Route path="workouts/exercises/new" element={<ExerciseFormScreen />} />
+            <Route path="workouts/exercises/:key" element={<ExerciseDetailScreen />} />
 
-          <Route path="routines" element={<Navigate to="/routines/today" replace />} />
-          <Route path="routines/today" element={<RoutinePlaceholder />} />
-          <Route path="routines/manage" element={<RoutinePlaceholder />} />
+            <Route path="routines" element={<Navigate to="/routines/today" replace />} />
+            <Route path="routines/today" element={<RoutinePlaceholder />} />
+            <Route path="routines/manage" element={<RoutinePlaceholder />} />
 
-          <Route path="settings" element={<SettingsScreen />} />
-          <Route path="settings/about" element={<AboutScreen />} />
-          <Route path="settings/feedback" element={<FeedbackScreen />} />
+            <Route path="settings" element={<SettingsScreen />} />
+            <Route path="settings/about" element={<AboutScreen />} />
+            <Route path="settings/feedback" element={<FeedbackScreen />} />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </DialogProvider>
   )
 }

@@ -54,6 +54,7 @@ export interface BodyMeasurement {
 export interface Profile {
   id: number
   name: string
+  folderOrder?: string[]
   createdAt: string
 }
 
@@ -99,6 +100,7 @@ export interface Routine {
   id?: number
   name: string
   folder?: string
+  sortOrder?: number
   createdAt: string
 }
 

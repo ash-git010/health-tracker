@@ -14,3 +14,14 @@ export async function saveName(name: string): Promise<void> {
     createdAt: new Date().toISOString(),
   })
 }
+
+export async function getFolderOrder(): Promise<string[]> {
+  const profile = await getProfile()
+  return profile?.folderOrder ?? []
+}
+
+export async function saveFolderOrder(order: string[]): Promise<void> {
+  const profile = await getProfile()
+  if (!profile) return
+  await db.profile.put({ ...profile, folderOrder: order })
+}

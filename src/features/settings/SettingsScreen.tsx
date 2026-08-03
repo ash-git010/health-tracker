@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Download, Upload, Info, MessageSquare } from 'lucide-react'
 import { exportAll, importAll, downloadBackup } from '../../data/backup'
 import { getProfile, saveName } from '../../data/profile'
 import { Button, ScreenHeader } from '../../components/ui'
 import { TextField } from '../../components/TextField'
+import { useConfirm } from '../../components/DialogProvider'
 
 export function SettingsScreen() {
   const [status, setStatus] = useState('')
+  const confirm = useConfirm()
 
   async function handleExport() {
     downloadBackup(await exportAll())
@@ -14,7 +17,13 @@ export function SettingsScreen() {
   }
 
   async function handleImport(file: File) {
-    if (!confirm('This replaces everything currently stored. Continue?')) return
+    const ok = await confirm({
+      title: 'Restore from backup?',
+      message: 'This replaces everything currently stored on this device.',
+      confirmLabel: 'Restore',
+      destructive: true,
+    })
+    if (!ok) return
     try {
       await importAll(await file.text())
       setStatus('Restored. Reload the app to see it.')
@@ -24,24 +33,23 @@ export function SettingsScreen() {
   }
 
   return (
-    <div className="stack">
+    <div className="stack" style={{ paddingBottom: '2rem' }}>
       <ScreenHeader title="Settings" />
 
       <h3>Name</h3>
       <NameEditor />
 
-      <h3 style={{ marginTop: '1rem' }}>Your data</h3>
+      <h3 style={{ marginTop: '1.25rem' }}>Your data</h3>
       <p className="muted">
-        Stored on this device only. Export regularly — clearing browser data erases
-        everything.
+        Stored on this device only. Export regularly — clearing browser data erases everything.
       </p>
 
       <Button onClick={handleExport} block>
-        Export backup
+        <Download size={16} /> Export backup
       </Button>
 
       <label className="btn btn-block" style={{ cursor: 'pointer' }}>
-        Restore from backup
+        <Upload size={16} /> Restore from backup
         <input
           type="file"
           accept="application/json"
@@ -55,14 +63,14 @@ export function SettingsScreen() {
 
       {status && <p className="muted">{status}</p>}
 
-      <h3 style={{ marginTop: '1rem' }}>App</h3>
+      <h3 style={{ marginTop: '1.25rem' }}>App</h3>
 
       <Link to="/settings/about" className="btn btn-block" style={{ textDecoration: 'none' }}>
-        About Upkeep
+        <Info size={16} /> About Upkeep
       </Link>
 
       <Link to="/settings/feedback" className="btn btn-block" style={{ textDecoration: 'none' }}>
-        Report a problem or suggest something
+        <MessageSquare size={16} /> Report a problem
       </Link>
     </div>
   )

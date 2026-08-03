@@ -7,9 +7,11 @@ import { formatDay } from '../../data/dates'
 import { FolderPicker } from './FolderPicker'
 import { TextField } from '../../components/TextField'
 import { Button, Empty, ScreenHeader } from '../../components/ui'
+import { useConfirm } from '../../components/DialogProvider'
 
 export function FinishWorkoutScreen() {
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const workout = useLiveQuery(() => activeWorkout(), [])
   const savedRoutine = useLiveQuery(
     () => (workout?.routineId ? getRoutine(workout.routineId) : Promise.resolve(null)),
@@ -51,13 +53,19 @@ export function FinishWorkoutScreen() {
   }
 
   async function handleDiscard() {
-    if (!confirm('Discard this workout? Everything logged will be deleted.')) return
+    const ok = await confirm({
+      title: 'Discard this workout?',
+      message: 'Everything logged in this session will be deleted.',
+      confirmLabel: 'Discard',
+      destructive: true,
+    })
+    if (!ok) return
     await deleteWorkout(workout!.id!)
     navigate('/workouts/log')
   }
 
   return (
-    <div className="stack">
+    <div className="stack" style={{ paddingBottom: '2rem' }}>
       <ScreenHeader
         title="Finish workout"
         action={
@@ -112,17 +120,19 @@ export function FinishWorkoutScreen() {
         </>
       )}
 
-      <div className="row">
-        <span className="grow muted">Date</span>
-        <span className="muted">{formatDay(workout.date)}</span>
-      </div>
-      <div className="row">
-        <span className="grow muted">Duration</span>
-        <span className="muted">{formatDuration(durationSeconds)}</span>
+      <div style={{ marginTop: '0.5rem' }}>
+        <div className="row" style={{ padding: '0.35rem 0' }}>
+          <span className="grow faint">Date</span>
+          <span className="muted">{formatDay(workout.date)}</span>
+        </div>
+        <div className="row" style={{ padding: '0.35rem 0' }}>
+          <span className="grow faint">Duration</span>
+          <span className="muted num">{formatDuration(durationSeconds)}</span>
+        </div>
       </div>
 
       <Button variant="primary" block onClick={handleSave} disabled={!displayName.trim() || saving}>
-        Save
+        {saving ? 'Saving…' : 'Save workout'}
       </Button>
 
       <Button variant="ghost" className="btn-warn" block onClick={handleDiscard}>

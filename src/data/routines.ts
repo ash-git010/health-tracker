@@ -1,5 +1,6 @@
 import { db } from './db'
 import { getSets, startWorkout, renameWorkout, addSet, setWorkoutRoutineId } from './workouts'
+import { getFolderOrder, saveFolderOrder } from './profile'
 import type { Routine, RoutineExercise } from './types'
 
 export type RoutineExerciseInput = Pick<
@@ -7,8 +8,14 @@ export type RoutineExerciseInput = Pick<
   'exerciseKey' | 'exerciseName' | 'targetSets' | 'restSeconds'
 >
 
+export const UNGROUPED = 'Routines'
+
 export async function listRoutines(): Promise<Routine[]> {
-  return db.routines.orderBy('name').toArray()
+  await ensureSortOrders()
+  const routines = await db.routines.toArray()
+  return routines.sort(
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name)
+  )
 }
 
 export async function getRoutine(id: number): Promise<Routine | null> {
@@ -22,16 +29,20 @@ export async function getRoutineExercises(routineId: number): Promise<RoutineExe
 }
 
 export async function createRoutine(name: string, folder?: string): Promise<number> {
+  const all = await db.routines.toArray()
+  const maxOrder = all.reduce((m, r) => Math.max(m, r.sortOrder ?? 0), 0)
+
   return db.routines.add({
     name,
     folder: folder || undefined,
+    sortOrder: maxOrder + 1,
     createdAt: new Date().toISOString(),
   })
 }
 
 export async function updateRoutine(
   id: number,
-  changes: Partial<Pick<Routine, 'name' | 'folder'>>
+  changes: Partial<Pick<Routine, 'name' | 'folder' | 'sortOrder'>>
 ): Promise<void> {
   await db.routines.update(id, changes)
 }
@@ -43,15 +54,37 @@ export async function deleteRoutine(id: number): Promise<void> {
   })
 }
 
+/** Swap sortOrder with the adjacent routine in the same folder. */
+export async function moveRoutine(id: number, direction: -1 | 1): Promise<void> {
+  const all = await listRoutines()
+  const routine = all.find((r) => r.id === id)
+  if (!routine) return
+
+  const siblings = all.filter((r) => (r.folder || '') === (routine.folder || ''))
+  const index = siblings.findIndex((r) => r.id === id)
+  const target = siblings[index + direction]
+  if (!target) return
+
+  const a = routine.sortOrder ?? 0
+  const b = target.sortOrder ?? 0
+
+  await db.transaction('rw', db.routines, async () => {
+    await db.routines.update(routine.id!, { sortOrder: b })
+    await db.routines.update(target.id!, { sortOrder: a })
+  })
+}
+
+export async function moveRoutineToFolder(id: number, folder: string | undefined): Promise<void> {
+  await db.routines.update(id, { folder: folder || undefined })
+}
+
 export async function setRoutineExercises(
   routineId: number,
   exercises: RoutineExerciseInput[]
 ): Promise<void> {
   await db.transaction('rw', db.routineExercises, async () => {
     await db.routineExercises.where('routineId').equals(routineId).delete()
-    await db.routineExercises.bulkAdd(
-      exercises.map((ex, order) => ({ ...ex, routineId, order }))
-    )
+    await db.routineExercises.bulkAdd(exercises.map((ex, order) => ({ ...ex, routineId, order })))
   })
 }
 
@@ -113,5 +146,38 @@ export async function startWorkoutFromRoutine(routineId: number): Promise<number
 
 export async function routineFolders(): Promise<string[]> {
   const routines = await db.routines.toArray()
-  return [...new Set(routines.map((r) => r.folder).filter((f): f is string => !!f))].sort()
+  const present = [...new Set(routines.map((r) => r.folder).filter((f): f is string => !!f))]
+  const saved = await getFolderOrder()
+
+  const ordered = saved.filter((f) => present.includes(f))
+  const missing = present.filter((f) => !ordered.includes(f)).sort()
+
+  return [...ordered, ...missing]
+}
+
+export async function moveFolder(folder: string, direction: -1 | 1): Promise<void> {
+  const order = await routineFolders()
+  const index = order.indexOf(folder)
+  const target = index + direction
+  if (index === -1 || target < 0 || target >= order.length) return
+
+  const next = [...order]
+  ;[next[index], next[target]] = [next[target], next[index]]
+  await saveFolderOrder(next)
+}
+
+/** One-time backfill: give sortOrder to routines created before ordering existed. */
+async function ensureSortOrders(): Promise<void> {
+  const all = await db.routines.toArray()
+  const missing = all.filter((r) => typeof r.sortOrder !== 'number')
+  if (missing.length === 0) return
+
+  const maxOrder = all.reduce((m, r) => Math.max(m, r.sortOrder ?? 0), 0)
+  const sorted = missing.sort((a, b) => a.name.localeCompare(b.name))
+
+  await db.transaction('rw', db.routines, async () => {
+    for (let i = 0; i < sorted.length; i++) {
+      await db.routines.update(sorted[i].id!, { sortOrder: maxOrder + i + 1 })
+    }
+  })
 }

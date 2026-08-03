@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { Pencil, X, ChevronRight } from 'lucide-react'
 import {
   getWorkout,
   getSets,
@@ -11,10 +12,11 @@ import {
   workoutVolume,
   completedSets,
 } from '../../data/workouts'
-import { saveWorkoutAsRoutine, getRoutine } from '../../data/routines'
+import { getRoutine } from '../../data/routines'
 import { formatDay } from '../../data/dates'
 import { formatRestLabel } from './rest'
 import { Button, Card, Empty, InlineRename, ScreenHeader } from '../../components/ui'
+import { useConfirm } from '../../components/DialogProvider'
 import type { SetType, WorkoutSet } from '../../data/types'
 
 const SET_TYPES: { value: SetType; label: string }[] = [
@@ -28,6 +30,7 @@ export function WorkoutDetailScreen() {
   const { id } = useParams()
   const workoutId = Number(id)
   const navigate = useNavigate()
+  const confirm = useConfirm()
   const [renaming, setRenaming] = useState(false)
 
   const workout = useLiveQuery(() => getWorkout(workoutId), [workoutId])
@@ -43,27 +46,27 @@ export function WorkoutDetailScreen() {
   const grouped = groupByExercise(sets)
   const volume = workoutVolume(sets)
 
-  async function handleSaveAsRoutine() {
-    const name = prompt('Name this routine', workout!.name)
-    if (!name || !name.trim()) return
-    await saveWorkoutAsRoutine(workoutId, name.trim())
-    navigate('/workouts/routines')
-  }
-
   async function handleDelete() {
-    if (!confirm(`Delete ${workout!.name}?`)) return
+    const ok = await confirm({
+      title: `Delete ${workout!.name || 'this workout'}?`,
+      message: 'This workout and all its sets will be removed.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    })
+    if (!ok) return
     await deleteWorkout(workoutId)
     navigate('/workouts/history')
   }
 
   return (
-    <div>
+    <div style={{ paddingBottom: '2rem' }}>
       <ScreenHeader
-        title={workout.name}
+        title={workout.name || 'Workout'}
+        onBack={() => navigate('/workouts/history')}
         action={
-          <Button size="sm" onClick={() => setRenaming(true)}>
-            Rename
-          </Button>
+          <button className="icon-btn" aria-label="Rename workout" onClick={() => setRenaming(true)}>
+            <Pencil size={16} />
+          </button>
         }
       />
 
@@ -78,33 +81,48 @@ export function WorkoutDetailScreen() {
         />
       )}
 
-      <Card style={{ marginBottom: '1rem' }}>
-        <div className="row">
-          <span className="grow muted">Date</span>
-          <strong>{formatDay(workout.date)}</strong>
+      <Card style={{ marginBottom: '1.5rem' }}>
+        <div className="row" style={{ textAlign: 'center' }}>
+          <div className="grow">
+            <div className="faint">Volume</div>
+            <div className="stat-sm">{Math.round(volume)}</div>
+          </div>
+          <div className="grow">
+            <div className="faint">Sets</div>
+            <div className="stat-sm">{completedSets(sets).length}</div>
+          </div>
+          <div className="grow">
+            <div className="faint">Exercises</div>
+            <div className="stat-sm">{grouped.length}</div>
+          </div>
         </div>
-        <div className="row">
-          <span className="grow muted">Volume</span>
-          <strong>{Math.round(volume)} kg</strong>
-        </div>
-        <div className="row">
-          <span className="grow muted">Sets</span>
-          <strong>{completedSets(sets).length}</strong>
+        <div className="faint" style={{ textAlign: 'center', marginTop: '0.75rem' }}>
+          {formatDay(workout.date)}
         </div>
       </Card>
+
+      {workout.notes && (
+        <Card style={{ marginBottom: '1.5rem' }}>
+          <p className="muted" style={{ margin: 0 }}>
+            {workout.notes}
+          </p>
+        </Card>
+      )}
 
       {grouped.map((group) => (
         <Card key={group.key} style={{ marginBottom: '0.75rem' }}>
           <Link
             to={`/workouts/exercises/${encodeURIComponent(group.key)}`}
+            className="row"
             style={{ color: 'inherit', textDecoration: 'none' }}
           >
-            <strong>{group.name}</strong>
+            <strong className="grow" style={{ minWidth: 0 }}>
+              {group.name}
+            </strong>
+            <ChevronRight size={16} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
           </Link>
-          <div className="muted" style={{ fontSize: '0.8125rem' }}>
-            Rest: {formatRestLabel(group.sets[0]?.restSeconds ?? 90)}
-          </div>
-          <div style={{ marginTop: '0.5rem' }}>
+          <div className="faint">Rest: {formatRestLabel(group.sets[0]?.restSeconds ?? 90)}</div>
+          <div style={{ marginTop: '0.6rem' }}>
             {group.sets.map((set, i) => (
               <SetRow key={set.id} set={set} index={i} />
             ))}
@@ -112,18 +130,21 @@ export function WorkoutDetailScreen() {
         </Card>
       ))}
 
-      <div className="row" style={{ marginTop: '1rem' }}>
+      <div className="stack" style={{ marginTop: '1.5rem' }}>
         {workout.routineId ? (
-          <span className="muted grow" style={{ alignSelf: 'center' }}>
-            Saved as {routine?.name ?? '…'}
-          </span>
+          <p className="muted" style={{ margin: 0 }}>
+            Saved as routine: {routine?.name ?? '…'}
+          </p>
         ) : (
-          <Button block onClick={handleSaveAsRoutine}>
+          <Button
+            block
+            onClick={() => navigate(`/workouts/history/${workoutId}/save-as-routine`)}
+          >
             Save as routine
           </Button>
         )}
-        <Button variant="ghost" block onClick={handleDelete}>
-          Delete
+        <Button variant="ghost" className="btn-warn" block onClick={handleDelete}>
+          Delete workout
         </Button>
       </div>
     </div>
@@ -140,8 +161,11 @@ function SetRow({ set, index }: { set: WorkoutSet; index: number }) {
 
   return (
     <div className="row set-row">
-      <span className="muted" style={{ width: '1.5rem' }}>
-        {index + 1}
+      <span
+        className={`faint set-type-${set.type}`}
+        style={{ width: '1.5rem', textAlign: 'center', fontWeight: 600 }}
+      >
+        {setLabel(set.type, index + 1)}
       </span>
 
       <input
@@ -153,7 +177,7 @@ function SetRow({ set, index }: { set: WorkoutSet; index: number }) {
         style={{ flex: 1 }}
       />
 
-      <span className="muted">×</span>
+      <span className="faint">×</span>
 
       <input
         type="number"
@@ -181,10 +205,17 @@ function SetRow({ set, index }: { set: WorkoutSet; index: number }) {
         aria-label={`Delete set ${index + 1}`}
         onClick={() => set.id && deleteSet(set.id)}
       >
-        ×
+        <X size={16} />
       </button>
     </div>
   )
+}
+
+function setLabel(type: SetType, seqNumber: number): string {
+  if (type === 'warmup') return 'W'
+  if (type === 'drop') return 'D'
+  if (type === 'failure') return 'F'
+  return String(seqNumber)
 }
 
 function groupByExercise(sets: WorkoutSet[]) {

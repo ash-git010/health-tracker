@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { Plus, Trash2, ChevronRight } from 'lucide-react'
 import {
   allExercises,
   searchExercises,
@@ -10,7 +11,8 @@ import {
   type ExerciseOption,
 } from '../../data/exercises'
 import { EquipmentIcon } from '../../components/EquipmentIcon'
-import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
+import { Card, Empty, ScreenHeader } from '../../components/ui'
+import { useConfirm } from '../../components/DialogProvider'
 
 export function ExerciseLibraryScreen() {
   const navigate = useNavigate()
@@ -31,14 +33,17 @@ export function ExerciseLibraryScreen() {
   const shown = filtered.slice(0, 60)
 
   return (
-    <div>
+    <div style={{ paddingBottom: '2rem' }}>
       <ScreenHeader
         title="Exercises"
         onBack={() => navigate('/workouts/progress')}
         action={
-          <Button size="sm" variant="primary" onClick={() => navigate('/workouts/exercises/new')}>
-            New exercise
-          </Button>
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={() => navigate('/workouts/exercises/new')}
+          >
+            <Plus size={16} /> New
+          </button>
         }
       />
 
@@ -50,7 +55,7 @@ export function ExerciseLibraryScreen() {
         style={{ marginBottom: '0.5rem' }}
       />
 
-      <div className="row" style={{ marginBottom: '0.75rem' }}>
+      <div className="row" style={{ marginBottom: '1rem' }}>
         <select value={bodyPart} onChange={(e) => setBodyPart(e.target.value)}>
           <option value="">All body parts</option>
           {parts.map((p) => (
@@ -74,7 +79,7 @@ export function ExerciseLibraryScreen() {
       {exercises && filtered.length === 0 && <Empty>No exercises match that.</Empty>}
 
       {filtered.length > shown.length && (
-        <p className="muted">
+        <p className="faint" style={{ marginBottom: '0.75rem' }}>
           Showing {shown.length} of {filtered.length} — narrow your search to see more.
         </p>
       )}
@@ -91,8 +96,22 @@ export function ExerciseLibraryScreen() {
 }
 
 function ExerciseCard({ exercise, onOpen }: { exercise: ExerciseOption; onOpen: () => void }) {
+  const confirm = useConfirm()
+
+  async function handleDelete() {
+    const ok = await confirm({
+      title: `Delete ${exercise.name}?`,
+      message: 'This custom exercise will be removed from your library.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    })
+    if (!ok) return
+    const id = Number(exercise.key.split(':')[1])
+    await deleteCustomExercise(id)
+  }
+
   return (
-    <Card style={{ marginBottom: '0.5rem' }}>
+    <Card style={{ marginBottom: '0.5rem', padding: '0.75rem' }}>
       <div className="row">
         <div
           style={{
@@ -110,25 +129,39 @@ function ExerciseCard({ exercise, onOpen }: { exercise: ExerciseOption; onOpen: 
           <EquipmentIcon equipment={exercise.equipment} size={20} />
         </div>
 
-        <button className="btn-plain grow" onClick={onOpen}>
-          <strong style={{ display: 'block' }}>{exercise.name}</strong>
-          <span className="muted">
+        <button className="btn-plain grow" style={{ minWidth: 0 }} onClick={onOpen}>
+          <span
+            style={{
+              display: 'block',
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {exercise.name}
+          </span>
+          <span
+            className="faint"
+            style={{
+              display: 'block',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              textTransform: 'capitalize',
+            }}
+          >
             {exercise.target} · {exercise.equipment}
             {exercise.custom && ' · custom'}
           </span>
         </button>
 
-        {exercise.custom && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              const id = Number(exercise.key.split(':')[1])
-              if (confirm(`Delete ${exercise.name}?`)) deleteCustomExercise(id)
-            }}
-          >
-            Delete
-          </Button>
+        {exercise.custom ? (
+          <button className="icon-btn" aria-label={`Delete ${exercise.name}`} onClick={handleDelete}>
+            <Trash2 size={16} />
+          </button>
+        ) : (
+          <ChevronRight size={16} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
         )}
       </div>
     </Card>

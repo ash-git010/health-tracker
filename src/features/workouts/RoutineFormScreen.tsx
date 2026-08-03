@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ChevronUp, ChevronDown, X, Plus } from 'lucide-react'
 import {
   getRoutine,
   getRoutineExercises,
@@ -13,11 +14,13 @@ import { ExercisePicker } from './ExercisePicker'
 import { FolderPicker } from './FolderPicker'
 import { TextField } from '../../components/TextField'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
+import { useConfirm } from '../../components/DialogProvider'
 
 export function RoutineFormScreen() {
   const { id } = useParams()
   const routineId = id ? Number(id) : undefined
   const navigate = useNavigate()
+  const confirm = useConfirm()
 
   const [loading, setLoading] = useState(!!routineId)
   const [name, setName] = useState('')
@@ -97,14 +100,23 @@ export function RoutineFormScreen() {
 
   async function handleDelete() {
     if (!routineId) return
-    if (!confirm('Delete this routine?')) return
+    const ok = await confirm({
+      title: 'Delete this routine?',
+      message: 'Workouts already logged from it are unaffected.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    })
+    if (!ok) return
     await deleteRoutine(routineId)
     navigate('/workouts/routines')
   }
 
   return (
     <div className="stack">
-      <ScreenHeader title={routineId ? 'Edit routine' : 'New routine'} />
+      <ScreenHeader
+        title={routineId ? 'Edit routine' : 'New routine'}
+        onBack={() => navigate('/workouts/routines')}
+      />
 
       <TextField label="Name" value={name} onChange={setName} placeholder="Push day" />
 
@@ -117,34 +129,38 @@ export function RoutineFormScreen() {
       {exercises.map((ex, i) => (
         <Card key={`${ex.exerciseKey}-${i}`} style={{ marginBottom: '0.5rem' }}>
           <div className="row">
-            <strong className="grow">{ex.exerciseName}</strong>
+            <strong className="grow" style={{ minWidth: 0 }}>
+              {ex.exerciseName}
+            </strong>
             <button
               className="icon-btn"
               aria-label={`Move ${ex.exerciseName} up`}
               disabled={i === 0}
+              style={{ opacity: i === 0 ? 0.3 : 1 }}
               onClick={() => move(i, -1)}
             >
-              ↑
+              <ChevronUp size={18} />
             </button>
             <button
               className="icon-btn"
               aria-label={`Move ${ex.exerciseName} down`}
               disabled={i === exercises.length - 1}
+              style={{ opacity: i === exercises.length - 1 ? 0.3 : 1 }}
               onClick={() => move(i, 1)}
             >
-              ↓
+              <ChevronDown size={18} />
             </button>
             <button
               className="icon-btn"
               aria-label={`Remove ${ex.exerciseName}`}
               onClick={() => removeExercise(i)}
             >
-              ×
+              <X size={16} />
             </button>
           </div>
 
-          <div className="row" style={{ marginTop: '0.5rem' }}>
-            <label className="field grow">
+          <div className="row" style={{ marginTop: '0.5rem', alignItems: 'flex-start' }}>
+            <label className="field grow" style={{ marginBottom: 0 }}>
               <span className="field-label">Target sets</span>
               <input
                 type="number"
@@ -154,7 +170,7 @@ export function RoutineFormScreen() {
                 onChange={(e) => updateExercise(i, { targetSets: Number(e.target.value) || 1 })}
               />
             </label>
-            <label className="field grow">
+            <label className="field grow" style={{ marginBottom: 0 }}>
               <span className="field-label">Rest (sec)</span>
               <input
                 type="number"
@@ -162,9 +178,7 @@ export function RoutineFormScreen() {
                 min={0}
                 step={15}
                 value={ex.restSeconds}
-                onChange={(e) =>
-                  updateExercise(i, { restSeconds: Number(e.target.value) || 0 })
-                }
+                onChange={(e) => updateExercise(i, { restSeconds: Number(e.target.value) || 0 })}
               />
             </label>
           </div>
@@ -172,19 +186,18 @@ export function RoutineFormScreen() {
       ))}
 
       <Button block onClick={() => setPicking(true)}>
-        Add exercise
+        <Plus size={16} /> Add exercise
       </Button>
 
       <div className="form-actions">
-        <Button onClick={() => navigate('/workouts/routines')}>Cancel</Button>
         {routineId && (
-          <Button variant="ghost" onClick={handleDelete}>
+          <Button variant="ghost" className="btn-warn" onClick={handleDelete}>
             Delete
           </Button>
         )}
         <span className="grow">
           <Button variant="primary" block onClick={handleSave} disabled={!canSave || saving}>
-            Save routine
+            {saving ? 'Saving…' : 'Save routine'}
           </Button>
         </span>
       </div>

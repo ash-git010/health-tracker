@@ -1,42 +1,49 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { Search, ScanLine, Plus, Pencil, Trash2 } from 'lucide-react'
 import { listFoods, deleteFood, hasPieces } from '../../data/foods'
-import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
-import type { Food } from '../../data/types'
 import { fuzzySearch } from '../../data/search'
+import { Card, Empty, ScreenHeader } from '../../components/ui'
+import { useConfirm } from '../../components/DialogProvider'
+import type { Food } from '../../data/types'
 
 export function FoodListScreen() {
   const foods = useLiveQuery(() => listFoods(), [])
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
+  const confirm = useConfirm()
 
   const filtered = fuzzySearch(foods ?? [], search, (f) => `${f.name} ${f.brand ?? ''}`)
 
   async function handleDelete(food: Food) {
     if (!food.id) return
-    if (confirm(`Delete ${food.name}?`)) {
-      await deleteFood(food.id)
-    }
+    const ok = await confirm({
+      title: `Delete ${food.name}?`,
+      message: 'This removes it from your food list. Past log entries are unaffected.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    })
+    if (ok) await deleteFood(food.id)
   }
 
   return (
-    <div>
+    <div style={{ paddingBottom: '2rem' }}>
       <ScreenHeader title="Foods" />
 
-      <div className="row" style={{ marginBottom: '0.75rem' }}>
+      <div className="row" style={{ marginBottom: '1rem' }}>
         <Link to="/meals/foods/search" className="btn grow" style={{ textDecoration: 'none' }}>
-          Search
+          <Search size={16} /> Search
         </Link>
         <Link to="/meals/foods/scan" className="btn grow" style={{ textDecoration: 'none' }}>
-          Scan
+          <ScanLine size={16} /> Scan
         </Link>
         <Link
           to="/meals/foods/new"
           className="btn btn-primary grow"
           style={{ textDecoration: 'none' }}
         >
-          Manual
+          <Plus size={16} /> New
         </Link>
       </div>
 
@@ -45,7 +52,7 @@ export function FoodListScreen() {
         value={search}
         placeholder="Filter your foods…"
         onChange={(e) => setSearch(e.target.value)}
-        style={{ marginBottom: '0.75rem' }}
+        style={{ marginBottom: '1rem' }}
       />
 
       {foods === undefined && <Empty>Loading…</Empty>}
@@ -59,33 +66,46 @@ export function FoodListScreen() {
       )}
 
       {filtered.map((food) => (
-        <Card key={food.id} style={{ marginBottom: '0.5rem' }}>
-          <div className="row">
-            <strong className="grow">{food.name}</strong>
-            <span className="muted">
-              {food.kcal} kcal / 100{food.unit}
-            </span>
-          </div>
+        <Card key={food.id} style={{ marginBottom: '0.5rem', padding: '0.875rem' }}>
+          <div className="row" style={{ alignItems: 'flex-start' }}>
+            <div className="grow" style={{ minWidth: 0 }}>
+              <div className="row">
+                <strong className="grow" style={{ minWidth: 0 }}>
+                  {food.name}
+                </strong>
+                <span className="muted num">
+                  {food.kcal} kcal
+                  <span className="faint">/100{food.unit}</span>
+                </span>
+              </div>
 
-          <div className="muted" style={{ marginTop: '0.25rem' }}>
-            P {food.protein}g · C {food.carbs}g · F {food.fat}g
-            {food.brand && ` · ${food.brand}`}
-          </div>
+              <div className="faint" style={{ marginTop: '0.2rem' }}>
+                P {food.protein} · C {food.carbs} · F {food.fat}
+                {food.brand && ` · ${food.brand}`}
+              </div>
 
-          {hasPieces(food) && (
-            <div className="muted">
-              1 {food.pieceLabel || 'piece'} = {food.pieceGrams}
-              {food.unit}
+              {hasPieces(food) && (
+                <div className="faint">
+                  1 {food.pieceLabel || 'piece'} = {food.pieceGrams}
+                  {food.unit}
+                </div>
+              )}
             </div>
-          )}
 
-          <div className="row" style={{ marginTop: '0.5rem' }}>
-            <Button size="sm" onClick={() => navigate(`/meals/foods/${food.id}/edit`)}>
-              Edit
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => handleDelete(food)}>
-              Delete
-            </Button>
+            <button
+              className="icon-btn"
+              aria-label={`Edit ${food.name}`}
+              onClick={() => navigate(`/meals/foods/${food.id}/edit`)}
+            >
+              <Pencil size={15} />
+            </button>
+            <button
+              className="icon-btn"
+              aria-label={`Delete ${food.name}`}
+              onClick={() => handleDelete(food)}
+            >
+              <Trash2 size={15} />
+            </button>
           </div>
         </Card>
       ))}

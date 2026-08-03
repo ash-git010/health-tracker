@@ -6,6 +6,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.4',
+    date: '2026-08-03',
+    changes: [
+      'Confirmations now look like part of the app instead of browser popups',
+      'Reorder routines and folders, and move routines between folders',
+      'Saving a workout as a routine now lets you pick a folder',
+      'Icons throughout, and tidier list layouts',
+    ],
+  },
+  {
     version: '1.3',
     date: '2026-08-03',
     changes: [
