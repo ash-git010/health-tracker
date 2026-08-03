@@ -1,3 +1,4 @@
+import { APP_VERSION } from './changelog'
 const FEEDBACK_URL = 'https://upkeep-feedback.aswin010pk.workers.dev'
 
 export interface FeedbackInput {
@@ -23,4 +24,3 @@ export async function sendFeedback(input: FeedbackInput): Promise<string> {
   return data.url as string
 }
 
-export const APP_VERSION = '1.0'

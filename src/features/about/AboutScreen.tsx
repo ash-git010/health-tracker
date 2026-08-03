@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { CHANGELOG } from './changelog'
+import { CHANGELOG } from '../../data/changelog'
 import { Card, ScreenHeader } from '../../components/ui'
 
 export function AboutScreen() {

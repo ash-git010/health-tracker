@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
   allExercises,
@@ -11,11 +12,11 @@ import {
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 
 export function ExerciseLibraryScreen() {
+  const navigate = useNavigate()
   const exercises = useLiveQuery(() => allExercises(), [])
   const [query, setQuery] = useState('')
   const [bodyPart, setBodyPart] = useState('')
   const [equipment, setEquipment] = useState('')
-  const [open, setOpen] = useState<string | null>(null)
 
   const list = exercises ?? []
   const parts = useMemo(() => bodyParts(list), [list])
@@ -30,7 +31,14 @@ export function ExerciseLibraryScreen() {
 
   return (
     <div>
-      <ScreenHeader title="Exercises" />
+      <ScreenHeader
+        title="Exercises"
+        action={
+          <Button size="sm" variant="primary" onClick={() => navigate('/workouts/exercises/new')}>
+            New exercise
+          </Button>
+        }
+      />
 
       <input
         type="text"
@@ -73,68 +81,38 @@ export function ExerciseLibraryScreen() {
         <ExerciseCard
           key={ex.key}
           exercise={ex}
-          expanded={open === ex.key}
-          onToggle={() => setOpen(open === ex.key ? null : ex.key)}
+          onOpen={() => navigate(`/workouts/exercises/${encodeURIComponent(ex.key)}`)}
         />
       ))}
     </div>
   )
 }
 
-function ExerciseCard({
-  exercise,
-  expanded,
-  onToggle,
-}: {
-  exercise: ExerciseOption
-  expanded: boolean
-  onToggle: () => void
-}) {
+function ExerciseCard({ exercise, onOpen }: { exercise: ExerciseOption; onOpen: () => void }) {
   return (
     <Card style={{ marginBottom: '0.5rem' }}>
-      <button className="btn-plain" style={{ width: '100%' }} onClick={onToggle}>
-        <div className="row">
-          <strong className="grow">{exercise.name}</strong>
-          <span className="muted">{expanded ? '−' : '+'}</span>
-        </div>
-        <div className="muted" style={{ marginTop: '0.2rem' }}>
-          {exercise.target} · {exercise.equipment}
-          {exercise.custom && ' · custom'}
-        </div>
-      </button>
+      <div className="row">
+        <button className="btn-plain grow" onClick={onOpen}>
+          <strong style={{ display: 'block' }}>{exercise.name}</strong>
+          <span className="muted">
+            {exercise.target} · {exercise.equipment}
+            {exercise.custom && ' · custom'}
+          </span>
+        </button>
 
-      {expanded && (
-        <div style={{ marginTop: '0.75rem' }}>
-          {exercise.secondary.length > 0 && (
-            <p className="muted" style={{ marginBottom: '0.5rem' }}>
-              Also works: {exercise.secondary.join(', ')}
-            </p>
-          )}
-
-          {exercise.steps.length > 0 && (
-            <ol style={{ margin: 0, paddingLeft: '1.1rem', fontSize: '0.875rem' }}>
-              {exercise.steps.map((s, i) => (
-                <li key={i} style={{ marginBottom: '0.25rem' }}>
-                  {s}
-                </li>
-              ))}
-            </ol>
-          )}
-
-          {exercise.custom && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                const id = Number(exercise.key.split(':')[1])
-                if (confirm(`Delete ${exercise.name}?`)) deleteCustomExercise(id)
-              }}
-            >
-              Delete
-            </Button>
-          )}
-        </div>
-      )}
+        {exercise.custom && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              const id = Number(exercise.key.split(':')[1])
+              if (confirm(`Delete ${exercise.name}?`)) deleteCustomExercise(id)
+            }}
+          >
+            Delete
+          </Button>
+        )}
+      </div>
     </Card>
   )
 }

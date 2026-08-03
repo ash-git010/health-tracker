@@ -43,6 +43,11 @@ export async function listWorkouts(limit = 50): Promise<Workout[]> {
   return all
 }
 
+export async function getWorkoutsByIds(ids: number[]): Promise<Workout[]> {
+  const found = await db.workouts.bulkGet([...new Set(ids)])
+  return found.filter((w): w is Workout => w !== undefined)
+}
+
 export async function activeWorkout(): Promise<Workout | null> {
   const all = await db.workouts.toArray()
   return (

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
   getWorkout,
@@ -95,7 +95,12 @@ export function WorkoutDetailScreen() {
 
       {grouped.map((group) => (
         <Card key={group.key} style={{ marginBottom: '0.75rem' }}>
-          <strong>{group.name}</strong>
+          <Link
+            to={`/workouts/exercises/${encodeURIComponent(group.key)}`}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+          >
+            <strong>{group.name}</strong>
+          </Link>
           <div className="muted" style={{ fontSize: '0.8125rem' }}>
             Rest: {formatRestLabel(group.sets[0]?.restSeconds ?? 90)}
           </div>

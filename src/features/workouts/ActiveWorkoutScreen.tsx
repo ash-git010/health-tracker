@@ -33,6 +33,7 @@ const SET_TYPES: { value: SetType; label: string }[] = [
 const SET_COL = '2rem'
 const NUM_COL = '4rem'
 const CHECK_COL = '2.75rem'
+const DEL_COL = '2.75rem'
 
 interface RestTimer {
   exerciseKey: string
@@ -265,6 +266,7 @@ function ExerciseBlock({
   onExtendTimer: (delta: number) => void
   onSkipTimer: () => void
 }) {
+  const navigate = useNavigate()
   const [previous, setPrevious] = useState<WorkoutSet[]>([])
   const [menu, setMenu] = useState<'none' | 'actions' | 'rest'>('none')
 
@@ -354,6 +356,7 @@ function ExerciseBlock({
         <span style={{ width: NUM_COL, textAlign: 'center' }}>KG</span>
         <span style={{ width: NUM_COL, textAlign: 'center' }}>REPS</span>
         <span style={{ width: CHECK_COL, textAlign: 'center' }}>✓</span>
+        <span style={{ width: DEL_COL }} aria-hidden="true" />
       </div>
 
       <div>
@@ -373,7 +376,7 @@ function ExerciseBlock({
       </div>
 
       <Button size="sm" onClick={addAnother} style={{ marginTop: '0.5rem' }}>
-        Add set
+        Add set {sets.length + 1}
       </Button>
 
       {menu === 'actions' && (
@@ -382,13 +385,20 @@ function ExerciseBlock({
           onClose={() => setMenu('none')}
           options={[
             {
+              label: 'View exercise',
+              onSelect: () => {
+                setMenu('none')
+                navigate(`/workouts/exercises/${encodeURIComponent(exerciseKey)}`)
+              },
+            },
+            { label: 'Set rest timer', onSelect: () => setMenu('rest') },
+            {
               label: 'Remove exercise',
               onSelect: () => {
                 setMenu('none')
                 handleRemove()
               },
             },
-            { label: 'Set rest timer', onSelect: () => setMenu('rest') },
           ]}
         />
       )}
@@ -488,6 +498,15 @@ function SetRow({
         onClick={toggleComplete}
       >
         ✓
+      </button>
+
+      <button
+        className="icon-btn"
+        style={{ width: DEL_COL }}
+        aria-label={`Remove set ${label}`}
+        onClick={() => set.id && deleteSet(set.id)}
+      >
+        ×
       </button>
 
       {typeMenuOpen && (

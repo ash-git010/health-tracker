@@ -6,6 +6,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.1',
+    date: '2026-08-03',
+    changes: [
+      'Tap any exercise to see its full history, records and progress over time',
+      'Personal records for estimated 1RM, max weight, max reps and volume',
+      'Estimated performance table showing what you could lift at any rep count',
+      'Create your own exercises for anything not in the library',
+      'Remove a single set without deleting the whole exercise',
+      'Clearer charts — no more negative values or repeated dates',
+    ],
+  },
+  {
     version: '1.0',
     date: '2026-08-02',
     changes: [
@@ -148,3 +160,5 @@ export const CHANGELOG: Release[] = [
     ],
   },
 ]
+
+export const APP_VERSION = CHANGELOG[0].version

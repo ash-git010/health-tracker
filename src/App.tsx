@@ -25,6 +25,8 @@ import { FinishWorkoutScreen } from './features/workouts/FinishWorkoutScreen'
 import { WorkoutHistoryScreen } from './features/workouts/WorkoutHistoryScreen'
 import { WorkoutDetailScreen } from './features/workouts/WorkoutDetailScreen'
 import { ExerciseLibraryScreen } from './features/workouts/ExerciseLibraryScreen'
+import { ExerciseDetailScreen } from './features/workouts/ExerciseDetailScreen'
+import { ExerciseFormScreen } from './features/workouts/ExerciseFormScreen'
 import { RoutineListScreen } from './features/workouts/RoutineListScreen'
 import { RoutineFormScreen } from './features/workouts/RoutineFormScreen'
 
@@ -114,6 +116,8 @@ export default function App() {
           <Route path="workouts/history" element={<WorkoutHistoryScreen />} />
           <Route path="workouts/history/:id" element={<WorkoutDetailScreen />} />
           <Route path="workouts/exercises" element={<ExerciseLibraryScreen />} />
+          <Route path="workouts/exercises/new" element={<ExerciseFormScreen />} />
+          <Route path="workouts/exercises/:key" element={<ExerciseDetailScreen />} />
 
           <Route path="routines" element={<Navigate to="/routines/today" replace />} />
           <Route path="routines/today" element={<RoutinePlaceholder />} />
