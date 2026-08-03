@@ -23,6 +23,7 @@ import { unlockAudio } from './data/audio'
 import { ActiveWorkoutScreen } from './features/workouts/ActiveWorkoutScreen'
 import { FinishWorkoutScreen } from './features/workouts/FinishWorkoutScreen'
 import { WorkoutHistoryScreen } from './features/workouts/WorkoutHistoryScreen'
+import { WorkoutProgressScreen } from './features/workouts/WorkoutProgressScreen'
 import { WorkoutDetailScreen } from './features/workouts/WorkoutDetailScreen'
 import { ExerciseLibraryScreen } from './features/workouts/ExerciseLibraryScreen'
 import { ExerciseDetailScreen } from './features/workouts/ExerciseDetailScreen'
@@ -115,6 +116,7 @@ export default function App() {
           <Route path="workouts/routines/:id/edit" element={<RoutineFormScreen />} />
           <Route path="workouts/history" element={<WorkoutHistoryScreen />} />
           <Route path="workouts/history/:id" element={<WorkoutDetailScreen />} />
+          <Route path="workouts/progress" element={<WorkoutProgressScreen />} />
           <Route path="workouts/exercises" element={<ExerciseLibraryScreen />} />
           <Route path="workouts/exercises/new" element={<ExerciseFormScreen />} />
           <Route path="workouts/exercises/:key" element={<ExerciseDetailScreen />} />

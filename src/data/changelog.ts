@@ -6,6 +6,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.2',
+    date: '2026-08-03',
+    changes: [
+      'New Progress tab in Workouts — see your training at a glance',
+      'Calendar view showing which days you trained, with a weekly streak counter',
+      'Sets per muscle group, so you can spot what you\'re undertraining',
+      'Muscle balance chart comparing how evenly you train across the body',
+      'Volume trend over the last three months',
+      'Recent personal records, with a link straight to that exercise',
+    ],
+  },
+  {
     version: '1.1',
     date: '2026-08-03',
     changes: [

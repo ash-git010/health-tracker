@@ -84,6 +84,10 @@ export async function getSets(workoutId: number): Promise<WorkoutSet[]> {
   return sets.sort((a, b) => a.order - b.order || a.setNumber - b.setNumber)
 }
 
+export async function getAllSets(): Promise<WorkoutSet[]> {
+  return db.workoutSets.toArray()
+}
+
 export async function addSet(input: {
   workoutId: number
   exerciseKey: string
