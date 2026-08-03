@@ -15,6 +15,7 @@ import {
   type ProgressPoint,
 } from '../../data/exerciseStats'
 import { formatDay, addDays, todayISO } from '../../data/dates'
+import { EquipmentIcon, categoryFor, CATEGORY_LABEL } from '../../components/EquipmentIcon'
 import { Card, Empty } from '../../components/ui'
 import type { Workout, WorkoutSet } from '../../data/types'
 
@@ -57,7 +58,12 @@ export function ExerciseDetailScreen() {
   return (
     <div>
       <div className="row" style={{ marginBottom: '0.75rem' }}>
-        <button className="icon-btn" aria-label="Back" onClick={() => navigate(-1)}>
+        <button
+          className="icon-btn"
+          aria-label="Back"
+          onClick={() => navigate(-1)}
+          style={{ marginLeft: '-0.5rem' }}
+        >
           ‹
         </button>
         <h2 className="grow" style={{ margin: 0 }}>
@@ -89,16 +95,30 @@ function AboutTab({ exercise }: { exercise: ExerciseOption }) {
   return (
     <div>
       <div
-        aria-hidden="true"
         style={{
-          width: '100%',
-          maxWidth: 220,
-          aspectRatio: '1',
-          margin: '0 auto 1rem',
-          borderRadius: 'var(--radius)',
-          background: 'var(--surface-2)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '0.5rem',
+          margin: '0 auto 1.25rem',
         }}
-      />
+      >
+        <div
+          style={{
+            width: 96,
+            height: 96,
+            borderRadius: 'var(--radius-lg)',
+            background: 'var(--surface-2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--accent)',
+          }}
+        >
+          <EquipmentIcon equipment={exercise.equipment} size={40} />
+        </div>
+        <span className="faint">{CATEGORY_LABEL[categoryFor(exercise.equipment)]}</span>
+      </div>
 
       <Card style={{ marginBottom: '1rem' }}>
         <InfoRow label="Body part" value={exercise.bodyPart} />
@@ -305,14 +325,14 @@ function ProgressChart({
 
   return (
     <Card style={{ marginBottom: '1rem' }}>
-      <div className="muted">{title}</div>
-      <div className="muted" style={{ fontSize: '0.75rem', marginTop: '0.4rem' }}>
-        Latest
+      <h3 style={{ marginBottom: '0.5rem' }}>{title}</h3>
+
+      <div className="faint">Latest</div>
+      <div className="row" style={{ alignItems: 'baseline', gap: '0.3rem' }}>
+        <span className="stat-sm">{Math.round(latest * 10) / 10}</span>
+        <span className="stat-unit">{unit}</span>
       </div>
-      <strong style={{ fontSize: '1.4rem', display: 'block' }}>
-        {Math.round(latest * 10) / 10} {unit}
-      </strong>
-      <div className="muted" style={{ marginBottom: '0.5rem' }}>
+      <div className="muted" style={{ marginBottom: '0.75rem' }}>
         Best: {Math.round(best * 10) / 10}
         {unit}
       </div>
@@ -343,9 +363,9 @@ function ProgressChart({
                 formatter={(v) => [`${v} ${unit}`, title]}
                 labelFormatter={(v) => formatTick(v as string | number)}
                 contentStyle={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-strong)',
+                  borderRadius: '10px',
                 }}
               />
               <Line
@@ -406,7 +426,7 @@ function RecordsTab({ sets, workouts }: { sets?: WorkoutSet[]; workouts?: Workou
                   style={{
                     flex: 1,
                     position: 'relative',
-                    height: '1.75rem',
+                    height: '1.85rem',
                     background: 'var(--surface-2)',
                     borderRadius: 6,
                     overflow: 'hidden',
@@ -424,8 +444,9 @@ function RecordsTab({ sets, workouts }: { sets?: WorkoutSet[]; workouts?: Workou
                     style={{
                       position: 'relative',
                       display: 'block',
-                      padding: '0.25rem 0.5rem',
+                      padding: '0.3rem 0.6rem',
                       fontSize: '0.8125rem',
+                      fontWeight: 600,
                       color: 'var(--accent-text)',
                     }}
                   >
@@ -437,7 +458,7 @@ function RecordsTab({ sets, workouts }: { sets?: WorkoutSet[]; workouts?: Workou
                 </span>
               </div>
             ))}
-            <p className="muted" style={{ margin: '0.5rem 0 0' }}>
+            <p className="muted" style={{ margin: '0.75rem 0 0' }}>
               Estimated using the Epley formula from your best set — actual performance may vary.
             </p>
           </Card>
@@ -449,14 +470,14 @@ function RecordsTab({ sets, workouts }: { sets?: WorkoutSet[]; workouts?: Workou
 
 function PRRow({ label, unit, pr }: { label: string; unit: string; pr: ExercisePR | null }) {
   return (
-    <div className="row" style={{ padding: '0.4rem 0', alignItems: 'flex-start' }}>
+    <div className="row" style={{ padding: '0.45rem 0', alignItems: 'flex-start' }}>
       <span className="grow muted">{label}</span>
       {pr ? (
         <div style={{ textAlign: 'right' }}>
-          <strong>
+          <strong className="num">
             {pr.value} {unit}
           </strong>
-          <div className="muted" style={{ fontSize: '0.8125rem' }}>
+          <div className="faint">
             {pr.detail} · {formatDay(pr.date)}
           </div>
         </div>
@@ -469,9 +490,9 @@ function PRRow({ label, unit, pr }: { label: string; unit: string; pr: ExerciseP
 
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="row" style={{ padding: '0.35rem 0' }}>
+    <div className="row" style={{ padding: '0.4rem 0' }}>
       <span className="grow muted">{label}</span>
-      <strong>{value}</strong>
+      <strong className="num">{value}</strong>
     </div>
   )
 }

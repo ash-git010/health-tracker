@@ -17,9 +17,11 @@ import {
   isSetCompleted,
 } from '../../data/workouts'
 import { listRoutines, startWorkoutFromRoutine } from '../../data/routines'
+import { findExercise } from '../../data/exercises'
 import { playBeep } from '../../data/audio'
 import { ExercisePicker } from './ExercisePicker'
 import { REST_OPTIONS, formatTime, formatRestLabel } from './rest'
+import { EquipmentIcon } from '../../components/EquipmentIcon'
 import { Button, Card, Empty, Fab } from '../../components/ui'
 import type { SetType, WorkoutSet } from '../../data/types'
 
@@ -30,10 +32,10 @@ const SET_TYPES: { value: SetType; label: string }[] = [
   { value: 'failure', label: 'Failure' },
 ]
 
-const SET_COL = '2rem'
-const NUM_COL = '4rem'
-const CHECK_COL = '2.75rem'
-const DEL_COL = '2.75rem'
+const SET_COL = '1.75rem'
+const NUM_COL = '3.5rem'
+const CHECK_COL = '2.5rem'
+const DEL_COL = '2rem'
 
 interface RestTimer {
   exerciseKey: string
@@ -93,7 +95,6 @@ export function ActiveWorkoutScreen() {
   if (!workout) {
     return (
       <div className="stack">
-        <h2>Workout</h2>
         <Card>
           <p style={{ margin: 0 }}>No workout in progress.</p>
           <p className="muted" style={{ margin: '0.5rem 0 0' }}>
@@ -110,6 +111,8 @@ export function ActiveWorkoutScreen() {
         >
           Start empty workout
         </Button>
+
+        {(routines ?? []).length > 0 && <h3 style={{ marginTop: '1.25rem' }}>Routines</h3>}
 
         {(routines ?? []).map((r) => (
           <Button
@@ -174,16 +177,16 @@ export function ActiveWorkoutScreen() {
         <Card>
           <div className="row" style={{ textAlign: 'center' }}>
             <div className="grow">
-              <div className="muted">Duration</div>
-              <strong>{formatDuration(elapsedSeconds)}</strong>
+              <div className="faint">Duration</div>
+              <div className="stat-sm">{formatDuration(elapsedSeconds)}</div>
             </div>
             <div className="grow">
-              <div className="muted">Volume</div>
-              <strong>{Math.round(volume)} kg</strong>
+              <div className="faint">Volume</div>
+              <div className="stat-sm">{Math.round(volume)}</div>
             </div>
             <div className="grow">
-              <div className="muted">Sets</div>
-              <strong>{setCount}</strong>
+              <div className="faint">Sets</div>
+              <div className="stat-sm">{setCount}</div>
             </div>
           </div>
         </Card>
@@ -268,11 +271,16 @@ function ExerciseBlock({
 }) {
   const navigate = useNavigate()
   const [previous, setPrevious] = useState<WorkoutSet[]>([])
+  const [equipment, setEquipment] = useState<string | undefined>()
   const [menu, setMenu] = useState<'none' | 'actions' | 'rest'>('none')
 
   useEffect(() => {
     lastSetsFor(exerciseKey, workoutId).then(setPrevious)
   }, [exerciseKey, workoutId])
+
+  useEffect(() => {
+    findExercise(exerciseKey).then((e) => setEquipment(e?.equipment))
+  }, [exerciseKey])
 
   const restSeconds = sets[0]?.restSeconds ?? 90
   const nonWarmup = sets.filter((s) => s.type !== 'warmup')
@@ -308,15 +316,20 @@ function ExerciseBlock({
     <Card style={{ marginBottom: '0.75rem' }}>
       <div className="row" style={{ alignItems: 'flex-start' }}>
         <div
-          aria-hidden="true"
           style={{
             width: 48,
             height: 48,
-            borderRadius: 8,
+            borderRadius: 'var(--radius-sm)',
             background: 'var(--surface-2)',
             flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--accent)',
           }}
-        />
+        >
+          <EquipmentIcon equipment={equipment} size={24} />
+        </div>
         <div className="grow">
           <strong style={{ display: 'block' }}>{exerciseName}</strong>
           <span className="muted">
@@ -350,7 +363,7 @@ function ExerciseBlock({
         )}
       </div>
 
-      <div className="row set-header muted">
+      <div className="row set-header">
         <span style={{ width: SET_COL, textAlign: 'center' }}>SET</span>
         <span className="grow">PREVIOUS</span>
         <span style={{ width: NUM_COL, textAlign: 'center' }}>KG</span>
@@ -467,7 +480,10 @@ function SetRow({
         {label}
       </button>
 
-      <span className="muted grow" style={{ fontSize: '0.8125rem' }}>
+      <span 
+        className="faint grow"
+        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+      >
         {hint ? `${hint.weightKg}kg × ${hint.reps}` : '–'}
       </span>
 

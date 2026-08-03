@@ -9,6 +9,7 @@ import {
   deleteCustomExercise,
   type ExerciseOption,
 } from '../../data/exercises'
+import { EquipmentIcon } from '../../components/EquipmentIcon'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 
 export function ExerciseLibraryScreen() {
@@ -93,6 +94,22 @@ function ExerciseCard({ exercise, onOpen }: { exercise: ExerciseOption; onOpen: 
   return (
     <Card style={{ marginBottom: '0.5rem' }}>
       <div className="row">
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--surface-2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--accent)',
+            flexShrink: 0,
+          }}
+        >
+          <EquipmentIcon equipment={exercise.equipment} size={20} />
+        </div>
+
         <button className="btn-plain grow" onClick={onOpen}>
           <strong style={{ display: 'block' }}>{exercise.name}</strong>
           <span className="muted">
