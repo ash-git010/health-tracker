@@ -703,6 +703,21 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   color: #1a0d0b;
 }
 
+.care-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.5rem 0;
+  text-align: left;
+}
+
+.care-step .check-btn {
+  min-width: 30px;
+  min-height: 30px;
+  flex-shrink: 0;
+}
+
 /* Motion */
 @keyframes dialog-in {
   from { transform: scale(0.94); opacity: 0; }

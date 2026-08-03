@@ -42,11 +42,11 @@ export const SECTIONS: Section[] = [
       { path: 'progress', label: 'Progress' },
     ],
   },
-  {
+{
     id: 'routines',
     title: 'Routines',
     blurb: 'Skin, hair and daily habits',
-    ready: false,
+    ready: true,
     tabs: [
       { path: 'today', label: 'Today' },
       { path: 'manage', label: 'Manage' },

@@ -16,7 +16,6 @@ import { SettingsScreen } from './features/settings/SettingsScreen'
 import { AboutScreen } from './features/about/AboutScreen'
 import { FeedbackScreen } from './features/about/FeedbackScreen'
 import { NameScreen } from './features/onboarding/NameScreen'
-import { RoutinePlaceholder } from './features/routines/RoutinePlaceholder'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
 import { unlockAudio } from './data/audio'
@@ -33,6 +32,9 @@ import { RoutineFormScreen } from './features/workouts/RoutineFormScreen'
 import { DialogProvider } from './components/DialogProvider'
 import { SaveAsRoutineScreen } from './features/workouts/SaveAsRoutineScreen'
 import { ensureSortOrders } from './data/routines'
+import { RoutineTodayScreen } from './features/routines/RoutineTodayScreen'
+import { RoutineManageScreen } from './features/routines/RoutineManageScreen'
+import { CareRoutineFormScreen } from './features/routines/CareRoutineFormScreen'
 
 type Stage = 'checking' | 'name' | 'goals' | 'ready'
 
@@ -128,8 +130,10 @@ export default function App() {
             <Route path="workouts/exercises/:key" element={<ExerciseDetailScreen />} />
 
             <Route path="routines" element={<Navigate to="/routines/today" replace />} />
-            <Route path="routines/today" element={<RoutinePlaceholder />} />
-            <Route path="routines/manage" element={<RoutinePlaceholder />} />
+            <Route path="routines/today" element={<RoutineTodayScreen />} />
+            <Route path="routines/manage" element={<RoutineManageScreen />} />
+            <Route path="routines/manage/new" element={<CareRoutineFormScreen />} />
+            <Route path="routines/manage/:id/edit" element={<CareRoutineFormScreen />} />
 
             <Route path="settings" element={<SettingsScreen />} />
             <Route path="settings/about" element={<AboutScreen />} />

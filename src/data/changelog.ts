@@ -6,6 +6,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.5',
+    date: '2026-08-03',
+    changes: [
+      'Routines are here — build skin, hair or any daily routine and tick it off',
+      'Steps can note which product you use',
+      'Streaks for each routine, with skip days that don\'t break them',
+      'Group routines by morning, evening or anytime, and create your own types',
+    ],
+  },
+  {
     version: '1.4',
     date: '2026-08-03',
     changes: [

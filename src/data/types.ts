@@ -1,6 +1,7 @@
 export type Unit = 'g' | 'ml'
-
 export type SetType = 'normal' | 'warmup' | 'drop' | 'failure'
+export type RoutineKind = string
+export type TimeOfDay = 'morning' | 'evening' | 'anytime'
 
 export interface Goals {
   id: number
@@ -112,4 +113,31 @@ export interface RoutineExercise {
   order: number
   targetSets: number
   restSeconds: number
+}
+
+export interface CareRoutine {
+  id?: number
+  name: string
+  kind: RoutineKind
+  timeOfDay: TimeOfDay
+  sortOrder: number
+  createdAt: string
+}
+
+export interface CareStep {
+  id?: number
+  careRoutineId: number
+  name: string
+  product?: string
+  notes?: string
+  order: number
+}
+
+export interface CareDone {
+  id?: number
+  date: string
+  careRoutineId: number
+  stepIds: number[]
+  skipped: boolean
+  createdAt: string
 }
