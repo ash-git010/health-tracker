@@ -1,10 +1,18 @@
+function describe(x: unknown): string {
+  if (x instanceof Error) return `${x.name}: ${x.message}`
+  if (typeof x === 'object' && x !== null) {
+    const o = x as Record<string, unknown>
+    return `${o.name ?? 'Object'}: ${o.message ?? JSON.stringify(o).slice(0, 300)}`
+  }
+  return String(x)
+}
+
 window.addEventListener('error', (e) => {
-  document.title = `ERR: ${e.message}`
-  alert(`Error: ${e.message}\n${e.filename}:${e.lineno}`)
+  alert(`Error: ${describe(e.error ?? e.message)}`)
 })
 
 window.addEventListener('unhandledrejection', (e) => {
-  alert(`Promise rejected: ${e.reason?.message ?? e.reason}`)
+  alert(`Rejected: ${describe(e.reason)}`)
 })
 
 const redirect = sessionStorage.redirect
