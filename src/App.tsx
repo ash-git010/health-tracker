@@ -32,6 +32,7 @@ import { RoutineListScreen } from './features/workouts/RoutineListScreen'
 import { RoutineFormScreen } from './features/workouts/RoutineFormScreen'
 import { DialogProvider } from './components/DialogProvider'
 import { SaveAsRoutineScreen } from './features/workouts/SaveAsRoutineScreen'
+import { ensureSortOrders } from './data/routines'
 
 type Stage = 'checking' | 'name' | 'goals' | 'ready'
 
@@ -46,6 +47,7 @@ export default function App() {
       if (!profile) setStage('name')
       else if (!goals) setStage('goals')
       else setStage('ready')
+      ensureSortOrders()
     }
     check()
   }, [])

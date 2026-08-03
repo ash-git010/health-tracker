@@ -11,7 +11,6 @@ export type RoutineExerciseInput = Pick<
 export const UNGROUPED = 'Routines'
 
 export async function listRoutines(): Promise<Routine[]> {
-  await ensureSortOrders()
   const routines = await db.routines.toArray()
   return routines.sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name)
@@ -166,18 +165,25 @@ export async function moveFolder(folder: string, direction: -1 | 1): Promise<voi
   await saveFolderOrder(next)
 }
 
-/** One-time backfill: give sortOrder to routines created before ordering existed. */
-async function ensureSortOrders(): Promise<void> {
-  const all = await db.routines.toArray()
-  const missing = all.filter((r) => typeof r.sortOrder !== 'number')
-  if (missing.length === 0) return
 
-  const maxOrder = all.reduce((m, r) => Math.max(m, r.sortOrder ?? 0), 0)
-  const sorted = missing.sort((a, b) => a.name.localeCompare(b.name))
+let backfilled = false
 
-  await db.transaction('rw', db.routines, async () => {
+export async function ensureSortOrders(): Promise<void> {
+  if (backfilled) return
+  backfilled = true
+
+  try {
+    const all = await db.routines.toArray()
+    const missing = all.filter((r) => typeof r.sortOrder !== 'number')
+    if (missing.length === 0) return
+
+    const maxOrder = all.reduce((m, r) => Math.max(m, r.sortOrder ?? 0), 0)
+    const sorted = missing.sort((a, b) => a.name.localeCompare(b.name))
+
     for (let i = 0; i < sorted.length; i++) {
       await db.routines.update(sorted[i].id!, { sortOrder: maxOrder + i + 1 })
     }
-  })
+  } catch (err) {
+    console.error('sortOrder backfill failed:', err)
+  }
 }
