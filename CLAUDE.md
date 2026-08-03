@@ -57,3 +57,7 @@ on a real phone via the forwarded dev server.
 
 - Never use `git stash`, `git checkout .`, `git reset`, or anything that discards
   uncommitted work. Ask before any git command that isn't `status`, `diff`, or `log`.
+
+  - **Never write to the database inside a `useLiveQuery` callback.** Dexie runs
+  those in a read-only transaction and throws ReadOnlyError. Writes belong in
+  event handlers or effects.
