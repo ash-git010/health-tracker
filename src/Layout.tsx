@@ -10,26 +10,43 @@ export function Layout() {
   const sectionId = parts[0] ?? ''
   const section = getSection(sectionId)
   const isSettings = sectionId === 'settings'
+  const isHub = parts.length === 0
 
   return (
-    <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: section ? '5rem' : 0 }}>
+    <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: section ? '5.5rem' : 0 }}>
       <header className="app-header">
         <div className="row">
-          <button onClick={() => navigate('/')} className="btn-plain wordmark grow">
-            Up<span>keep</span>
-            {section && <span className="muted"> · {section.title}</span>}
-          </button>
+          {isHub ? (
+            <div className="wordmark grow">
+              Up<span>keep</span>
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={() => navigate('/')}
+                className="icon-btn"
+                aria-label="Home"
+                style={{ marginLeft: '-0.5rem' }}
+              >
+                ‹
+              </button>
+              <h2 className="grow" style={{ margin: 0 }}>
+                {section?.title ?? (isSettings ? 'Settings' : '')}
+              </h2>
+            </>
+          )}
           <button
             onClick={() => navigate(isSettings ? '/' : '/settings')}
             className="icon-btn"
             aria-label="Settings"
+            style={{ marginRight: '-0.5rem' }}
           >
             ⚙
           </button>
         </div>
       </header>
 
-      <main style={{ padding: '1rem' }}>
+      <main style={{ padding: '1.125rem 1rem' }}>
         <Outlet />
       </main>
 
@@ -40,7 +57,6 @@ export function Layout() {
               key={t.path}
               to={`/${section.id}/${t.path}`}
               className={({ isActive }) => (isActive ? 'active' : '')}
-              aria-current={undefined}
             >
               {t.label}
             </NavLink>

@@ -1,39 +1,44 @@
 import { Link } from 'react-router-dom'
 import { SECTIONS } from '../../sections'
-import { Card } from '../../components/ui'
 
 export function HubScreen({ name }: { name: string }) {
   return (
     <div>
-      <h1 style={{ marginBottom: '0.25rem' }}>
-        {greeting()}, {name}
-      </h1>
-      <p className="muted" style={{ marginBottom: '1.5rem' }}>
-        What are you tracking?
-      </p>
+      <div style={{ marginBottom: '1.75rem' }}>
+        <p className="muted" style={{ margin: 0 }}>
+          {greeting()}
+        </p>
+        <h1 style={{ margin: '0.15rem 0 0' }}>{name}</h1>
+      </div>
 
-      {SECTIONS.map((section) => (
-        <Link
-          key={section.id}
-          to={`/${section.id}`}
-          className="btn-plain"
-          style={{ display: 'block', marginBottom: '0.75rem', textDecoration: 'none' }}
-        >
-          <Card>
-            <div className="row">
-              <strong className="grow" style={{ fontSize: '1.05rem' }}>
-                {section.title}
-              </strong>
-              {!section.ready && <span className="muted">soon</span>}
-            </div>
-            <div className="muted" style={{ marginTop: '0.2rem' }}>
-              {section.blurb}
-            </div>
-          </Card>
-        </Link>
-      ))}
+      <h3>Track</h3>
+
+      <div className="hub-grid">
+        {SECTIONS.map((section, i) => (
+          <Link
+            key={section.id}
+            to={`/${section.id}`}
+            className="hub-tile"
+            style={{ animationDelay: `${i * 45}ms` }}
+          >
+            <span className="hub-tile-icon" aria-hidden="true">
+              {ICONS[section.id] ?? '•'}
+            </span>
+            <span className="hub-tile-title">{section.title}</span>
+            <span className="hub-tile-blurb">{section.blurb}</span>
+            {!section.ready && <span className="hub-tile-soon">Soon</span>}
+          </Link>
+        ))}
+      </div>
     </div>
   )
+}
+
+const ICONS: Record<string, string> = {
+  meals: '◍',
+  body: '◐',
+  workouts: '◆',
+  routines: '❋',
 }
 
 function greeting(): string {
