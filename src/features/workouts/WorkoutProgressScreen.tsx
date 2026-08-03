@@ -16,6 +16,7 @@ import {
   LineChart,
   Line,
 } from 'recharts'
+import { ChevronLeft, ChevronRight, Trophy, Library } from 'lucide-react'
 import { listWorkouts, getAllSets, completedSets, workoutVolume } from '../../data/workouts'
 import { allExercises } from '../../data/exercises'
 import {
@@ -39,6 +40,14 @@ const RANGE_OPTIONS: { key: string; label: string; days: number }[] = [
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
+const TOOLTIP_STYLE = {
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-strong)',
+  borderRadius: '10px',
+}
+
+const AXIS_TICK = { fontSize: 11, fill: 'var(--text-faint)' }
+
 export function WorkoutProgressScreen() {
   const navigate = useNavigate()
 
@@ -57,42 +66,57 @@ export function WorkoutProgressScreen() {
   }
 
   return (
-    <div>
+    <div style={{ paddingBottom: '2rem' }}>
       <ScreenHeader title="Progress" />
-      <StatCards workouts={workouts} />
+      <StatCards workouts={workouts} sets={sets} />
       <CalendarSection workouts={workouts} navigate={navigate} />
       <RecentWorkoutsSection workouts={workouts} sets={sets} navigate={navigate} />
       <MuscleGroupSection sets={sets} exerciseLookup={exerciseLookup} />
       <VolumeSection workouts={workouts} sets={sets} />
       <RecentPRsSection sets={sets} workouts={workouts} navigate={navigate} />
 
-      <div style={{ margin: '0 0 1.5rem' }}>
+      <div style={{ marginTop: '1.5rem' }}>
         <Button block onClick={() => navigate('/workouts/exercises')}>
-          Browse exercises
+          <Library size={16} /> Browse exercises
         </Button>
       </div>
     </div>
   )
 }
 
-function StatCards({ workouts }: { workouts: Workout[] }) {
+function StatCards({ workouts, sets }: { workouts: Workout[]; sets: WorkoutSet[] }) {
   const streak = weekStreak(workouts)
   const thisMonthPrefix = todayISO().slice(0, 7)
-  const workoutsThisMonth = workouts.filter((w) => w.date.startsWith(thisMonthPrefix)).length
+  const monthWorkouts = workouts.filter((w) => w.date.startsWith(thisMonthPrefix))
+  const monthIds = new Set(monthWorkouts.map((w) => w.id))
+  const monthVolume = workoutVolume(sets.filter((s) => monthIds.has(s.workoutId)))
 
   return (
-    <div className="row" style={{ marginBottom: '1.25rem', gap: '0.75rem' }}>
-      <Card style={{ flex: 1, textAlign: 'center' }}>
-        <div className="muted">Week streak</div>
-        <strong style={{ fontSize: '1.6rem', display: 'block' }}>{streak}</strong>
-        <div className="muted">{streak === 1 ? 'week' : 'weeks'}</div>
-      </Card>
-      <Card style={{ flex: 1, textAlign: 'center' }}>
-        <div className="muted">This month</div>
-        <strong style={{ fontSize: '1.6rem', display: 'block' }}>{workoutsThisMonth}</strong>
-        <div className="muted">{workoutsThisMonth === 1 ? 'workout' : 'workouts'}</div>
-      </Card>
+    <div className="row" style={{ marginBottom: '1.75rem', gap: '0.75rem', alignItems: 'stretch' }}>
+      <StatCard label="Week streak" value={streak} unit={streak === 1 ? 'week' : 'weeks'} />
+      <StatCard
+        label="This month"
+        value={monthWorkouts.length}
+        unit={monthWorkouts.length === 1 ? 'workout' : 'workouts'}
+      />
+      <StatCard label="Volume" value={Math.round(monthVolume)} unit="kg" />
     </div>
+  )
+}
+
+function StatCard({ label, value, unit }: { label: string; value: number; unit: string }) {
+  return (
+    <Card style={{ flex: 1, padding: '0.875rem 0.75rem' }}>
+      <div className="faint" style={{ fontSize: '0.6875rem' }}>
+        {label}
+      </div>
+      <div className="stat-sm" style={{ margin: '0.15rem 0' }}>
+        {value}
+      </div>
+      <div className="faint" style={{ fontSize: '0.6875rem' }}>
+        {unit}
+      </div>
+    </Card>
   )
 }
 
@@ -145,54 +169,66 @@ function CalendarSection({
   return (
     <div>
       <h3>Calendar</h3>
-      <Card style={{ marginBottom: '1.25rem' }}>
-        <div className="row" style={{ marginBottom: '0.5rem' }}>
+      <Card style={{ marginBottom: '1.75rem' }}>
+        <div className="row" style={{ marginBottom: '0.75rem' }}>
           <button className="icon-btn" aria-label="Previous month" onClick={() => changeMonth(-1)}>
-            ‹
+            <ChevronLeft size={18} />
           </button>
           <strong className="grow" style={{ textAlign: 'center' }}>
             {monthLabel}
           </strong>
           <button className="icon-btn" aria-label="Next month" onClick={() => changeMonth(1)}>
-            ›
+            <ChevronRight size={18} />
           </button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.15rem' }}>
           {WEEKDAY_LABELS.map((d) => (
-            <div key={d} className="muted" style={{ textAlign: 'center', fontSize: '0.7rem' }}>
+            <div
+              key={d}
+              className="faint"
+              style={{ textAlign: 'center', fontSize: '0.6875rem', paddingBottom: '0.35rem' }}
+            >
               {d}
             </div>
           ))}
-          {days.map((d) => (
-            <button
-              key={d.date}
-              onClick={() => handleDayTap(d.date, d.hasWorkout)}
-              className="btn-plain"
-              style={{
-                aspectRatio: '1',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-                opacity: d.inMonth ? 1 : 0.35,
-                background: d.date === todayISO() ? 'var(--surface-2)' : 'transparent',
-                cursor: d.hasWorkout ? 'pointer' : 'default',
-              }}
-            >
-              <span style={{ fontSize: '0.8125rem' }}>{Number(d.date.slice(-2))}</span>
-              <span
+          {days.map((d) => {
+            const isToday = d.date === todayISO()
+            return (
+              <button
+                key={d.date}
+                onClick={() => handleDayTap(d.date, d.hasWorkout)}
+                className="btn-plain"
                 style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: '50%',
-                  marginTop: 2,
-                  background: d.hasWorkout ? 'var(--accent)' : 'transparent',
+                  aspectRatio: '1',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '10px',
+                  opacity: d.inMonth ? 1 : 0.25,
+                  background: d.hasWorkout
+                    ? 'var(--accent-soft)'
+                    : isToday
+                      ? 'var(--surface-2)'
+                      : 'transparent',
+                  border: isToday ? '1px solid var(--border-strong)' : '1px solid transparent',
+                  cursor: d.hasWorkout ? 'pointer' : 'default',
                 }}
-              />
-            </button>
-          ))}
+              >
+                <span
+                  className="num"
+                  style={{
+                    fontSize: '0.8125rem',
+                    fontWeight: d.hasWorkout ? 650 : 400,
+                    color: d.hasWorkout ? 'var(--accent)' : 'var(--text)',
+                  }}
+                >
+                  {Number(d.date.slice(-2))}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </Card>
 
@@ -228,7 +264,7 @@ function RecentWorkoutsSection({
   const recent = workouts.slice(0, 5)
 
   return (
-    <div>
+    <div style={{ marginBottom: '1.75rem' }}>
       <div className="row" style={{ marginBottom: '0.5rem' }}>
         <h3 className="grow" style={{ margin: 0 }}>
           Recent workouts
@@ -239,13 +275,13 @@ function RecentWorkoutsSection({
       </div>
 
       {recent.length === 0 ? (
-        <Card style={{ marginBottom: '1.25rem' }}>
+        <Card>
           <p className="muted" style={{ margin: 0 }}>
             No workouts logged yet.
           </p>
         </Card>
       ) : (
-        <div style={{ marginBottom: '1.25rem' }}>
+        <div>
           {recent.map((w) => (
             <RecentWorkoutCard
               key={w.id}
@@ -274,17 +310,21 @@ function RecentWorkoutCard({
   const volume = workoutVolume(sets)
 
   return (
-    <Card style={{ marginBottom: '0.5rem', cursor: 'pointer' }}>
-      <div onClick={() => navigate(`/workouts/history/${workout.id!}`)}>
+    <button
+      className="btn-plain"
+      style={{ display: 'block', width: '100%', marginBottom: '0.5rem' }}
+      onClick={() => navigate(`/workouts/history/${workout.id!}`)}
+    >
+      <Card>
         <div className="row">
-          <strong className="grow">{workout.name}</strong>
-          <span className="muted">{formatDay(workout.date)}</span>
+          <strong className="grow">{workout.name || 'Workout'}</strong>
+          <span className="faint">{formatDay(workout.date)}</span>
         </div>
-        <div className="muted" style={{ marginTop: '0.2rem' }}>
+        <div className="muted" style={{ marginTop: '0.25rem' }}>
           {exercises} exercises · {setCount} sets · {Math.round(volume)} kg
         </div>
-      </div>
-    </Card>
+      </Card>
+    </button>
   )
 }
 
@@ -305,6 +345,7 @@ function MuscleGroupSection({
     .sort((a, b) => b.value - a.value)
 
   const hasData = data.some((d) => d.value > 0)
+  const totalSets = data.reduce((sum, d) => sum + d.value, 0)
 
   return (
     <div>
@@ -321,45 +362,50 @@ function MuscleGroupSection({
         ))}
       </div>
 
-      <Card style={{ marginBottom: '1.25rem' }}>
+      <Card style={{ marginBottom: '1.75rem' }}>
         {!hasData ? (
           <p className="muted" style={{ margin: 0 }}>
             No sets logged in this range yet.
           </p>
         ) : (
-          <div style={{ height: Math.max(data.length * 34, 120) }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={data}
-                layout="vertical"
-                margin={{ top: 4, right: 16, left: 0, bottom: 0 }}
-              >
-                <XAxis type="number" hide />
-                <YAxis
-                  type="category"
-                  dataKey="group"
-                  width={80}
-                  tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  formatter={(v) => [`${v} sets`, '']}
-                  contentStyle={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Bar dataKey="value" fill="var(--accent)" radius={[0, 3, 3, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <>
+            <div className="faint">Total</div>
+            <div className="row" style={{ alignItems: 'baseline', gap: '0.3rem', marginBottom: '0.75rem' }}>
+              <span className="stat-sm">{Math.round(totalSets)}</span>
+              <span className="stat-unit">sets</span>
+            </div>
+
+            <div style={{ height: Math.max(data.length * 32, 120) }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data}
+                  layout="vertical"
+                  margin={{ top: 4, right: 16, left: 0, bottom: 0 }}
+                >
+                  <XAxis type="number" hide />
+                  <YAxis
+                    type="category"
+                    dataKey="group"
+                    width={84}
+                    tick={AXIS_TICK}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    formatter={(v) => [`${v} sets`, '']}
+                    contentStyle={TOOLTIP_STYLE}
+                    cursor={{ fill: 'var(--surface-2)' }}
+                  />
+                  <Bar dataKey="value" fill="var(--accent)" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </>
         )}
       </Card>
 
       <h3>Muscle balance</h3>
-      <Card style={{ marginBottom: '1.25rem' }}>
+      <Card style={{ marginBottom: '1.75rem' }}>
         {!hasData ? (
           <p className="muted" style={{ margin: 0 }}>
             Log a few workouts to see your muscle balance.
@@ -370,21 +416,19 @@ function MuscleGroupSection({
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={data}>
                   <PolarGrid stroke="var(--border)" />
-                  <PolarAngleAxis
-                    dataKey="group"
-                    tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                  />
+                  <PolarAngleAxis dataKey="group" tick={AXIS_TICK} />
                   <PolarRadiusAxis tick={false} axisLine={false} />
                   <Radar
                     dataKey="value"
                     stroke="var(--accent)"
+                    strokeWidth={2}
                     fill="var(--accent)"
-                    fillOpacity={0.35}
+                    fillOpacity={0.3}
                   />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
-            <p className="muted" style={{ margin: '0.5rem 0 0' }}>
+            <p className="faint" style={{ margin: '0.5rem 0 0' }}>
               A lopsided shape shows what's undertrained relative to the rest.
             </p>
           </>
@@ -396,51 +440,52 @@ function MuscleGroupSection({
 
 function VolumeSection({ workouts, sets }: { workouts: Workout[]; sets: WorkoutSet[] }) {
   const series = volumeSeries(workouts, sets, 90)
+  const latest = series[series.length - 1]
 
   return (
     <div>
       <h3>Volume trend</h3>
-      <Card style={{ marginBottom: '1.25rem' }}>
+      <Card style={{ marginBottom: '1.75rem' }}>
         {series.length < 2 ? (
           <p className="muted" style={{ margin: 0 }}>
             Log a couple more workouts to see a volume trend.
           </p>
         ) : (
-          <div style={{ height: 180 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={series} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(v) => shortDate(v as string)}
-                  tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={30}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  formatter={(v) => [`${v} kg`, 'Volume']}
-                  labelFormatter={(v) => shortDate(v as string)}
-                  contentStyle={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="volume"
-                  stroke="var(--accent)"
-                  strokeWidth={2.5}
-                  dot={{ r: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <>
+            <div className="faint">Last session</div>
+            <div className="row" style={{ alignItems: 'baseline', gap: '0.3rem', marginBottom: '0.75rem' }}>
+              <span className="stat-sm">{Math.round(latest.volume)}</span>
+              <span className="stat-unit">kg</span>
+            </div>
+
+            <div style={{ height: 180 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={series} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(v) => shortDate(v as string)}
+                    tick={AXIS_TICK}
+                    axisLine={false}
+                    tickLine={false}
+                    minTickGap={30}
+                  />
+                  <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    formatter={(v) => [`${v} kg`, 'Volume']}
+                    labelFormatter={(v) => shortDate(v as string)}
+                    contentStyle={TOOLTIP_STYLE}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="volume"
+                    stroke="var(--accent)"
+                    strokeWidth={2.5}
+                    dot={{ r: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </>
         )}
       </Card>
     </div>
@@ -478,14 +523,22 @@ function RecentPRsSection({
             <button
               key={`${pr.exerciseKey}-${pr.date}-${i}`}
               className="btn-plain"
-              style={{ display: 'block', width: '100%', padding: '0.4rem 0' }}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '0.7rem 0',
+                borderBottom: i < prs.length - 1 ? '1px solid var(--border)' : 'none',
+              }}
               onClick={() => navigate(`/workouts/exercises/${encodeURIComponent(pr.exerciseKey)}`)}
             >
               <div className="row">
-                <strong className="grow">{pr.exerciseName}</strong>
-                <span className="muted">{formatDay(pr.date)}</span>
+                <Trophy size={15} style={{ color: 'var(--warn)', flexShrink: 0 }} />
+                <strong className="grow" style={{ minWidth: 0 }}>
+                  {pr.exerciseName}
+                </strong>
+                <span className="faint">{formatDay(pr.date)}</span>
               </div>
-              <div className="muted">
+              <div className="muted" style={{ marginTop: '0.2rem', paddingLeft: '1.5rem' }}>
                 {pr.weightKg}kg × {pr.reps} · {pr.oneRM}kg 1RM
               </div>
             </button>

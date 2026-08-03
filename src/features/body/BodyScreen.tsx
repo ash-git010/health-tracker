@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
+import { Plus, X, TrendingDown, TrendingUp, Minus } from 'lucide-react'
 import {
   listMeasurements,
   deleteMeasurement,
@@ -10,7 +11,13 @@ import {
   toChartPoints,
 } from '../../data/measurements'
 import { formatDay } from '../../data/dates'
-import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
+import { Card, Empty, ScreenHeader } from '../../components/ui'
+
+const RANGES = [
+  { days: 30, label: '30d' },
+  { days: 90, label: '90d' },
+  { days: 365, label: '1y' },
+]
 
 export function BodyScreen() {
   const entries = useLiveQuery(() => listMeasurements(), [])
@@ -21,16 +28,16 @@ export function BodyScreen() {
   const change30 = entries ? weightChange(entries, 30) : null
 
   return (
-    <div>
+    <div style={{ paddingBottom: '2rem' }}>
       <ScreenHeader
-        title="Body"
+        title="Weight"
         action={
           <Link
             to="/body/weight/log"
             className="btn btn-sm btn-primary"
             style={{ textDecoration: 'none' }}
           >
-            Log weight
+            <Plus size={16} /> Log
           </Link>
         }
       />
@@ -38,30 +45,30 @@ export function BodyScreen() {
       {entries === undefined && <Empty>Loading…</Empty>}
 
       {entries && entries.length === 0 && (
-        <Empty>No measurements yet. Tap Log weight to start.</Empty>
+        <Empty>No measurements yet. Tap Log to record your first weigh-in.</Empty>
       )}
 
       {latest && (
-        <Card style={{ marginBottom: '1.25rem' }}>
-          <div className="row" style={{ alignItems: 'baseline' }}>
-            <strong style={{ fontSize: '1.6rem' }}>{latest.weightKg}</strong>
-            <span className="muted">kg</span>
-            <span className="muted grow" style={{ textAlign: 'right' }}>
+        <Card style={{ marginBottom: '1.5rem' }}>
+          <div className="faint">Current weight</div>
+          <div className="row" style={{ alignItems: 'baseline', gap: '0.35rem' }}>
+            <span className="stat">{latest.weightKg}</span>
+            <span className="stat-unit">kg</span>
+            <span className="faint grow" style={{ textAlign: 'right' }}>
               {formatDay(latest.date)}
             </span>
           </div>
 
-          {latest.heightCm && (
-            <div className="muted" style={{ marginTop: '0.25rem' }}>
-              BMI {bmi(latest.weightKg, latest.heightCm)} · {latest.heightCm}cm
+          {(change7 !== null || change30 !== null) && (
+            <div className="row" style={{ gap: '1.25rem', marginTop: '1rem' }}>
+              {change7 !== null && <ChangeStat label="7 days" kg={change7} />}
+              {change30 !== null && <ChangeStat label="30 days" kg={change30} />}
             </div>
           )}
 
-          {(change7 !== null || change30 !== null) && (
-            <div className="muted" style={{ marginTop: '0.5rem' }}>
-              {change7 !== null && <>7 days: {formatChange(change7)}</>}
-              {change7 !== null && change30 !== null && ' · '}
-              {change30 !== null && <>30 days: {formatChange(change30)}</>}
+          {latest.heightCm && (
+            <div className="faint" style={{ marginTop: '0.875rem' }}>
+              BMI {bmi(latest.weightKg, latest.heightCm)} · {latest.heightCm}cm
             </div>
           )}
         </Card>
@@ -69,22 +76,21 @@ export function BodyScreen() {
 
       {entries && entries.length >= 2 && (
         <>
-          <div className="row" style={{ marginBottom: '0.5rem' }}>
-            <h3 className="grow" style={{ margin: 0 }}>
-              Trend
-            </h3>
-            {[30, 90, 365].map((n) => (
+          <h3>Trend</h3>
+
+          <div className="chip-row">
+            {RANGES.map((r) => (
               <button
-                key={n}
-                onClick={() => setRange(n)}
-                className={`btn btn-sm${range === n ? ' btn-primary' : ''}`}
+                key={r.days}
+                onClick={() => setRange(r.days)}
+                className={`chip${range === r.days ? ' active' : ''}`}
               >
-                {n === 365 ? '1y' : `${n}d`}
+                {r.label}
               </button>
             ))}
           </div>
 
-          <Card style={{ marginBottom: '1.25rem' }}>
+          <Card style={{ marginBottom: '1.75rem' }}>
             <div style={{ height: 200 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -94,29 +100,29 @@ export function BodyScreen() {
                   <XAxis
                     dataKey="date"
                     tickFormatter={(d) => shortDate(d)}
-                    tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                    tick={{ fontSize: 11, fill: 'var(--text-faint)' }}
                     axisLine={false}
                     tickLine={false}
                     minTickGap={30}
                   />
                   <YAxis
                     domain={['dataMin - 1', 'dataMax + 1']}
-                    tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                    tick={{ fontSize: 11, fill: 'var(--text-faint)' }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip
                     formatter={(v, name) => [`${v} kg`, name === 'trend' ? 'Trend' : 'Weight']}
                     contentStyle={{
-                      background: 'var(--surface)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-strong)',
+                      borderRadius: '10px',
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="weightKg"
-                    stroke="var(--text-muted)"
+                    stroke="var(--text-faint)"
                     strokeWidth={1}
                     dot={{ r: 2 }}
                   />
@@ -130,7 +136,7 @@ export function BodyScreen() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <p className="muted" style={{ margin: '0.5rem 0 0', textAlign: 'center' }}>
+            <p className="faint" style={{ margin: '0.75rem 0 0', textAlign: 'center' }}>
               Thin line: each weigh-in · Thick line: 7-entry average
             </p>
           </Card>
@@ -142,30 +148,44 @@ export function BodyScreen() {
       {(entries ?? []).map((e) => (
         <div key={e.id} className="list-item">
           <div className="grow">
-            <strong>{e.weightKg} kg</strong>
-            {e.heightCm && <span className="muted"> · {e.heightCm}cm</span>}
+            <span className="num" style={{ fontWeight: 600 }}>
+              {e.weightKg} kg
+            </span>
+            {e.heightCm && <span className="faint"> · {e.heightCm}cm</span>}
           </div>
-          <span className="muted">{formatDay(e.date)}</span>
-          <Button
-            size="sm"
-            variant="ghost"
+          <span className="faint">{formatDay(e.date)}</span>
+          <button
+            className="icon-btn"
+            aria-label={`Delete entry from ${formatDay(e.date)}`}
             onClick={() => {
               if (e.id && confirm(`Delete the entry from ${formatDay(e.date)}?`)) {
                 deleteMeasurement(e.id)
               }
             }}
           >
-            ×
-          </Button>
+            <X size={16} />
+          </button>
         </div>
       ))}
     </div>
   )
 }
 
-function formatChange(kg: number): string {
-  if (kg === 0) return 'no change'
-  return kg > 0 ? `+${kg} kg` : `${kg} kg`
+function ChangeStat({ label, kg }: { label: string; kg: number }) {
+  const Icon = kg === 0 ? Minus : kg > 0 ? TrendingUp : TrendingDown
+  const colour = kg === 0 ? 'var(--text-muted)' : 'var(--text)'
+
+  return (
+    <div>
+      <div className="faint">{label}</div>
+      <div className="row" style={{ gap: '0.3rem', color: colour }}>
+        <Icon size={15} />
+        <span className="num" style={{ fontWeight: 600 }}>
+          {kg === 0 ? '—' : `${kg > 0 ? '+' : ''}${kg} kg`}
+        </span>
+      </div>
+    </div>
+  )
 }
 
 function shortDate(iso: string): string {

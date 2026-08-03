@@ -6,6 +6,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.3',
+    date: '2026-08-03',
+    changes: [
+      'New dark design throughout — cleaner, calmer, easier to read at a glance',
+      'Key numbers are now front and centre on every screen',
+      'Icons for exercise equipment, sections and controls',
+      'Redesigned home screen',
+      'Search, scan or add a new food without leaving the meal you\'re logging',
+      'Bigger tap targets and smoother transitions',
+    ]
+  },
+  {
     version: '1.2',
     date: '2026-08-03',
     changes: [

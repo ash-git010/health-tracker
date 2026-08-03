@@ -17,7 +17,17 @@ import { getGoals, macroGramsFromGoals } from '../../data/goals'
 import { lastNDays, shortDay, todayISO } from '../../data/dates'
 import { Card, Empty, ScreenHeader } from '../../components/ui'
 
-const MACRO_COLOURS = ['#6fae95', '#c9a227', '#c97b4a']
+const MACRO_COLOURS = ['#7c5cff', '#5b9bd5', '#c9a227']
+
+const RANGES = [7, 14, 30]
+
+const TOOLTIP_STYLE = {
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-strong)',
+  borderRadius: '10px',
+}
+
+const AXIS_TICK = { fontSize: 11, fill: 'var(--text-faint)' }
 
 export function ChartsScreen() {
   const [range, setRange] = useState(7)
@@ -64,15 +74,15 @@ export function ChartsScreen() {
   const proteinDaysMet = loggedDays.filter((d) => d.protein >= goals.minProteinGrams).length
 
   return (
-    <div>
+    <div style={{ paddingBottom: '2rem' }}>
       <ScreenHeader title="Charts" />
 
-      <div className="row" style={{ marginBottom: '1rem' }}>
-        {[7, 14, 30].map((n) => (
+      <div className="chip-row">
+        {RANGES.map((n) => (
           <button
             key={n}
             onClick={() => setRange(n)}
-            className={`btn btn-sm${range === n ? ' btn-primary' : ''}`}
+            className={`chip${range === n ? ' active' : ''}`}
           >
             {n} days
           </button>
@@ -80,120 +90,125 @@ export function ChartsScreen() {
       </div>
 
       <h3>Today's macros</h3>
-      {macroData.length === 0 ? (
-        <Card style={{ marginBottom: '1.25rem' }}>
+      <Card style={{ marginBottom: '1.75rem' }}>
+        {macroData.length === 0 ? (
           <p className="muted" style={{ margin: 0 }}>
             Nothing logged today yet.
           </p>
-        </Card>
-      ) : (
-        <Card style={{ marginBottom: '1.25rem' }}>
-          <div style={{ height: 200 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={macroData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={2}
-                >
-                  {macroData.map((_, i) => (
-                    <Cell key={i} fill={MACRO_COLOURS[i]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(v, _name, item) => `${item.payload.grams}g · ${v} kcal`}
-                  contentStyle={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+        ) : (
+          <>
+            <div style={{ height: 190 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={macroData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={52}
+                    outerRadius={82}
+                    paddingAngle={3}
+                    stroke="none"
+                  >
+                    {macroData.map((_, i) => (
+                      <Cell key={i} fill={MACRO_COLOURS[i]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(v, _name, item) => `${item.payload.grams}g · ${v} kcal`}
+                    contentStyle={TOOLTIP_STYLE}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
 
-          <div className="row" style={{ justifyContent: 'center', gap: '1rem' }}>
-            {macroData.map((d, i) => (
-              <span key={d.name} className="muted">
-                <span
-                  style={{
-                    display: 'inline-block',
-                    width: 10,
-                    height: 10,
-                    borderRadius: 2,
-                    background: MACRO_COLOURS[i],
-                    marginRight: 4,
-                  }}
-                />
-                {d.name} {d.grams}g
-              </span>
-            ))}
-          </div>
-        </Card>
-      )}
+            <div
+              className="row"
+              style={{ justifyContent: 'center', gap: '1.25rem', marginTop: '0.5rem' }}
+            >
+              {macroData.map((d, i) => (
+                <div key={d.name} style={{ textAlign: 'center' }}>
+                  <div className="row" style={{ gap: '0.35rem', justifyContent: 'center' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: 8,
+                        height: 8,
+                        borderRadius: 2,
+                        background: MACRO_COLOURS[i],
+                      }}
+                    />
+                    <span className="faint">{d.name}</span>
+                  </div>
+                  <div className="num" style={{ fontWeight: 600, marginTop: '0.15rem' }}>
+                    {d.grams}g
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </Card>
 
       <h3>Calories</h3>
-      <Card style={{ marginBottom: '1.25rem' }}>
-        <div style={{ height: 200 }}>
+      <Card style={{ marginBottom: '1.75rem' }}>
+        <div className="faint">Average</div>
+        <div className="row" style={{ alignItems: 'baseline', gap: '0.3rem', marginBottom: '0.75rem' }}>
+          <span className="stat-sm">{avgKcal}</span>
+          <span className="stat-unit">/ {goals.dailyCalories} kcal</span>
+        </div>
+
+        <div style={{ height: 190 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={totals} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
               <XAxis
                 dataKey="date"
                 tickFormatter={shortDay}
-                tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                tick={AXIS_TICK}
                 axisLine={false}
                 tickLine={false}
                 interval={range > 14 ? 4 : 0}
               />
-              <YAxis
-                tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                axisLine={false}
-                tickLine={false}
-              />
+              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
               <ReferenceLine
                 y={goals.dailyCalories}
-                stroke="var(--text-muted)"
+                stroke="var(--text-faint)"
                 strokeDasharray="4 4"
               />
               <Tooltip
                 formatter={(v) => `${v} kcal`}
                 labelFormatter={(d) => `${d}`}
-                contentStyle={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                }}
+                contentStyle={TOOLTIP_STYLE}
+                cursor={{ fill: 'var(--surface-2)' }}
               />
-              <Bar dataKey="kcal" fill="var(--accent)" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="kcal" fill="var(--accent)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <p className="muted" style={{ margin: '0.5rem 0 0', textAlign: 'center' }}>
+        <p className="faint" style={{ margin: '0.5rem 0 0', textAlign: 'center' }}>
           Dashed line: your {goals.dailyCalories} kcal target
         </p>
       </Card>
 
       <h3>Protein</h3>
-      <Card style={{ marginBottom: '1.25rem' }}>
-        <div style={{ height: 180 }}>
+      <Card style={{ marginBottom: '1.75rem' }}>
+        <div className="faint">Average</div>
+        <div className="row" style={{ alignItems: 'baseline', gap: '0.3rem', marginBottom: '0.75rem' }}>
+          <span className="stat-sm">{avgProtein}</span>
+          <span className="stat-unit">/ {targets.protein} g</span>
+        </div>
+
+        <div style={{ height: 170 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={totals} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
               <XAxis
                 dataKey="date"
                 tickFormatter={shortDay}
-                tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                tick={AXIS_TICK}
                 axisLine={false}
                 tickLine={false}
                 interval={range > 14 ? 4 : 0}
               />
-              <YAxis
-                tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                axisLine={false}
-                tickLine={false}
-              />
+              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
               <ReferenceLine
                 y={goals.minProteinGrams}
                 stroke="var(--warn)"
@@ -201,17 +216,14 @@ export function ChartsScreen() {
               />
               <Tooltip
                 formatter={(v) => `${v} g`}
-                contentStyle={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                }}
+                contentStyle={TOOLTIP_STYLE}
+                cursor={{ fill: 'var(--surface-2)' }}
               />
-              <Bar dataKey="protein" fill="var(--accent)" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="protein" fill="var(--accent)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <p className="muted" style={{ margin: '0.5rem 0 0', textAlign: 'center' }}>
+        <p className="faint" style={{ margin: '0.5rem 0 0', textAlign: 'center' }}>
           Dashed line: your {goals.minProteinGrams}g minimum
         </p>
       </Card>
@@ -224,10 +236,7 @@ export function ChartsScreen() {
           </p>
         ) : (
           <>
-            <SummaryRow
-              label="Days logged"
-              value={`${loggedDays.length} of ${range}`}
-            />
+            <SummaryRow label="Days logged" value={`${loggedDays.length} of ${range}`} />
             <SummaryRow
               label="Average calories"
               value={`${avgKcal} kcal`}
@@ -259,10 +268,12 @@ function SummaryRow({
   note?: string
 }) {
   return (
-    <div className="row" style={{ padding: '0.35rem 0' }}>
-      <span className="grow">{label}</span>
-      <strong>{value}</strong>
-      {note && <span className="muted">({note})</span>}
+    <div className="row" style={{ padding: '0.45rem 0' }}>
+      <span className="grow muted">{label}</span>
+      <div style={{ textAlign: 'right' }}>
+        <strong className="num">{value}</strong>
+        {note && <div className="faint">{note}</div>}
+      </div>
     </div>
   )
 }
