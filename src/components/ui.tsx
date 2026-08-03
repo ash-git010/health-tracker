@@ -65,9 +65,27 @@ export function Card({ children, style }: { children: ReactNode; style?: CSSProp
   )
 }
 
-export function ScreenHeader({ title, action }: { title: string; action?: ReactNode }) {
+export function ScreenHeader({
+  title,
+  action,
+  onBack,
+}: {
+  title: string
+  action?: ReactNode
+  onBack?: () => void
+}) {
   return (
     <div className="row" style={{ marginBottom: '0.75rem' }}>
+      {onBack && (
+        <button
+          className="icon-btn"
+          aria-label="Back"
+          onClick={onBack}
+          style={{ marginLeft: '-0.5rem' }}
+        >
+          ‹
+        </button>
+      )}
       <h2 className="grow" style={{ margin: 0 }}>
         {title}
       </h2>

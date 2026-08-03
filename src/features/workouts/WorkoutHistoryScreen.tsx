@@ -5,11 +5,12 @@ import { formatDay } from '../../data/dates'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 
 export function WorkoutHistoryScreen() {
+  const navigate = useNavigate()
   const workouts = useLiveQuery(() => listWorkouts(), [])
 
   return (
     <div>
-      <ScreenHeader title="History" />
+      <ScreenHeader title="History" onBack={() => navigate('/workouts/progress')} />
 
       {workouts === undefined && <Empty>Loading…</Empty>}
       {workouts && workouts.length === 0 && <Empty>No workouts logged yet.</Empty>}

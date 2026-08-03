@@ -16,7 +16,7 @@ import {
   LineChart,
   Line,
 } from 'recharts'
-import { listWorkouts, getAllSets } from '../../data/workouts'
+import { listWorkouts, getAllSets, completedSets, workoutVolume } from '../../data/workouts'
 import { allExercises } from '../../data/exercises'
 import {
   setsPerMuscleGroup,
@@ -28,7 +28,7 @@ import {
 } from '../../data/workoutStats'
 import { MUSCLE_GROUPS } from '../../data/muscleGroups'
 import { todayISO, addDays, formatDay } from '../../data/dates'
-import { Card, Empty, ScreenHeader } from '../../components/ui'
+import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 import type { Workout, WorkoutSet } from '../../data/types'
 
 const RANGE_OPTIONS: { key: string; label: string; days: number }[] = [
@@ -61,9 +61,16 @@ export function WorkoutProgressScreen() {
       <ScreenHeader title="Progress" />
       <StatCards workouts={workouts} />
       <CalendarSection workouts={workouts} navigate={navigate} />
+      <RecentWorkoutsSection workouts={workouts} sets={sets} navigate={navigate} />
       <MuscleGroupSection sets={sets} exerciseLookup={exerciseLookup} />
       <VolumeSection workouts={workouts} sets={sets} />
       <RecentPRsSection sets={sets} workouts={workouts} navigate={navigate} />
+
+      <div style={{ margin: '0 0 1.5rem' }}>
+        <Button block onClick={() => navigate('/workouts/exercises')}>
+          Browse exercises
+        </Button>
+      </div>
     </div>
   )
 }
@@ -206,6 +213,78 @@ function CalendarSection({
         </div>
       )}
     </div>
+  )
+}
+
+function RecentWorkoutsSection({
+  workouts,
+  sets,
+  navigate,
+}: {
+  workouts: Workout[]
+  sets: WorkoutSet[]
+  navigate: (path: string) => void
+}) {
+  const recent = workouts.slice(0, 5)
+
+  return (
+    <div>
+      <div className="row" style={{ marginBottom: '0.5rem' }}>
+        <h3 className="grow" style={{ margin: 0 }}>
+          Recent workouts
+        </h3>
+        <button className="btn-plain muted" onClick={() => navigate('/workouts/history')}>
+          See all
+        </button>
+      </div>
+
+      {recent.length === 0 ? (
+        <Card style={{ marginBottom: '1.25rem' }}>
+          <p className="muted" style={{ margin: 0 }}>
+            No workouts logged yet.
+          </p>
+        </Card>
+      ) : (
+        <div style={{ marginBottom: '1.25rem' }}>
+          {recent.map((w) => (
+            <RecentWorkoutCard
+              key={w.id}
+              workout={w}
+              sets={sets.filter((s) => s.workoutId === w.id)}
+              navigate={navigate}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RecentWorkoutCard({
+  workout,
+  sets,
+  navigate,
+}: {
+  workout: Workout
+  sets: WorkoutSet[]
+  navigate: (path: string) => void
+}) {
+  const exercises = new Set(sets.map((s) => s.exerciseKey)).size
+  const setCount = completedSets(sets).length
+  const volume = workoutVolume(sets)
+
+  return (
+    <Card style={{ marginBottom: '0.5rem', cursor: 'pointer' }}>
+      <div onClick={() => navigate(`/workouts/history/${workout.id!}`)}>
+        <div className="row">
+          <strong className="grow">{workout.name}</strong>
+          <span className="muted">{formatDay(workout.date)}</span>
+        </div>
+        <div className="muted" style={{ marginTop: '0.2rem' }}>
+          {exercises} exercises · {setCount} sets · {Math.round(volume)} kg
+        </div>
+      </div>
+    </Card>
   )
 }
 

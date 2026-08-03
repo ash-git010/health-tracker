@@ -33,6 +33,7 @@ export function ExerciseLibraryScreen() {
     <div>
       <ScreenHeader
         title="Exercises"
+        onBack={() => navigate('/workouts/progress')}
         action={
           <Button size="sm" variant="primary" onClick={() => navigate('/workouts/exercises/new')}>
             New exercise
