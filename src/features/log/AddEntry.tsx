@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { Link } from 'react-router-dom'
+import { Search, ScanLine, Plus } from 'lucide-react'
 import { listFoods, macrosForAmount, amountInBaseUnit, hasPieces } from '../../data/foods'
+import { fuzzySearch } from '../../data/search'
 import { logFood, MEALS, type Meal } from '../../data/log'
-import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
+import { Button, Card, ScreenHeader } from '../../components/ui'
 import type { Food } from '../../data/types'
 
 interface Props {
@@ -20,9 +23,7 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
   const [meal, setMeal] = useState<Meal>(defaultMeal)
   const [mode, setMode] = useState<'base' | 'piece'>('base')
 
-  const filtered = (foods ?? []).filter((f) =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = fuzzySearch(foods ?? [], search, (f) => `${f.name} ${f.brand ?? ''}`)
 
   const grams =
     selected && typeof amount === 'number' ? amountInBaseUnit(selected, amount, mode) : 0
@@ -42,12 +43,14 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
   }
 
   if (!selected) {
+    const linkState = { returnTo: '/meals/today/add', meal, date }
+
     return (
-      <div>
+      <div style={{ paddingBottom: '2rem' }}>
         <ScreenHeader
           title="Pick a food"
           action={
-            <Button size="sm" onClick={onCancel}>
+            <Button size="sm" variant="ghost" onClick={onCancel}>
               Cancel
             </Button>
           }
@@ -56,35 +59,63 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
         <input
           type="text"
           value={search}
-          placeholder="Search…"
+          placeholder="Search your foods…"
           onChange={(e) => setSearch(e.target.value)}
           autoFocus
-          style={{ marginBottom: '0.75rem' }}
+          style={{ marginBottom: '1rem' }}
         />
 
-        {filtered.length === 0 && <Empty>No foods found. Add some in the Foods tab.</Empty>}
-
-        {filtered.map((food) => (
-          <button
-            key={food.id}
-            className="btn btn-block"
-            onClick={() => pickFood(food)}
-            style={{
-              justifyContent: 'flex-start',
-              textAlign: 'left',
-              marginBottom: '0.5rem',
-              padding: '0.75rem',
-              display: 'block',
-            }}
+        <div className="row" style={{ gap: '0.5rem', marginBottom: '1.75rem' }}>
+          <Link
+            to="/meals/foods/search"
+            state={{ ...linkState, query: search }}
+            className="btn grow"
+            style={{ textDecoration: 'none' }}
           >
-            <strong>{food.name}</strong>
-            <span className="muted" style={{ display: 'block', fontWeight: 400 }}>
-              {food.kcal} kcal per 100{food.unit}
-              {hasPieces(food) &&
-                ` · 1 ${food.pieceLabel || 'piece'} = ${food.pieceGrams}${food.unit}`}
-            </span>
-          </button>
-        ))}
+            <Search size={16} /> Search
+          </Link>
+          <Link
+            to="/meals/foods/scan"
+            state={linkState}
+            className="btn grow"
+            style={{ textDecoration: 'none' }}
+          >
+            <ScanLine size={16} /> Scan
+          </Link>
+          <Link
+            to="/meals/foods/new"
+            state={linkState}
+            className="btn grow"
+            style={{ textDecoration: 'none' }}
+          >
+            <Plus size={16} /> New
+          </Link>
+        </div>
+
+        {filtered.length > 0 && <h3>Your foods</h3>}
+
+        {filtered.length === 0 && (
+          <p className="muted" style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+            {search ? `No match for "${search}"` : 'No foods saved yet'}
+          </p>
+        )}
+
+        <div>
+          {filtered.map((food) => (
+            <button
+              key={food.id}
+              className="btn-plain food-option"
+              onClick={() => pickFood(food)}
+            >
+              <span style={{ display: 'block', fontWeight: 600 }}>{food.name}</span>
+              <span className="faint" style={{ display: 'block' }}>
+                {food.kcal} kcal per 100{food.unit}
+                {hasPieces(food) &&
+                  ` · 1 ${food.pieceLabel || 'piece'} = ${food.pieceGrams}${food.unit}`}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     )
   }
@@ -93,15 +124,11 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
     <div>
       <ScreenHeader
         title={selected.name}
-        action={
-          <Button size="sm" onClick={() => setSelected(null)}>
-            Back
-          </Button>
-        }
+        onBack={() => setSelected(null)}
       />
 
       {hasPieces(selected) && (
-        <div className="row" style={{ marginBottom: '0.875rem' }}>
+        <div className="row" style={{ marginBottom: '1rem' }}>
           <Button
             variant={mode === 'piece' ? 'primary' : 'default'}
             onClick={() => {
@@ -156,12 +183,15 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
 
       {preview && (
         <Card style={{ marginTop: '1.25rem' }}>
-          <strong style={{ fontSize: '1.1rem' }}>{preview.kcal} kcal</strong>
-          <div className="muted" style={{ marginTop: '0.25rem' }}>
+          <div className="row" style={{ alignItems: 'baseline', gap: '0.35rem' }}>
+            <span className="stat-sm">{preview.kcal}</span>
+            <span className="stat-unit">kcal</span>
+          </div>
+          <div className="muted" style={{ marginTop: '0.35rem' }}>
             P {preview.protein}g · C {preview.carbs}g · F {preview.fat}g
           </div>
           {mode === 'piece' && (
-            <div className="muted" style={{ marginTop: '0.25rem' }}>
+            <div className="faint" style={{ marginTop: '0.25rem' }}>
               = {Math.round(grams)}
               {selected.unit}
             </div>
@@ -169,7 +199,7 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
         </Card>
       )}
 
-      <div style={{ marginTop: '1.25rem' }}>
+      <div style={{ marginTop: '1.5rem' }}>
         <Button variant="primary" block onClick={handleAdd} disabled={!preview}>
           Add to log
         </Button>

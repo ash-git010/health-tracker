@@ -642,6 +642,17 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   margin: 1.5rem 0;
 }
 
+.food-option {
+  display: block;
+  width: 100%;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.food-option:last-child { border-bottom: none; }
+.food-option:active { background: var(--surface-2); }
+
 /* Motion */
 @keyframes fade-in {
   from { opacity: 0; }

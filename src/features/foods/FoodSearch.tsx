@@ -6,12 +6,13 @@ import { Button, Empty, ScreenHeader } from '../../components/ui'
 import type { FoodInput } from '../../data/foods'
 
 interface Props {
+  initialQuery?: string
   onPicked: (food: Partial<FoodInput>) => void
   onCancel: () => void
 }
 
-export function FoodSearch({ onPicked, onCancel }: Props) {
-  const [query, setQuery] = useState('')
+export function FoodSearch({ initialQuery = '', onPicked, onCancel }: Props) {
+  const [query, setQuery] = useState(initialQuery)
   const [hits, setHits] = useState<SearchHit[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

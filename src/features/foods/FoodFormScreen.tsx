@@ -5,6 +5,13 @@ import { getFood, type FoodInput } from '../../data/foods'
 import { Empty } from '../../components/ui'
 import type { Food } from '../../data/types'
 
+interface FormState {
+  prefill?: Partial<FoodInput>
+  returnTo?: string
+  meal?: string
+  date?: string
+}
+
 export function FoodFormScreen() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -12,7 +19,7 @@ export function FoodFormScreen() {
   const [existing, setExisting] = useState<Food | undefined>()
   const [loading, setLoading] = useState(!!id)
 
-  const prefill = (location.state as { prefill?: Partial<FoodInput> } | null)?.prefill
+  const state = (location.state ?? {}) as FormState
 
   useEffect(() => {
     if (!id) return
@@ -22,13 +29,21 @@ export function FoodFormScreen() {
     })
   }, [id])
 
+  function goBack() {
+    if (state.returnTo) {
+      navigate(state.returnTo, { state: { meal: state.meal, date: state.date } })
+    } else {
+      navigate('/meals/foods')
+    }
+  }
+
   if (loading) return <Empty>Loading…</Empty>
 
   return (
     <FoodForm
       existing={existing}
-      initial={prefill}
-      onDone={() => navigate('/meals/foods')}
+      initial={state.prefill}
+      onDone={goBack}
       onCancel={() => navigate(-1)}
     />
   )

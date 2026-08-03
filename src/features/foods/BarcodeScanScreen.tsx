@@ -1,13 +1,29 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { BarcodeScanner } from './BarcodeScanner'
 import { lookupBarcode } from '../../data/openfoodfacts'
 import { Empty } from '../../components/ui'
 
+interface ScanState {
+  returnTo?: string
+  meal?: string
+  date?: string
+}
+
 export function BarcodeScanScreen() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const state = (location.state ?? {}) as ScanState
   const [looking, setLooking] = useState(false)
   const [error, setError] = useState('')
+
+  function cancel() {
+    if (state.returnTo) {
+      navigate(state.returnTo, { state: { meal: state.meal, date: state.date } })
+    } else {
+      navigate('/meals/foods')
+    }
+  }
 
   async function handleBarcode(barcode: string) {
     setLooking(true)
@@ -19,7 +35,14 @@ export function BarcodeScanScreen() {
         setLooking(false)
         return
       }
-      navigate('/meals/foods/new', { state: { prefill: result.food } })
+      navigate('/meals/foods/new', {
+        state: {
+          prefill: result.food,
+          returnTo: state.returnTo,
+          meal: state.meal,
+          date: state.date,
+        },
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lookup failed')
       setLooking(false)
@@ -31,7 +54,7 @@ export function BarcodeScanScreen() {
   return (
     <>
       {error && <p className="warn">{error}</p>}
-      <BarcodeScanner onDetected={handleBarcode} onCancel={() => navigate('/meals/foods')} />
+      <BarcodeScanner onDetected={handleBarcode} onCancel={cancel} />
     </>
   )
 }
