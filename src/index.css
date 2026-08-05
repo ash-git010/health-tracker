@@ -763,6 +763,15 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   text-align: center;
 }
 
+
+.wordmark {
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-size: 1.1875rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+.wordmark span { color: var(--accent); }
+
 /* Motion */
 @keyframes dialog-in {
   from { transform: scale(0.94); opacity: 0; }

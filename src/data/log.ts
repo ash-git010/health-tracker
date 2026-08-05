@@ -1,5 +1,6 @@
 import { db } from './db'
 import { macrosForAmount } from './foods'
+import { newId, now, isLive } from './ids'
 import type { Food, LogEntry } from './types'
 
 export type Meal = LogEntry['meal']
@@ -7,7 +8,8 @@ export type Meal = LogEntry['meal']
 export const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
 
 export async function getEntriesForDate(date: string): Promise<LogEntry[]> {
-  return db.logEntries.where('date').equals(date).sortBy('createdAt')
+  const entries = await db.logEntries.where('date').equals(date).sortBy('createdAt')
+  return entries.filter(isLive)
 }
 
 export async function logFood(
@@ -18,8 +20,10 @@ export async function logFood(
 ): Promise<void> {
   if (!food.id) throw new Error('Food has no id')
   const macros = macrosForAmount(food, amount)
+  const timestamp = now()
 
   await db.logEntries.add({
+    id: newId(),
     date,
     meal,
     foodId: food.id,
@@ -27,12 +31,13 @@ export async function logFood(
     amount,
     unit: food.unit,
     ...macros,
-    createdAt: new Date().toISOString(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
   })
 }
 
-export async function deleteEntry(id: number): Promise<void> {
-  await db.logEntries.delete(id)
+export async function deleteEntry(id: string): Promise<void> {
+  await db.logEntries.update(id, { deletedAt: now(), updatedAt: now() })
 }
 
 export function sumEntries(entries: LogEntry[]) {
@@ -51,7 +56,11 @@ export async function getEntriesInRange(
   startDate: string,
   endDate: string
 ): Promise<LogEntry[]> {
-  return db.logEntries.where('date').between(startDate, endDate, true, true).toArray()
+  const entries = await db.logEntries
+    .where('date')
+    .between(startDate, endDate, true, true)
+    .toArray()
+  return entries.filter(isLive)
 }
 
 export interface DayTotals {

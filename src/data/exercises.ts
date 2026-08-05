@@ -1,4 +1,5 @@
 import { db } from './db'
+import { newId, now, isLive } from './ids'
 import type { Exercise } from './types'
 import { fuzzySearch } from './search'
 import { POPULAR_EXERCISES } from './exercisePopularity'
@@ -69,7 +70,9 @@ async function loadSeed(): Promise<ExerciseOption[]> {
 export async function allExercises(): Promise<ExerciseOption[]> {
   const [seedOptions, custom] = await Promise.all([loadSeed(), db.exercises.toArray()])
 
-  const customOptions: ExerciseOption[] = custom.map((e) => ({
+  // The `custom:` prefix keeps custom keys from colliding with seed ids.
+  // The id is now a UUID, so these strings are stable across devices.
+  const customOptions: ExerciseOption[] = custom.filter(isLive).map((e) => ({
     key: `custom:${e.id}`,
     name: e.name,
     bodyPart: e.bodyPart,
@@ -123,11 +126,21 @@ export function equipmentTypes(list: ExerciseOption[]): string[] {
 }
 
 export async function addCustomExercise(
-  input: Omit<Exercise, 'id' | 'createdAt' | 'custom'>
-): Promise<number> {
-  return db.exercises.add({ ...input, custom: true, createdAt: new Date().toISOString() })
+  input: Omit<Exercise, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'custom'>
+): Promise<string> {
+  const timestamp = now()
+  const id = newId()
+  await db.exercises.add({
+    ...input,
+    id,
+    custom: true,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  })
+  return id
 }
 
-export async function deleteCustomExercise(id: number): Promise<void> {
-  await db.exercises.delete(id)
+export async function deleteCustomExercise(id: string): Promise<void> {
+  const timestamp = now()
+  await db.exercises.update(id, { deletedAt: timestamp, updatedAt: timestamp })
 }

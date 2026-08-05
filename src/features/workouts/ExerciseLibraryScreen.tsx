@@ -106,7 +106,7 @@ function ExerciseCard({ exercise, onOpen }: { exercise: ExerciseOption; onOpen: 
       destructive: true,
     })
     if (!ok) return
-    const id = Number(exercise.key.split(':')[1])
+    const id = (exercise.key.split(':')[1])
     await deleteCustomExercise(id)
   }
 

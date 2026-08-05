@@ -1,31 +1,41 @@
 import { db } from './db'
+import { newId, now, isLive } from './ids'
 import type { BodyMeasurement } from './types'
 
-export type MeasurementInput = Omit<BodyMeasurement, 'id' | 'createdAt'>
+export type MeasurementInput = Omit<BodyMeasurement, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>
 
 export async function listMeasurements(): Promise<BodyMeasurement[]> {
   const all = await db.measurements.orderBy('date').toArray()
-  return all.reverse()
+  return all.filter(isLive).reverse()
 }
 
 export async function getMeasurementForDate(
   date: string
 ): Promise<BodyMeasurement | undefined> {
-  return db.measurements.where('date').equals(date).first()
+  // Must filter deleted rows: otherwise deleting a day's weight and re-adding
+  // it would find the tombstone and "update" an invisible row.
+  const matches = await db.measurements.where('date').equals(date).toArray()
+  return matches.find(isLive)
 }
 
 export async function saveMeasurement(input: MeasurementInput): Promise<void> {
   const existing = await getMeasurementForDate(input.date)
+  const timestamp = now()
 
-  if (existing?.id) {
-    await db.measurements.update(existing.id, input)
+  if (existing) {
+    await db.measurements.update(existing.id, { ...input, updatedAt: timestamp })
   } else {
-    await db.measurements.add({ ...input, createdAt: new Date().toISOString() })
+    await db.measurements.add({
+      ...input,
+      id: newId(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    })
   }
 }
 
-export async function deleteMeasurement(id: number): Promise<void> {
-  await db.measurements.delete(id)
+export async function deleteMeasurement(id: string): Promise<void> {
+  await db.measurements.update(id, { deletedAt: now(), updatedAt: now() })
 }
 
 export async function latestMeasurement(): Promise<BodyMeasurement | undefined> {

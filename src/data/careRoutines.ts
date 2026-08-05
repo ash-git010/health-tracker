@@ -1,6 +1,7 @@
 import { db } from './db'
 import { todayISO, addDays } from './dates'
-import type { CareRoutine, CareStep, CareDone, TimeOfDay } from './types'
+import { newId, now, isLive } from './ids'
+import type { CareRoutine, CareStep, CareDone, CareStepDone, TimeOfDay } from './types'
 
 export const DEFAULT_KINDS = ['Skin', 'Hair', 'Other']
 
@@ -10,72 +11,139 @@ export const TIMES: { value: TimeOfDay; label: string }[] = [
   { value: 'anytime', label: 'Anytime' },
 ]
 
-export type CareRoutineInput = Omit<CareRoutine, 'id' | 'createdAt' | 'sortOrder'>
-export type CareStepInput = Omit<CareStep, 'id' | 'careRoutineId' | 'order'>
+export type CareRoutineInput = Omit<CareRoutine, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'sortOrder'>
+export type CareStepInput = Omit<CareStep, 'id' | 'careRoutineId' | 'order' | 'createdAt' | 'updatedAt' | 'deletedAt'>
 
 /* ---------- reads ---------- */
 
 export async function listCareRoutines(): Promise<CareRoutine[]> {
   const all = await db.careRoutines.toArray()
-  return all.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+  return all
+    .filter(isLive)
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
 }
 
-export async function getCareRoutine(id: number): Promise<CareRoutine | null> {
-  return (await db.careRoutines.get(id)) ?? null
+export async function getCareRoutine(id: string): Promise<CareRoutine | null> {
+  const routine = await db.careRoutines.get(id)
+  return routine && isLive(routine) ? routine : null
 }
 
-export async function getSteps(careRoutineId: number): Promise<CareStep[]> {
+export async function getSteps(careRoutineId: string): Promise<CareStep[]> {
   const steps = await db.careSteps.where('careRoutineId').equals(careRoutineId).toArray()
-  return steps.sort((a, b) => a.order - b.order)
+  return steps.filter(isLive).sort((a, b) => a.order - b.order)
 }
 
 export async function getDoneForDate(date: string): Promise<CareDone[]> {
-  return db.careDoneLog.where('date').equals(date).toArray()
+  const rows = await db.careDoneLog.where('date').equals(date).toArray()
+  return rows.filter(isLive)
+}
+
+/** Ticked steps for a day, across all routines. */
+export async function getStepDoneForDate(date: string): Promise<CareStepDone[]> {
+  const rows = await db.careStepDone.where('date').equals(date).toArray()
+  return rows.filter(isLive)
+}
+
+/** Convenience for screens: the set of step ids ticked on a given date. */
+export async function tickedStepIds(date: string): Promise<Set<string>> {
+  const rows = await getStepDoneForDate(date)
+  return new Set(rows.map((r) => r.stepId))
 }
 
 export async function routineKinds(): Promise<string[]> {
   const all = await db.careRoutines.toArray()
-  const used = [...new Set(all.map((r) => r.kind).filter(Boolean))]
+  const used = [...new Set(all.filter(isLive).map((r) => r.kind).filter(Boolean))]
   const extra = used.filter((k) => !DEFAULT_KINDS.includes(k)).sort()
   return [...DEFAULT_KINDS, ...extra]
 }
 
 /* ---------- writes ---------- */
 
-export async function createCareRoutine(input: CareRoutineInput): Promise<number> {
+export async function createCareRoutine(input: CareRoutineInput): Promise<string> {
   const all = await db.careRoutines.toArray()
   const maxOrder = all.reduce((m, r) => Math.max(m, r.sortOrder), 0)
+  const timestamp = now()
+  const id = newId()
 
-  return db.careRoutines.add({
+  await db.careRoutines.add({
     ...input,
+    id,
     sortOrder: maxOrder + 1,
-    createdAt: new Date().toISOString(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
   })
+  return id
 }
 
 export async function updateCareRoutine(
-  id: number,
+  id: string,
   changes: Partial<Pick<CareRoutine, 'name' | 'kind' | 'timeOfDay' | 'sortOrder'>>
 ): Promise<void> {
-  await db.careRoutines.update(id, changes)
+  await db.careRoutines.update(id, { ...changes, updatedAt: now() })
 }
 
-export async function deleteCareRoutine(id: number): Promise<void> {
-  await db.transaction('rw', [db.careRoutines, db.careSteps, db.careDoneLog], async () => {
-    await db.careSteps.where('careRoutineId').equals(id).delete()
-    await db.careDoneLog.where('careRoutineId').equals(id).delete()
-    await db.careRoutines.delete(id)
-  })
+export async function deleteCareRoutine(id: string): Promise<void> {
+  const timestamp = now()
+  const dead = { deletedAt: timestamp, updatedAt: timestamp }
+
+  await db.transaction(
+    'rw',
+    [db.careRoutines, db.careSteps, db.careDoneLog, db.careStepDone],
+    async () => {
+      await db.careSteps.where('careRoutineId').equals(id).modify(dead)
+      await db.careDoneLog.where('careRoutineId').equals(id).modify(dead)
+      await db.careStepDone.where('careRoutineId').equals(id).modify(dead)
+      await db.careRoutines.update(id, dead)
+    }
+  )
 }
 
-export async function setSteps(careRoutineId: number, steps: CareStepInput[]): Promise<void> {
+/**
+ * Reconciles by position instead of deleting and re-adding.
+ *
+ * The previous version wiped every step and inserted fresh ones on each save,
+ * which meant new ids each time — so historical ticks pointed at steps that no
+ * longer existed. Editing a routine silently broke its own history. Updating
+ * in place keeps ids stable and keeps past ticks meaningful.
+ */
+export async function setSteps(
+  careRoutineId: string,
+  steps: CareStepInput[]
+): Promise<void> {
+  const timestamp = now()
+
   await db.transaction('rw', db.careSteps, async () => {
-    await db.careSteps.where('careRoutineId').equals(careRoutineId).delete()
-    await db.careSteps.bulkAdd(steps.map((s, order) => ({ ...s, careRoutineId, order })))
+    const existing = (
+      await db.careSteps.where('careRoutineId').equals(careRoutineId).toArray()
+    )
+      .filter(isLive)
+      .sort((a, b) => a.order - b.order)
+
+    for (let i = 0; i < steps.length; i++) {
+      const input = steps[i]
+      const row = existing[i]
+
+      if (row) {
+        await db.careSteps.update(row.id, { ...input, order: i, updatedAt: timestamp })
+      } else {
+        await db.careSteps.add({
+          ...input,
+          id: newId(),
+          careRoutineId,
+          order: i,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        })
+      }
+    }
+
+    for (const row of existing.slice(steps.length)) {
+      await db.careSteps.update(row.id, { deletedAt: timestamp, updatedAt: timestamp })
+    }
   })
 }
 
-export async function moveCareRoutine(id: number, direction: -1 | 1): Promise<void> {
+export async function moveCareRoutine(id: string, direction: -1 | 1): Promise<void> {
   const all = await listCareRoutines()
   const routine = all.find((r) => r.id === id)
   if (!routine) return
@@ -85,47 +153,78 @@ export async function moveCareRoutine(id: number, direction: -1 | 1): Promise<vo
   const target = siblings[index + direction]
   if (!target) return
 
+  const timestamp = now()
+
   await db.transaction('rw', db.careRoutines, async () => {
-    await db.careRoutines.update(routine.id!, { sortOrder: target.sortOrder })
-    await db.careRoutines.update(target.id!, { sortOrder: routine.sortOrder })
+    await db.careRoutines.update(routine.id, {
+      sortOrder: target.sortOrder,
+      updatedAt: timestamp,
+    })
+    await db.careRoutines.update(target.id, {
+      sortOrder: routine.sortOrder,
+      updatedAt: timestamp,
+    })
   })
 }
 
-/** Tick or untick a step for a given day. Event handlers only — never a live query. */
+/**
+ * Tick or untick a step for a given day. Event handlers only — never a live
+ * query (Dexie runs those read-only and will throw).
+ *
+ * One row per step per day. Unticking sets deletedAt; re-ticking clears it on
+ * the same row rather than adding another, so a day can't accumulate
+ * duplicates. Two devices ticking different steps now write different rows and
+ * never collide.
+ */
 export async function toggleStep(
-  careRoutineId: number,
-  stepId: number,
+  careRoutineId: string,
+  stepId: string,
   date: string
 ): Promise<void> {
-  const existing = await db.careDoneLog
+  const timestamp = now()
+
+  const existing = await db.careStepDone
+    .where('[date+careRoutineId]')
+    .equals([date, careRoutineId])
+    .filter((r) => r.stepId === stepId)
+    .first()
+
+  if (existing) {
+    await db.careStepDone.update(existing.id, {
+      // Dexie deletes a property when its update value is undefined, which is
+      // exactly what reviving the row needs.
+      deletedAt: existing.deletedAt ? undefined : timestamp,
+      updatedAt: timestamp,
+    })
+  } else {
+    await db.careStepDone.add({
+      id: newId(),
+      date,
+      careRoutineId,
+      stepId,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    })
+  }
+
+  // Ticking anything means the day wasn't skipped after all.
+  const done = await db.careDoneLog
     .where('[date+careRoutineId]')
     .equals([date, careRoutineId])
     .first()
 
-  if (!existing) {
-    await db.careDoneLog.add({
-      date,
-      careRoutineId,
-      stepIds: [stepId],
-      skipped: false,
-      createdAt: new Date().toISOString(),
-    })
-    return
+  if (done?.skipped) {
+    await db.careDoneLog.update(done.id, { skipped: false, updatedAt: timestamp })
   }
-
-  const has = existing.stepIds.includes(stepId)
-  const stepIds = has
-    ? existing.stepIds.filter((id) => id !== stepId)
-    : [...existing.stepIds, stepId]
-
-  await db.careDoneLog.update(existing.id!, { stepIds, skipped: false })
 }
 
 export async function setSkipped(
-  careRoutineId: number,
+  careRoutineId: string,
   date: string,
   skipped: boolean
 ): Promise<void> {
+  const timestamp = now()
+
   const existing = await db.careDoneLog
     .where('[date+careRoutineId]')
     .equals([date, careRoutineId])
@@ -134,45 +233,73 @@ export async function setSkipped(
   if (!existing) {
     if (!skipped) return
     await db.careDoneLog.add({
+      id: newId(),
       date,
       careRoutineId,
-      stepIds: [],
       skipped: true,
-      createdAt: new Date().toISOString(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
     })
     return
   }
 
-  await db.careDoneLog.update(existing.id!, { skipped, stepIds: skipped ? [] : existing.stepIds })
+  // Ticks are left alone. Skipping a day you'd partly done and then unskipping
+  // it used to wipe them; now they come back.
+  await db.careDoneLog.update(existing.id, {
+    skipped,
+    deletedAt: undefined,
+    updatedAt: timestamp,
+  })
 }
 
 /* ---------- derived ---------- */
 
-export function isComplete(done: CareDone | undefined, steps: CareStep[]): boolean {
-  if (!done) return false
-  if (done.skipped) return true
+export function isComplete(
+  done: CareDone | undefined,
+  steps: CareStep[],
+  ticked: Set<string>
+): boolean {
+  if (done?.skipped) return true
   if (steps.length === 0) return false
-  return steps.every((s) => done.stepIds.includes(s.id!))
+  return steps.every((s) => ticked.has(s.id))
 }
 
-export async function routineStreak(careRoutineId: number): Promise<number> {
-  const [steps, allDone] = await Promise.all([
+/** Ticked step ids for a routine, grouped by date. */
+async function ticksByDate(careRoutineId: string): Promise<Map<string, Set<string>>> {
+  const rows = await db.careStepDone.where('careRoutineId').equals(careRoutineId).toArray()
+  const map = new Map<string, Set<string>>()
+
+  for (const row of rows) {
+    if (!isLive(row)) continue
+    const set = map.get(row.date) ?? new Set<string>()
+    set.add(row.stepId)
+    map.set(row.date, set)
+  }
+
+  return map
+}
+
+const EMPTY = new Set<string>()
+
+export async function routineStreak(careRoutineId: string): Promise<number> {
+  const [steps, allDone, ticks] = await Promise.all([
     getSteps(careRoutineId),
     db.careDoneLog.where('careRoutineId').equals(careRoutineId).toArray(),
+    ticksByDate(careRoutineId),
   ])
 
   if (steps.length === 0) return 0
 
-  const byDate = new Map(allDone.map((d) => [d.date, d]))
+  const byDate = new Map(allDone.filter(isLive).map((d) => [d.date, d]))
   let streak = 0
   let cursor = todayISO()
 
   // Today not being done yet shouldn't break the streak.
-  if (!isComplete(byDate.get(cursor), steps)) {
+  if (!isComplete(byDate.get(cursor), steps, ticks.get(cursor) ?? EMPTY)) {
     cursor = addDays(cursor, -1)
   }
 
-  while (isComplete(byDate.get(cursor), steps)) {
+  while (isComplete(byDate.get(cursor), steps, ticks.get(cursor) ?? EMPTY)) {
     streak++
     cursor = addDays(cursor, -1)
   }
@@ -180,19 +307,21 @@ export async function routineStreak(careRoutineId: number): Promise<number> {
   return streak
 }
 
-export async function completionRate(careRoutineId: number, days: number): Promise<number> {
-  const [steps, allDone] = await Promise.all([
+export async function completionRate(careRoutineId: string, days: number): Promise<number> {
+  const [steps, allDone, ticks] = await Promise.all([
     getSteps(careRoutineId),
     db.careDoneLog.where('careRoutineId').equals(careRoutineId).toArray(),
+    ticksByDate(careRoutineId),
   ])
 
   if (steps.length === 0) return 0
 
-  const byDate = new Map(allDone.map((d) => [d.date, d]))
+  const byDate = new Map(allDone.filter(isLive).map((d) => [d.date, d]))
   let completed = 0
 
   for (let i = 0; i < days; i++) {
-    if (isComplete(byDate.get(addDays(todayISO(), -i)), steps)) completed++
+    const date = addDays(todayISO(), -i)
+    if (isComplete(byDate.get(date), steps, ticks.get(date) ?? EMPTY)) completed++
   }
 
   return Math.round((completed / days) * 100)

@@ -204,7 +204,7 @@ export function ActiveWorkoutScreen() {
         {grouped.map((group) => (
           <ExerciseBlock
             key={group.key}
-            workoutId={workout.id!}
+            workoutId={workout.id}
             exerciseKey={group.key}
             exerciseName={group.name}
             order={group.order}
@@ -267,7 +267,7 @@ function ExerciseBlock({
   onExtendTimer,
   onSkipTimer,
 }: {
-  workoutId: number
+  workoutId: string
   exerciseKey: string
   exerciseName: string
   order: number

@@ -21,7 +21,7 @@ import type { TimeOfDay } from '../../data/types'
 
 export function CareRoutineFormScreen() {
   const { id } = useParams()
-  const routineId = id ? Number(id) : undefined
+  const routineId = id
   const navigate = useNavigate()
   const confirm = useConfirm()
 

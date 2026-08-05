@@ -1,5 +1,6 @@
 import { db } from './db'
 import { completedSets } from './workouts'
+import { isLive } from './ids'
 import type { Workout, WorkoutSet } from './types'
 
 function round1(n: number): number {
@@ -17,13 +18,13 @@ export function weightForReps(oneRM: number, reps: number): number {
 
 export async function getSetsForExercise(exerciseKey: string): Promise<WorkoutSet[]> {
   const all = await db.workoutSets.where('exerciseKey').equals(exerciseKey).toArray()
-  return completedSets(all)
+  return completedSets(all.filter(isLive))
 }
 
 export interface ExercisePR {
   value: number
   date: string
-  workoutId: number
+  workoutId: string
   detail: string
 }
 
@@ -40,15 +41,15 @@ function setDetail(set: WorkoutSet): string {
 }
 
 export function exercisePRs(sets: WorkoutSet[], workouts: Workout[]): ExercisePRs {
-  const workoutById = new Map(workouts.map((w) => [w.id!, w]))
+  const workoutById = new Map(workouts.map((w) => [w.id, w]))
 
   let oneRM: ExercisePR | null = null
   let maxWeight: ExercisePR | null = null
   let maxReps: ExercisePR | null = null
   let maxSetVolume: ExercisePR | null = null
 
-  const volumeByWorkout = new Map<number, number>()
-  const setCountByWorkout = new Map<number, number>()
+  const volumeByWorkout = new Map<string, number>()
+  const setCountByWorkout = new Map<string, number>()
 
   for (const s of sets) {
     const workout = workoutById.get(s.workoutId)
@@ -102,8 +103,10 @@ export interface LifetimeStats {
 }
 
 export function lifetimeStats(sets: WorkoutSet[], workouts: Workout[]): LifetimeStats {
-  const validWorkoutIds = new Set(workouts.map((w) => w.id!))
-  const relevantWorkoutIds = new Set(sets.map((s) => s.workoutId).filter((id) => validWorkoutIds.has(id)))
+  const validWorkoutIds = new Set(workouts.map((w) => w.id))
+  const relevantWorkoutIds = new Set(
+    sets.map((s) => s.workoutId).filter((id) => validWorkoutIds.has(id))
+  )
 
   return {
     workouts: relevantWorkoutIds.size,
@@ -137,8 +140,8 @@ export interface ProgressPoint {
 }
 
 export function progressSeries(sets: WorkoutSet[], workouts: Workout[]): ProgressPoint[] {
-  const workoutById = new Map(workouts.map((w) => [w.id!, w]))
-  const byWorkout = new Map<number, WorkoutSet[]>()
+  const workoutById = new Map(workouts.map((w) => [w.id, w]))
+  const byWorkout = new Map<string, WorkoutSet[]>()
 
   for (const s of sets) {
     if (!workoutById.has(s.workoutId)) continue

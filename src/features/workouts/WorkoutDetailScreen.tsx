@@ -28,7 +28,7 @@ const SET_TYPES: { value: SetType; label: string }[] = [
 
 export function WorkoutDetailScreen() {
   const { id } = useParams()
-  const workoutId = Number(id)
+  const workoutId = id!
   const navigate = useNavigate()
   const confirm = useConfirm()
   const [renaming, setRenaming] = useState(false)

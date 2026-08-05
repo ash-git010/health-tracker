@@ -1,60 +1,67 @@
 import { db } from './db'
 import { getSets, startWorkout, renameWorkout, addSet, setWorkoutRoutineId } from './workouts'
 import { getFolderOrder, saveFolderOrder } from './profile'
+import { newId, now, isLive } from './ids'
 import type { Routine, RoutineExercise } from './types'
 
-export type RoutineExerciseInput = Pick<
-  RoutineExercise,
-  'exerciseKey' | 'exerciseName' | 'targetSets' | 'restSeconds'
->
+export type RoutineExerciseInput = Pick<RoutineExercise, 'exerciseKey' | 'exerciseName' | 'targetSets' | 'restSeconds'>
 
 export const UNGROUPED = 'Routines'
 
 export async function listRoutines(): Promise<Routine[]> {
   const routines = await db.routines.toArray()
-  return routines.sort(
-    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name)
-  )
+  return routines
+    .filter(isLive)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name))
 }
 
-export async function getRoutine(id: number): Promise<Routine | null> {
+export async function getRoutine(id: string): Promise<Routine | null> {
   const routine = await db.routines.get(id)
-  return routine ?? null
+  return routine && isLive(routine) ? routine : null
 }
 
-export async function getRoutineExercises(routineId: number): Promise<RoutineExercise[]> {
+export async function getRoutineExercises(routineId: string): Promise<RoutineExercise[]> {
   const exercises = await db.routineExercises.where('routineId').equals(routineId).toArray()
-  return exercises.sort((a, b) => a.order - b.order)
+  return exercises.filter(isLive).sort((a, b) => a.order - b.order)
 }
 
-export async function createRoutine(name: string, folder?: string): Promise<number> {
+export async function createRoutine(name: string, folder?: string): Promise<string> {
   const all = await db.routines.toArray()
   const maxOrder = all.reduce((m, r) => Math.max(m, r.sortOrder ?? 0), 0)
+  const timestamp = now()
+  const id = newId()
 
-  return db.routines.add({
+  await db.routines.add({
+    id,
     name,
     folder: folder || undefined,
     sortOrder: maxOrder + 1,
-    createdAt: new Date().toISOString(),
+    createdAt: timestamp,
+    updatedAt: timestamp,
   })
+  return id
 }
 
 export async function updateRoutine(
-  id: number,
+  id: string,
   changes: Partial<Pick<Routine, 'name' | 'folder' | 'sortOrder'>>
 ): Promise<void> {
-  await db.routines.update(id, changes)
+  await db.routines.update(id, { ...changes, updatedAt: now() })
 }
 
-export async function deleteRoutine(id: number): Promise<void> {
+export async function deleteRoutine(id: string): Promise<void> {
+  const timestamp = now()
   await db.transaction('rw', [db.routines, db.routineExercises], async () => {
-    await db.routineExercises.where('routineId').equals(id).delete()
-    await db.routines.delete(id)
+    await db.routineExercises
+      .where('routineId')
+      .equals(id)
+      .modify({ deletedAt: timestamp, updatedAt: timestamp })
+    await db.routines.update(id, { deletedAt: timestamp, updatedAt: timestamp })
   })
 }
 
 /** Swap sortOrder with the adjacent routine in the same folder. */
-export async function moveRoutine(id: number, direction: -1 | 1): Promise<void> {
+export async function moveRoutine(id: string, direction: -1 | 1): Promise<void> {
   const all = await listRoutines()
   const routine = all.find((r) => r.id === id)
   if (!routine) return
@@ -66,32 +73,76 @@ export async function moveRoutine(id: number, direction: -1 | 1): Promise<void> 
 
   const a = routine.sortOrder ?? 0
   const b = target.sortOrder ?? 0
+  const timestamp = now()
 
   await db.transaction('rw', db.routines, async () => {
-    await db.routines.update(routine.id!, { sortOrder: b })
-    await db.routines.update(target.id!, { sortOrder: a })
+    await db.routines.update(routine.id, { sortOrder: b, updatedAt: timestamp })
+    await db.routines.update(target.id, { sortOrder: a, updatedAt: timestamp })
   })
 }
 
-export async function moveRoutineToFolder(id: number, folder: string | undefined): Promise<void> {
-  await db.routines.update(id, { folder: folder || undefined })
+export async function moveRoutineToFolder(
+  id: string,
+  folder: string | undefined
+): Promise<void> {
+  await db.routines.update(id, { folder: folder || undefined, updatedAt: now() })
 }
 
+/**
+ * Reconciles by position rather than wiping and re-adding. Deleting every row
+ * on each save would leave a tombstone per exercise per edit, all of which
+ * would then sync.
+ */
 export async function setRoutineExercises(
-  routineId: number,
+  routineId: string,
   exercises: RoutineExerciseInput[]
 ): Promise<void> {
+  const timestamp = now()
+
   await db.transaction('rw', db.routineExercises, async () => {
-    await db.routineExercises.where('routineId').equals(routineId).delete()
-    await db.routineExercises.bulkAdd(exercises.map((ex, order) => ({ ...ex, routineId, order })))
+    const existing = (
+      await db.routineExercises.where('routineId').equals(routineId).toArray()
+    )
+      .filter(isLive)
+      .sort((a, b) => a.order - b.order)
+
+    for (let i = 0; i < exercises.length; i++) {
+      const input = exercises[i]
+      const row = existing[i]
+
+      if (row) {
+        await db.routineExercises.update(row.id, {
+          ...input,
+          order: i,
+          updatedAt: timestamp,
+        })
+      } else {
+        await db.routineExercises.add({
+          ...input,
+          id: newId(),
+          routineId,
+          order: i,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        })
+      }
+    }
+
+    // Anything beyond the new length is gone.
+    for (const row of existing.slice(exercises.length)) {
+      await db.routineExercises.update(row.id, {
+        deletedAt: timestamp,
+        updatedAt: timestamp,
+      })
+    }
   })
 }
 
 export async function saveWorkoutAsRoutine(
-  workoutId: number,
+  workoutId: string,
   name: string,
   folder?: string
-): Promise<number> {
+): Promise<string> {
   const sets = await getSets(workoutId)
 
   const exercises: RoutineExerciseInput[] = []
@@ -119,7 +170,7 @@ export async function saveWorkoutAsRoutine(
   return routineId
 }
 
-export async function startWorkoutFromRoutine(routineId: number): Promise<number> {
+export async function startWorkoutFromRoutine(routineId: string): Promise<string> {
   const routine = await getRoutine(routineId)
   const exercises = await getRoutineExercises(routineId)
 
@@ -145,7 +196,9 @@ export async function startWorkoutFromRoutine(routineId: number): Promise<number
 
 export async function routineFolders(): Promise<string[]> {
   const routines = await db.routines.toArray()
-  const present = [...new Set(routines.map((r) => r.folder).filter((f): f is string => !!f))]
+  const present = [
+    ...new Set(routines.filter(isLive).map((r) => r.folder).filter((f): f is string => !!f)),
+  ]
   const saved = await getFolderOrder()
 
   const ordered = saved.filter((f) => present.includes(f))
@@ -165,7 +218,6 @@ export async function moveFolder(folder: string, direction: -1 | 1): Promise<voi
   await saveFolderOrder(next)
 }
 
-
 let backfilled = false
 
 export async function ensureSortOrders(): Promise<void> {
@@ -174,14 +226,17 @@ export async function ensureSortOrders(): Promise<void> {
 
   try {
     const all = await db.routines.toArray()
-    const missing = all.filter((r) => typeof r.sortOrder !== 'number')
+    const missing = all.filter((r) => isLive(r) && typeof r.sortOrder !== 'number')
     if (missing.length === 0) return
 
     const maxOrder = all.reduce((m, r) => Math.max(m, r.sortOrder ?? 0), 0)
     const sorted = missing.sort((a, b) => a.name.localeCompare(b.name))
 
     for (let i = 0; i < sorted.length; i++) {
-      await db.routines.update(sorted[i].id!, { sortOrder: maxOrder + i + 1 })
+      await db.routines.update(sorted[i].id, {
+        sortOrder: maxOrder + i + 1,
+        updatedAt: now(),
+      })
     }
   } catch (err) {
     console.error('sortOrder backfill failed:', err)

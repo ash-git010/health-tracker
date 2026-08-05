@@ -109,7 +109,7 @@ export function volumeSeries(workouts: Workout[], sets: WorkoutSet[], days: numb
   const cutoff = addDays(todayISO(), -days)
   const relevantWorkouts = workouts.filter((w) => w.date >= cutoff)
 
-  const setsByWorkout = new Map<number, WorkoutSet[]>()
+  const setsByWorkout = new Map<string, WorkoutSet[]>()
   for (const s of sets) {
     const list = setsByWorkout.get(s.workoutId) ?? []
     list.push(s)
@@ -118,7 +118,7 @@ export function volumeSeries(workouts: Workout[], sets: WorkoutSet[], days: numb
 
   const byDate = new Map<string, VolumePoint>()
   for (const w of relevantWorkouts) {
-    const workoutSets = completedSets(setsByWorkout.get(w.id!) ?? [])
+    const workoutSets = completedSets(setsByWorkout.get(w.id) ?? [])
     const volume = workoutSets.reduce((sum, s) => sum + s.weightKg * s.reps, 0)
     const duration = w.finishedAt
       ? (new Date(w.finishedAt).getTime() - new Date(w.startedAt).getTime()) / 60000
@@ -146,11 +146,13 @@ export interface PRResult {
 }
 
 export function recentPRs(sets: WorkoutSet[], workouts: Workout[], limit: number): PRResult[] {
-  const workoutById = new Map(workouts.map((w) => [w.id!, w]))
+  const workoutById = new Map(workouts.map((w) => [w.id, w]))
   const relevant = completedSets(sets).filter((s) => workoutById.has(s.workoutId))
 
   const ordered = [...relevant].sort((a, b) => {
-    const dateCompare = workoutById.get(a.workoutId)!.date.localeCompare(workoutById.get(b.workoutId)!.date)
+    const dateCompare = workoutById
+      .get(a.workoutId)!
+      .date.localeCompare(workoutById.get(b.workoutId)!.date)
     return dateCompare || a.createdAt.localeCompare(b.createdAt)
   })
 

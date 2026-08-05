@@ -23,7 +23,7 @@ export function FoodFormScreen() {
 
   useEffect(() => {
     if (!id) return
-    getFood(Number(id)).then((food) => {
+    getFood(id).then((food) => {
       setExisting(food)
       setLoading(false)
     })

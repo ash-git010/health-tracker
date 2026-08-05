@@ -6,6 +6,7 @@ import {
   listCareRoutines,
   getSteps,
   getDoneForDate,
+  tickedStepIds,
   toggleStep,
   setSkipped,
   routineStreak,
@@ -22,8 +23,13 @@ export function RoutineTodayScreen() {
 
   const routines = useLiveQuery(() => listCareRoutines(), [])
   const done = useLiveQuery(() => getDoneForDate(date), [date])
+  // Ticks now live in their own table, so they're a separate query. One query
+  // for the whole day rather than one per routine.
+  const ticked = useLiveQuery(() => tickedStepIds(date), [date])
 
-  if (routines === undefined || done === undefined) return <Empty>Loading…</Empty>
+  if (routines === undefined || done === undefined || ticked === undefined) {
+    return <Empty>Loading…</Empty>
+  }
 
   if (routines.length === 0) {
     return (
@@ -79,7 +85,8 @@ export function RoutineTodayScreen() {
             <RoutineCard
               key={r.id}
               routine={r}
-              done={doneByRoutine.get(r.id!)}
+              done={doneByRoutine.get(r.id)}
+              ticked={ticked}
               date={date}
             />
           ))}
@@ -92,19 +99,22 @@ export function RoutineTodayScreen() {
 function RoutineCard({
   routine,
   done,
+  ticked,
   date,
 }: {
   routine: CareRoutine
   done: CareDone | undefined
+  ticked: Set<string>
   date: string
 }) {
-  const steps = useLiveQuery(() => getSteps(routine.id!), [routine.id])
-  const streak = useLiveQuery(() => routineStreak(routine.id!), [routine.id, done])
+  const steps = useLiveQuery(() => getSteps(routine.id), [routine.id])
+  // Recomputed when the tick set changes, not just when the skip row does.
+  const streak = useLiveQuery(() => routineStreak(routine.id), [routine.id, done, ticked])
 
   if (steps === undefined) return null
 
-  const complete = isComplete(done, steps)
-  const doneCount = steps.filter((s) => done?.stepIds.includes(s.id!)).length
+  const complete = isComplete(done, steps, ticked)
+  const doneCount = steps.filter((s) => ticked.has(s.id)).length
 
   return (
     <Card
@@ -133,22 +143,22 @@ function RoutineCard({
       {!done?.skipped && (
         <div style={{ marginTop: '0.75rem' }}>
           {steps.map((step) => {
-            const ticked = done?.stepIds.includes(step.id!) ?? false
+            const isTicked = ticked.has(step.id)
             return (
               <button
                 key={step.id}
                 className="btn-plain care-step"
-                onClick={() => toggleStep(routine.id!, step.id!, date)}
+                onClick={() => toggleStep(routine.id, step.id, date)}
               >
-                <span className={`check-btn${ticked ? ' active' : ''}`} aria-hidden="true">
-                  {ticked && <Check size={15} />}
+                <span className={`check-btn${isTicked ? ' active' : ''}`} aria-hidden="true">
+                  {isTicked && <Check size={15} />}
                 </span>
                 <span className="grow" style={{ minWidth: 0 }}>
                   <span
                     style={{
                       display: 'block',
-                      opacity: ticked ? 0.55 : 1,
-                      textDecoration: ticked ? 'line-through' : 'none',
+                      opacity: isTicked ? 0.55 : 1,
+                      textDecoration: isTicked ? 'line-through' : 'none',
                     }}
                   >
                     {step.name}
@@ -165,7 +175,7 @@ function RoutineCard({
         <Button
           size="sm"
           variant="ghost"
-          onClick={() => setSkipped(routine.id!, date, !done?.skipped)}
+          onClick={() => setSkipped(routine.id, date, !done?.skipped)}
         >
           {done?.skipped ? 'Undo skip' : 'Skip today'}
         </Button>

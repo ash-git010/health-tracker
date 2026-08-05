@@ -1,54 +1,64 @@
 import Dexie, { type Table } from 'dexie'
 import type {
-  Goals, Food, LogEntry, BodyMeasurement, Profile, Exercise, Workout, WorkoutSet,
-  Routine, RoutineExercise, CareRoutine, CareStep, CareDone,
+  Goals, Profile, Food, LogEntry, BodyMeasurement, Exercise, Workout, WorkoutSet,
+  Routine, RoutineExercise, CareRoutine, CareStep, CareDone, CareStepDone,
 } from './types'
 
-export class HealthDB extends Dexie {
+// Local-only. Tracks sync progress; never pushed to the server.
+export interface SyncState {
+  key: string
+  lastSyncedAt?: string
+  migratedAt?: string
+}
+
+export class UpkeepDB extends Dexie {
+  // Singletons — one row, fixed numeric id.
   goals!: Table<Goals, number>
-  foods!: Table<Food, number>
-  logEntries!: Table<LogEntry, number>
-  measurements!: Table<BodyMeasurement, number>
   profile!: Table<Profile, number>
-  exercises!: Table<Exercise, number>
-  workouts!: Table<Workout, number>
-  workoutSets!: Table<WorkoutSet, number>
-  routines!: Table<Routine, number>
-  routineExercises!: Table<RoutineExercise, number>
-  careRoutines!: Table<CareRoutine, number>
-  careSteps!: Table<CareStep, number>
-  careDoneLog!: Table<CareDone, number>
+
+  // Synced entities — UUID primary keys minted on the device.
+  foods!: Table<Food, string>
+  logEntries!: Table<LogEntry, string>
+  measurements!: Table<BodyMeasurement, string>
+  exercises!: Table<Exercise, string>
+  workouts!: Table<Workout, string>
+  workoutSets!: Table<WorkoutSet, string>
+  routines!: Table<Routine, string>
+  routineExercises!: Table<RoutineExercise, string>
+  careRoutines!: Table<CareRoutine, string>
+  careSteps!: Table<CareStep, string>
+  careDoneLog!: Table<CareDone, string>
+  careStepDone!: Table<CareStepDone, string>
+
+  // Local bookkeeping.
+  syncState!: Table<SyncState, string>
 
   constructor() {
-    super('HealthTrackerDB')
+    super('UpkeepDB')
 
     this.version(1).stores({
       goals: 'id',
-      foods: '++id, name, createdAt',
-      logEntries: '++id, date, foodId, [date+meal]',
-      measurements: '++id, date',
-    })
-
-    this.version(2).stores({
       profile: 'id',
-    })
 
-    this.version(3).stores({
-      exercises: '++id, name, bodyPart, equipment',
-      workouts: '++id, date',
-      workoutSets: '++id, workoutId, exerciseKey, [exerciseKey+createdAt]',
-    })
+      foods: 'id, name, createdAt, updatedAt',
+      logEntries: 'id, date, foodId, [date+meal], updatedAt',
+      measurements: 'id, date, updatedAt',
 
-    this.version(4).stores({
-      routines: '++id, name, folder, createdAt',
-      routineExercises: '++id, routineId, [routineId+order]',
-    })
-    this.version(5).stores({
-      careRoutines: '++id, kind, timeOfDay',
-      careSteps: '++id, careRoutineId, [careRoutineId+order]',
-      careDoneLog: '++id, date, careRoutineId, [date+careRoutineId]',
+      exercises: 'id, name, bodyPart, equipment, updatedAt',
+      workouts: 'id, date, routineId, updatedAt',
+      workoutSets: 'id, workoutId, exerciseKey, [exerciseKey+createdAt], updatedAt',
+
+      routines: 'id, name, folder, createdAt, updatedAt',
+      routineExercises: 'id, routineId, [routineId+order], updatedAt',
+
+      careRoutines: 'id, kind, timeOfDay, updatedAt',
+      careSteps: 'id, careRoutineId, [careRoutineId+order], updatedAt',
+      careDoneLog: 'id, date, careRoutineId, [date+careRoutineId], updatedAt',
+      careStepDone: 'id, date, careRoutineId, stepId, [date+careRoutineId], updatedAt',
+
+      syncState: 'key',
     })
   }
 }
 
-export const db = new HealthDB()
+export const db = new UpkeepDB()

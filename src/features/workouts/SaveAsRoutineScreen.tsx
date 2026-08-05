@@ -9,7 +9,7 @@ import { Button, Empty, ScreenHeader } from '../../components/ui'
 
 export function SaveAsRoutineScreen() {
   const { id } = useParams()
-  const workoutId = Number(id)
+  const workoutId = id!
   const navigate = useNavigate()
 
   const workout = useLiveQuery(() => getWorkout(workoutId), [workoutId])

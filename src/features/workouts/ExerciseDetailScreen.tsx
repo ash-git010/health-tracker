@@ -213,7 +213,7 @@ function groupByWorkout(
   workouts: Workout[]
 ): { workout: Workout; sets: WorkoutSet[] }[] {
   const workoutById = new Map(workouts.map((w) => [w.id!, w]))
-  const map = new Map<number, WorkoutSet[]>()
+  const map = new Map<string, WorkoutSet[]>()
 
   for (const s of sets) {
     const list = map.get(s.workoutId) ?? []

@@ -1,26 +1,35 @@
 import { db } from './db'
+import { newId, now, isLive } from './ids'
 import type { Food } from './types'
 
-export type FoodInput = Omit<Food, 'id' | 'createdAt'>
+// Sync fields are set by this layer, never by callers.
+export type FoodInput = Omit<Food, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>
 
 export async function listFoods(): Promise<Food[]> {
-  return db.foods.orderBy('name').toArray()
+  const all = await db.foods.orderBy('name').toArray()
+  return all.filter(isLive)
 }
 
-export async function getFood(id: number): Promise<Food | undefined> {
-  return db.foods.get(id)
+export async function getFood(id: string): Promise<Food | undefined> {
+  const food = await db.foods.get(id)
+  return food && isLive(food) ? food : undefined
 }
 
-export async function addFood(input: FoodInput): Promise<number> {
-  return db.foods.add({ ...input, createdAt: new Date().toISOString() })
+export async function addFood(input: FoodInput): Promise<string> {
+  const timestamp = now()
+  const id = newId()
+  await db.foods.add({ ...input, id, createdAt: timestamp, updatedAt: timestamp })
+  return id
 }
 
-export async function updateFood(id: number, input: FoodInput): Promise<void> {
-  await db.foods.update(id, input)
+export async function updateFood(id: string, input: FoodInput): Promise<void> {
+  await db.foods.update(id, { ...input, updatedAt: now() })
 }
 
-export async function deleteFood(id: number): Promise<void> {
-  await db.foods.delete(id)
+// Soft delete: the row stays so sync can tell other devices it went away.
+// A hard delete would simply be re-downloaded on the next pull.
+export async function deleteFood(id: string): Promise<void> {
+  await db.foods.update(id, { deletedAt: now(), updatedAt: now() })
 }
 
 export function macrosForAmount(food: Food, amount: number) {

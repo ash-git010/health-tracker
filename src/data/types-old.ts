@@ -1,11 +1,3 @@
-// Sync fields, present on every entity that will sync to Supabase:
-//   id         UUID minted on the device (crypto.randomUUID()), never server-assigned
-//   updatedAt  ISO timestamp, stamped on every write — drives "what changed since last sync"
-//   deletedAt  soft delete; rows are never removed, only marked, or sync resurrects them
-//
-// Goals and Profile are singletons — one row per user — so they keep a fixed
-// numeric id locally and use user_id as the primary key server-side.
-
 export type Unit = 'g' | 'ml'
 export type SetType = 'normal' | 'warmup' | 'drop' | 'failure'
 export type RoutineKind = string
@@ -21,16 +13,8 @@ export interface Goals {
   updatedAt: string
 }
 
-export interface Profile {
-  id: number
-  name: string
-  folderOrder?: string[]
-  createdAt: string
-  updatedAt: string
-}
-
 export interface Food {
-  id: string
+  id?: number
   name: string
   brand?: string
   unit: Unit
@@ -43,15 +27,13 @@ export interface Food {
   pieceGrams?: number
   pieceLabel?: string
   createdAt: string
-  updatedAt: string
-  deletedAt?: string
 }
 
 export interface LogEntry {
-  id: string
+  id?: number
   date: string
   meal: 'breakfast' | 'lunch' | 'dinner' | 'snack'
-  foodId: string
+  foodId: number
   foodName: string
   amount: number
   unit: Unit
@@ -60,22 +42,25 @@ export interface LogEntry {
   carbs: number
   fat: number
   createdAt: string
-  updatedAt: string
-  deletedAt?: string
 }
 
 export interface BodyMeasurement {
-  id: string
+  id?: number
   date: string
   weightKg: number
   heightCm?: number
   createdAt: string
-  updatedAt: string
-  deletedAt?: string
+}
+
+export interface Profile {
+  id: number
+  name: string
+  folderOrder?: string[]
+  createdAt: string
 }
 
 export interface Exercise {
-  id: string
+  id?: number
   seedId?: string
   name: string
   bodyPart: string
@@ -85,26 +70,21 @@ export interface Exercise {
   steps: string[]
   custom: boolean
   createdAt: string
-  updatedAt: string
-  deletedAt?: string
 }
 
 export interface Workout {
-  id: string
+  id?: number
   date: string
   name: string
   startedAt: string
   finishedAt?: string
   notes?: string
-  routineId?: string
-  createdAt: string
-  updatedAt: string
-  deletedAt?: string
+  routineId?: number
 }
 
 export interface WorkoutSet {
-  id: string
-  workoutId: string
+  id?: number
+  workoutId: number
   exerciseKey: string
   exerciseName: string
   order: number
@@ -115,76 +95,49 @@ export interface WorkoutSet {
   restSeconds: number
   completed: boolean
   createdAt: string
-  updatedAt: string
-  deletedAt?: string
 }
 
 export interface Routine {
-  id: string
+  id?: number
   name: string
   folder?: string
   sortOrder?: number
   createdAt: string
-  updatedAt: string
-  deletedAt?: string
 }
 
 export interface RoutineExercise {
-  id: string
-  routineId: string
+  id?: number
+  routineId: number
   exerciseKey: string
   exerciseName: string
   order: number
   targetSets: number
   restSeconds: number
-  createdAt: string
-  updatedAt: string
-  deletedAt?: string
 }
 
 export interface CareRoutine {
-  id: string
+  id?: number
   name: string
   kind: RoutineKind
   timeOfDay: TimeOfDay
   sortOrder: number
   createdAt: string
-  updatedAt: string
-  deletedAt?: string
 }
 
 export interface CareStep {
-  id: string
-  careRoutineId: string
+  id?: number
+  careRoutineId: number
   name: string
   product?: string
   notes?: string
   order: number
-  createdAt: string
-  updatedAt: string
-  deletedAt?: string
 }
 
-// One row per routine per day. Holds skip state only — which steps were
-// ticked now lives in CareStepDone.
 export interface CareDone {
-  id: string
+  id?: number
   date: string
-  careRoutineId: string
+  careRoutineId: number
+  stepIds: number[]
   skipped: boolean
   createdAt: string
-  updatedAt: string
-  deletedAt?: string
-}
-
-// One row per ticked step per day. Unticking sets deletedAt rather than
-// removing the row, so two devices ticking different steps never collide.
-export interface CareStepDone {
-  id: string
-  date: string
-  careRoutineId: string
-  stepId: string
-  createdAt: string
-  updatedAt: string
-  deletedAt?: string
 }

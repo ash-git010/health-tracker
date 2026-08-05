@@ -1,7 +1,13 @@
-import type { FoodInput } from './foods'
+import type { Food } from './types'
 import { fuzzySearch } from './search'
 
-export interface CommonFood extends Omit<FoodInput, 'brand'> {
+/**
+ * Bundled reference data, not user rows — same category as the exercise seed.
+ * These never live in the database, so they have no id and no sync fields.
+ * A UUID is minted only when one is copied into the user's food list.
+ */
+export interface CommonFood
+  extends Omit<Food, 'id' | 'brand' | 'createdAt' | 'updatedAt' | 'deletedAt'> {
   keywords?: string
 }
 

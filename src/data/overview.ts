@@ -1,7 +1,13 @@
 import { getDailyTotals } from './log'
 import { listWorkouts } from './workouts'
 import { listMeasurements } from './measurements'
-import { listCareRoutines, getSteps, getDoneForDate, isComplete } from './careRoutines'
+import {
+  listCareRoutines,
+  getSteps,
+  getDoneForDate,
+  tickedStepIds,
+  isComplete,
+} from './careRoutines'
 import { lastNDays, todayISO, addDays } from './dates'
 
 export interface HubSummary {
@@ -27,14 +33,22 @@ export async function hubSummary(): Promise<HubSummary> {
   let routinesDone: HubSummary['routinesDone'] = null
   if (routines.length > 0) {
     const today = todayISO()
-    const done = await getDoneForDate(today)
+
+    // Was awaiting getSteps once per routine in sequence. Still one query per
+    // routine, but they now run in parallel, and the day's ticks are a single
+    // query for all routines rather than one each.
+    const [done, ticked, stepLists] = await Promise.all([
+      getDoneForDate(today),
+      tickedStepIds(today),
+      Promise.all(routines.map((r) => getSteps(r.id))),
+    ])
+
     const doneByRoutine = new Map(done.map((d) => [d.careRoutineId, d]))
 
     let completed = 0
-    for (const r of routines) {
-      const steps = await getSteps(r.id!)
-      if (isComplete(doneByRoutine.get(r.id!), steps)) completed++
-    }
+    routines.forEach((r, i) => {
+      if (isComplete(doneByRoutine.get(r.id), stepLists[i], ticked)) completed++
+    })
     routinesDone = { done: completed, total: routines.length }
   }
 

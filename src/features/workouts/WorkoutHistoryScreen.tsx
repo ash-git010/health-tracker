@@ -24,7 +24,7 @@ export function WorkoutHistoryScreen() {
       {workouts && workouts.length === 0 && <Empty>No workouts logged yet.</Empty>}
 
       {(workouts ?? []).map((w) => (
-        <WorkoutRow key={w.id} id={w.id!} name={w.name} date={w.date} done={!!w.finishedAt} />
+        <WorkoutRow key={w.id} id={w.id} name={w.name} date={w.date} done={!!w.finishedAt} />
       ))}
     </div>
   )
@@ -36,7 +36,7 @@ function WorkoutRow({
   date,
   done,
 }: {
-  id: number
+  id: string
   name: string
   date: string
   done: boolean
