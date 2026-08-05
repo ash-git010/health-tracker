@@ -1,3 +1,11 @@
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+import { migrateIfNeeded } from './data/migrate'
+import '@fontsource/bricolage-grotesque/600.css'
+import '@fontsource/bricolage-grotesque/700.css'
+
 window.addEventListener('unhandledrejection', (e) => {
   console.error('Unhandled rejection:', e.reason)
 })
@@ -8,15 +16,46 @@ if (redirect) {
   history.replaceState(null, '', redirect)
 }
 
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
-import '@fontsource/bricolage-grotesque/600.css'
-import '@fontsource/bricolage-grotesque/700.css'
+const root = createRoot(document.getElementById('root')!)
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+function Booting() {
+  return (
+    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+      Preparing your data…
+    </div>
+  )
+}
+
+function MigrationFailed({ message }: { message: string }) {
+  return (
+    <div style={{ padding: '2rem' }}>
+      <h2>Something went wrong</h2>
+      <p className="muted">
+        Upkeep couldn't finish updating its database, so it hasn't started. Your
+        existing data has not been touched — closing and reopening the app will
+        try again.
+      </p>
+      <p className="faint" style={{ marginTop: '1rem', wordBreak: 'break-word' }}>
+        {message}
+      </p>
+    </div>
+  )
+}
+
+// Nothing renders until the migration settles. If the app mounted first, the
+// screens would read an empty new database and briefly look as though all the
+// data had vanished.
+root.render(<Booting />)
+
+migrateIfNeeded()
+  .then(() => {
+    root.render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    )
+  })
+  .catch((err) => {
+    console.error('Migration failed:', err)
+    root.render(<MigrationFailed message={String(err?.message ?? err)} />)
+  })
