@@ -9,6 +9,9 @@ export interface SyncState {
   key: string
   lastSyncedAt?: string
   migratedAt?: string
+  // Set when the user chooses to carry on without an account, so the gate
+  // does not reappear every launch. Non-indexed, so no version bump needed.
+  authSkippedAt?: string
 }
 
 export class UpkeepDB extends Dexie {

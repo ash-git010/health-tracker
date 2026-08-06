@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from './Layout'
 import { HubScreen } from './features/hub/HubScreen'
@@ -16,8 +16,14 @@ import { SettingsScreen } from './features/settings/SettingsScreen'
 import { AboutScreen } from './features/about/AboutScreen'
 import { FeedbackScreen } from './features/about/FeedbackScreen'
 import { NameScreen } from './features/onboarding/NameScreen'
+import { AuthGateScreen } from './features/auth/AuthGateScreen'
+import { RegisterScreen } from './features/auth/RegisterScreen'
+import { LoginScreen } from './features/auth/LoginScreen'
+import { AccountScreen } from './features/auth/AccountScreen'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
+import { getCurrentUser, onAuthChange } from './data/auth'
+import { hasSkippedAuth, setSkippedAuth } from './data/syncState'
 import { unlockAudio } from './data/audio'
 import { ActiveWorkoutScreen } from './features/workouts/ActiveWorkoutScreen'
 import { FinishWorkoutScreen } from './features/workouts/FinishWorkoutScreen'
@@ -36,23 +42,44 @@ import { RoutineTodayScreen } from './features/routines/RoutineTodayScreen'
 import { RoutineManageScreen } from './features/routines/RoutineManageScreen'
 import { CareRoutineFormScreen } from './features/routines/CareRoutineFormScreen'
 
-type Stage = 'checking' | 'name' | 'goals' | 'ready'
+type Stage = 'checking' | 'gate' | 'register' | 'login' | 'name' | 'goals' | 'ready'
 
 export default function App() {
   const [stage, setStage] = useState<Stage>('checking')
   const [name, setName] = useState('')
 
-  useEffect(() => {
-    async function check() {
-      const [profile, goals] = await Promise.all([getProfile(), getGoals()])
-      setName(profile?.name ?? '')
-      if (!profile) setStage('name')
-      else if (!goals) setStage('goals')
-      else setStage('ready')
-      ensureSortOrders()
-    }
-    check()
+  /**
+   * Works out where the user should be, given what exists locally and whether
+   * they are signed in. Called on mount, after register/login/skip, and
+   * whenever the auth state changes — so there is only one copy of this logic.
+   *
+   * The gate comes first because a returning tester with a full profile still
+   * needs to be offered an account, but only once.
+   */
+  const resolveStage = useCallback(async () => {
+    const [profile, goals, user, skipped] = await Promise.all([
+      getProfile(),
+      getGoals(),
+      getCurrentUser(),
+      hasSkippedAuth(),
+    ])
+
+    setName(profile?.name ?? '')
+
+    if (!user && !skipped) return setStage('gate')
+    if (!profile) return setStage('name')
+    if (!goals) return setStage('goals')
+    setStage('ready')
   }, [])
+
+  useEffect(() => {
+    resolveStage()
+    ensureSortOrders()
+  }, [resolveStage])
+
+  // Keeps the stage and the hub greeting correct when the user logs in or out
+  // from the account screen, without that screen needing to know about stages.
+  useEffect(() => onAuthChange(() => resolveStage()), [resolveStage])
 
   useEffect(() => {
     function handleFirstTap() {
@@ -68,6 +95,41 @@ export default function App() {
       <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>
         Loading…
       </p>
+    )
+  }
+
+  if (stage === 'gate') {
+    return (
+      <AuthGateScreen
+        name={name || undefined}
+        onRegister={() => setStage('register')}
+        onLogin={() => setStage('login')}
+        onSkip={async () => {
+          await setSkippedAuth()
+          await resolveStage()
+        }}
+      />
+    )
+  }
+
+  if (stage === 'register') {
+    return (
+      <RegisterScreen
+        existingName={name || undefined}
+        onDone={resolveStage}
+        onSwitchToLogin={() => setStage('login')}
+        onBack={() => setStage('gate')}
+      />
+    )
+  }
+
+  if (stage === 'login') {
+    return (
+      <LoginScreen
+        onDone={resolveStage}
+        onSwitchToRegister={() => setStage('register')}
+        onBack={() => setStage('gate')}
+      />
     )
   }
 
@@ -99,6 +161,8 @@ export default function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<HubScreen name={name} />} />
+
+            <Route path="account" element={<AccountScreen />} />
 
             <Route path="meals" element={<Navigate to="/meals/today" replace />} />
             <Route path="meals/today" element={<TodayScreen />} />

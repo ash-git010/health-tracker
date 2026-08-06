@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom'
-import { ChevronLeft, Settings } from 'lucide-react'
+import { ChevronLeft, Settings, User } from 'lucide-react'
 import { getSection } from './sections'
 import { UpdatePrompt } from './components/UpdatePrompt'
 
@@ -11,7 +11,15 @@ export function Layout() {
   const sectionId = parts[0] ?? ''
   const section = getSection(sectionId)
   const isSettings = sectionId === 'settings'
+  const isAccount = sectionId === 'account'
   const isHub = parts.length === 0
+
+  function headerTitle(): string {
+    if (section) return section.title
+    if (isSettings) return 'Settings'
+    if (isAccount) return 'Account'
+    return ''
+  }
 
   return (
     <div style={{ maxWidth: '480px', margin: '0 auto', paddingBottom: section ? '5.5rem' : 0 }}>
@@ -32,10 +40,17 @@ export function Layout() {
                 <ChevronLeft size={22} />
               </button>
               <h2 className="grow" style={{ margin: 0 }}>
-                {section?.title ?? (isSettings ? 'Settings' : '')}
+                {headerTitle()}
               </h2>
             </>
           )}
+          <button
+            onClick={() => navigate(isAccount ? '/' : '/account')}
+            className="icon-btn"
+            aria-label="Account"
+          >
+            <User size={20} />
+          </button>
           <button
             onClick={() => navigate(isSettings ? '/' : '/settings')}
             className="icon-btn"
