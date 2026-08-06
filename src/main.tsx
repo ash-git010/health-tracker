@@ -5,7 +5,6 @@ import App from './App.tsx'
 import { migrateIfNeeded } from './data/migrate'
 import '@fontsource/bricolage-grotesque/600.css'
 import '@fontsource/bricolage-grotesque/700.css'
-import './data/auth'
 
 window.addEventListener('unhandledrejection', (e) => {
   console.error('Unhandled rejection:', e.reason)
