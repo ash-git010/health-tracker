@@ -14,6 +14,7 @@ import { getSyncUserId, setSyncUserId, clearSyncUser } from './syncState'
  * visibilitychange matters more than app open.
  */
 
+const FIRST_RUN_TIMEOUT_MS = 8_000
 const WRITE_DEBOUNCE_MS = 5_000
 const OPPORTUNISTIC_MIN_GAP_MS = 30_000
 
@@ -91,6 +92,23 @@ export function syncNow(trigger = 'manual'): Promise<SyncReport | null> {
     inFlight = null
   })
   return inFlight
+}
+
+/**
+ * Waits for a sync before the first-run stages decide anything, so a device
+ * logging into an existing account gets the server's name and goals instead of
+ * being asked to invent new ones.
+ *
+ * Bounded on purpose. A Supabase project paused after 7 days idle takes ~30
+ * seconds to wake, and blocking that long on a loading screen reads as a
+ * crash. On timeout the caller carries on with whatever is local; the sync is
+ * still running and lands when it lands.
+ */
+export async function syncBeforeFirstRun(): Promise<void> {
+  await Promise.race([
+    syncNow('first-run').catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, FIRST_RUN_TIMEOUT_MS)),
+  ])
 }
 
 function scheduleFromWrite(): void {

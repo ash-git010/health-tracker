@@ -24,6 +24,7 @@ import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
 import { getCurrentUser, onAuthChange } from './data/auth'
 import { hasSkippedAuth, setSkippedAuth } from './data/syncState'
+import { syncBeforeFirstRun } from './data/autoSync'
 import { unlockAudio } from './data/audio'
 import { ActiveWorkoutScreen } from './features/workouts/ActiveWorkoutScreen'
 import { FinishWorkoutScreen } from './features/workouts/FinishWorkoutScreen'
@@ -42,7 +43,15 @@ import { RoutineTodayScreen } from './features/routines/RoutineTodayScreen'
 import { RoutineManageScreen } from './features/routines/RoutineManageScreen'
 import { CareRoutineFormScreen } from './features/routines/CareRoutineFormScreen'
 
-type Stage = 'checking' | 'gate' | 'register' | 'login' | 'name' | 'goals' | 'ready'
+type Stage =
+  | 'checking'
+  | 'syncing'
+  | 'gate'
+  | 'register'
+  | 'login'
+  | 'name'
+  | 'goals'
+  | 'ready'
 
 export default function App() {
   const [stage, setStage] = useState<Stage>('checking')
@@ -67,6 +76,26 @@ export default function App() {
     setName(profile?.name ?? '')
 
     if (!user && !skipped) return setStage('gate')
+
+    // Signed in with nothing local: either a genuinely new account, or an
+    // existing one being opened on a new device. Those look identical from
+    // here, so pull before deciding — otherwise the account's own name and
+    // goals arrive moments after the user has been asked to invent new ones.
+    //
+    // Bounded inside syncBeforeFirstRun. On timeout or offline this falls
+    // through to the same questions it would have asked anyway.
+    if (user && !profile) {
+      setStage('syncing')
+      await syncBeforeFirstRun()
+
+      const [pulledProfile, pulledGoals] = await Promise.all([getProfile(), getGoals()])
+      setName(pulledProfile?.name ?? '')
+
+      if (!pulledProfile) return setStage('name')
+      if (!pulledGoals) return setStage('goals')
+      return setStage('ready')
+    }
+
     if (!profile) return setStage('name')
     if (!goals) return setStage('goals')
     setStage('ready')
@@ -79,7 +108,17 @@ export default function App() {
 
   // Keeps the stage and the hub greeting correct when the user logs in or out
   // from the account screen, without that screen needing to know about stages.
-  useEffect(() => onAuthChange(() => resolveStage()), [resolveStage])
+  //
+  // Deferred out of the callback: supabase-js holds an internal lock while it
+  // runs subscribers, and resolveStage calls back into supabase (getCurrentUser,
+  // and now a sync). autoSync defers its own trigger for the same reason.
+  useEffect(
+    () =>
+      onAuthChange(() => {
+        setTimeout(() => void resolveStage(), 0)
+      }),
+    [resolveStage]
+  )
 
   useEffect(() => {
     function handleFirstTap() {
@@ -94,6 +133,14 @@ export default function App() {
     return (
       <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>
         Loading…
+      </p>
+    )
+  }
+
+  if (stage === 'syncing') {
+    return (
+      <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>
+        Getting your data…
       </p>
     )
   }
