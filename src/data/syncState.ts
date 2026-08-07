@@ -77,6 +77,27 @@ export async function clearCursors(): Promise<void> {
   await patch({ cursors: {} })
 }
 
+// ---------------------------------------------------------------------------
+// Device ownership
+//
+// Set after this device's first successful sync. Compared on every automatic
+// sync so a second person logging in on the same phone cannot silently absorb
+// the first person's data.
+// ---------------------------------------------------------------------------
+
+export async function getSyncUserId(): Promise<string | undefined> {
+  return (await getSyncState()).userId
+}
+
+export async function setSyncUserId(userId: string): Promise<void> {
+  await patch({ userId })
+}
+
+/** Hands the device to a different account. Does not touch local data. */
+export async function clearSyncUser(): Promise<void> {
+  await patch({ userId: undefined, cursors: {} })
+}
+
 // Development only, for resetting first-run state without hand-editing
 // IndexedDB. Deleting the whole 'main' row by hand would also clear
 // migratedAt, which would re-run the one-time migration. Vite strips this

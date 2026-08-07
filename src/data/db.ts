@@ -16,6 +16,7 @@ export interface SyncState {
   lastSyncedAt?: string
   /** Per-table sync cursors, keyed by SERVER table name (`log_entries`). */
   cursors?: Record<string, string>
+  userId?: string
   migratedAt?: string
   authSkippedAt?: string
 }

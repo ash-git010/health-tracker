@@ -6,6 +6,7 @@ import type {
   Goals, Profile, Food, LogEntry, BodyMeasurement, Exercise, Workout, WorkoutSet,
   Routine, RoutineExercise, CareRoutine, CareStep, CareDone, CareStepDone,
 } from './types'
+import { asSyncWrite } from './syncWrites'
 
 /**
  * Push/pull sync between Dexie and Supabase.
@@ -523,7 +524,7 @@ async function pullGoals(since: string | undefined): Promise<number> {
   const local = await db.goals.get(1)
   if (local && local.updatedAt > incoming.updatedAt) return 0
 
-  await db.goals.put(incoming)
+  await asSyncWrite(() => db.goals.put(incoming))
   return 1
 }
 
@@ -566,7 +567,7 @@ async function pullProfile(since: string | undefined): Promise<number> {
   const local = await db.profile.get(1)
   if (local && local.updatedAt > incoming.updatedAt) return 0
 
-  await db.profile.put(incoming)
+  await asSyncWrite(() => db.profile.put(incoming))
   return 1
 }
 
@@ -611,7 +612,7 @@ async function pullTable(t: TableSync<never>, since: string | undefined): Promis
   if (error) throw new Error(`${t.name} pull: ${error.message}`)
   if (!data || data.length === 0) return 0
 
-  await t.put(data.map((row) => t.fromRow(row as Row)) as never[])
+  await asSyncWrite(() => t.put(data.map((row) => t.fromRow(row as Row)) as never[]))
   return data.length
 }
 
