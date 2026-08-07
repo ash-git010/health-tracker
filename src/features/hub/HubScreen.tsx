@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Utensils, Scale, Dumbbell, Sparkles } from 'lucide-react'
+import { Utensils, Scale, Dumbbell, Sparkles, ChevronRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { SECTIONS } from '../../sections'
 import { hubSummary } from '../../data/overview'
+import { getCurrentUser, onAuthChange } from '../../data/auth'
 
 const ICONS: Record<string, LucideIcon> = {
   meals: Utensils,
@@ -14,6 +16,24 @@ const ICONS: Record<string, LucideIcon> = {
 
 export function HubScreen({ name }: { name: string }) {
   const summary = useLiveQuery(() => hubSummary(), [])
+
+  // undefined while unknown, so the nudge never flashes on screen for a
+  // signed-in user during the first render.
+  const [signedIn, setSignedIn] = useState<boolean | undefined>(undefined)
+
+  useEffect(() => {
+    let alive = true
+    getCurrentUser().then((user) => {
+      if (alive) setSignedIn(user !== null)
+    })
+    // Only sets state — no call back into supabase from inside the callback,
+    // which is what makes deferring unnecessary here.
+    const unsubscribe = onAuthChange((user) => setSignedIn(user !== null))
+    return () => {
+      alive = false
+      unsubscribe()
+    }
+  }, [])
 
   const stats = summary
     ? [
@@ -86,6 +106,21 @@ export function HubScreen({ name }: { name: string }) {
           )
         })}
       </div>
+
+      {/*
+        Describes the current state rather than promising an outcome. "Sign in
+        to keep your data safe" would be the same overclaim as the changelog
+        line held back in the handover — nothing is backed up until the account
+        exists and has synced.
+      */}
+      {signedIn === false && (
+        <Link to="/account" className="hub-nudge">
+          <span>
+            No account linked — your data is only on this device
+          </span>
+          <ChevronRight size={16} strokeWidth={2} />
+        </Link>
+      )}
     </div>
   )
 }

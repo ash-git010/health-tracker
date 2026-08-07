@@ -772,6 +772,29 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 }
 .wordmark span { color: var(--accent); }
 
+/* Signed-out nudge at the foot of the hub. Deliberately not a card or a
+   warning — it is a reminder, and it is permanent for anyone who never wants
+   an account, so it has to sit quietly. */
+.hub-nudge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding: 0.875rem 1rem;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.hub-nudge:active {
+  border-color: var(--accent);
+}
+
 /* Motion */
 @keyframes dialog-in {
   from { transform: scale(0.94); opacity: 0; }
