@@ -7,10 +7,16 @@ import type {
 // Local-only. Tracks sync progress; never pushed to the server.
 export interface SyncState {
   key: string
+  /**
+   * @deprecated The old single global cursor. Never read as of the per-table
+   * cursor change — kept only so existing rows type-check. Do not reintroduce:
+   * one timestamp for fourteen tables cannot express "foods are current, care
+   * routines have never synced", which is what caused the foreign key failures.
+   */
   lastSyncedAt?: string
+  /** Per-table sync cursors, keyed by SERVER table name (`log_entries`). */
+  cursors?: Record<string, string>
   migratedAt?: string
-  // Set when the user chooses to carry on without an account, so the gate
-  // does not reappear every launch. Non-indexed, so no version bump needed.
   authSkippedAt?: string
 }
 

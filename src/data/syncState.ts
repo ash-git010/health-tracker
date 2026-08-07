@@ -40,12 +40,41 @@ export async function clearSkippedAuth(): Promise<void> {
   await patch({ authSkippedAt: undefined })
 }
 
-export async function getLastSyncedAt(): Promise<string | undefined> {
-  return (await getSyncState()).lastSyncedAt
+// ---------------------------------------------------------------------------
+// Sync cursors
+//
+// One cursor per table, keyed by SERVER table name ('log_entries', not
+// 'logEntries') so the key matches TableSync.name in sync.ts and there is no
+// second naming convention to keep in step.
+//
+// A missing key means "this table has never synced", which is the correct
+// starting state for every device: a fresh install, an existing tester after
+// this update, and anything left behind by the old global cursor. Nothing reads
+// the old `lastSyncedAt` any more, so all three are the same path — push
+// everything, pull everything, once.
+// ---------------------------------------------------------------------------
+
+export async function getCursors(): Promise<Record<string, string>> {
+  return (await getSyncState()).cursors ?? {}
 }
 
-export async function setLastSyncedAt(timestamp: string): Promise<void> {
-  await patch({ lastSyncedAt: timestamp })
+/** Merges the given cursors over the stored ones. Tables not named are left alone. */
+export async function setCursors(advanced: Record<string, string>): Promise<void> {
+  const current = await getSyncState()
+  await patch({ cursors: { ...(current.cursors ?? {}), ...advanced } })
+}
+
+/** Forces one table to resync from scratch on the next run. */
+export async function clearCursor(table: string): Promise<void> {
+  const current = await getSyncState()
+  const next = { ...(current.cursors ?? {}) }
+  delete next[table]
+  await patch({ cursors: next })
+}
+
+/** Forces a full resync of everything on the next run. */
+export async function clearCursors(): Promise<void> {
+  await patch({ cursors: {} })
 }
 
 // Development only, for resetting first-run state without hand-editing

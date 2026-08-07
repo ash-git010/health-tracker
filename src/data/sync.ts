@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { db } from './db'
 import { getCurrentUser } from './auth'
-import { getLastSyncedAt, setLastSyncedAt } from './syncState'
+import { getCursors, setCursors, clearCursor, clearCursors } from './syncState'
 import type {
   Goals, Profile, Food, LogEntry, BodyMeasurement, Exercise, Workout, WorkoutSet,
   Routine, RoutineExercise, CareRoutine, CareStep, CareDone, CareStepDone,
@@ -617,44 +617,61 @@ async function pullTable(t: TableSync<never>, since: string | undefined): Promis
 
 /**
  * Push everything changed since the last sync, then pull everything changed
- * since the last sync, then move the cursor.
+ * since the last sync, then move each table's cursor.
  *
- * Known inefficiency: on the very first sync the cursor is undefined for both
- * halves, so rows just pushed come straight back down. Harmless — bulkPut over
- * identical rows is a no-op — but it doubles the transfer once. Worth fixing
- * if a user ever has enough history for it to matter.
+ * Cursors are per table. A single global timestamp could not express "foods
+ * are current, care routines have never synced": on a partially-synced account
+ * the parents were filtered out as already-sent while the children were not,
+ * and the children were rejected for violating their foreign keys.
+ *
+ * The invariant that prevents that here: a table's cursor advances only after
+ * that table's pull has completed, and pushes all run before any pull. So a
+ * cursor can never have moved past rows that failed to reach the server.
+ *
+ * Known inefficiency: on a table's very first sync the cursor is undefined for
+ * both halves, so rows just pushed come straight back down. Harmless — bulkPut
+ * over identical rows is a no-op — but it doubles the transfer once.
  */
 export async function syncAll(): Promise<SyncReport> {
   const user = await getCurrentUser()
   if (!user) return { pushed: 0, pulled: 0, error: 'Not signed in' }
 
-  const since = await getLastSyncedAt()
+  const cursors = await getCursors()
 
   // Captured before the work, not after. Anything written while syncing must
   // still look newer than the cursor, or it would never sync at all.
   const startedAt = new Date().toISOString()
+
+  // Accumulated in memory and written once in `finally`, so a failure halfway
+  // through still keeps the progress of the tables that finished. Tables that
+  // never got there keep their old cursor and retry the same range next time.
+  const next: Record<string, string> = {}
 
   const detail: Record<string, { pushed: number; pulled: number }> = {}
   let pushed = 0
   let pulled = 0
 
   try {
-    const gPush = await pushGoals(user.id, since)
-    const pPush = await pushProfile(user.id, since)
+    const gPush = await pushGoals(user.id, cursors.goals)
+    const pPush = await pushProfile(user.id, cursors.profile)
 
+    // Parents before children — see the TABLES comment.
     for (const t of TABLES) {
-      const count = await pushTable(t, user.id, since)
+      const count = await pushTable(t, user.id, cursors[t.name])
       detail[t.name] = { pushed: count, pulled: 0 }
       pushed += count
     }
 
-    const gPull = await pullGoals(since)
-    const pPull = await pullProfile(since)
+    const gPull = await pullGoals(cursors.goals)
+    next.goals = startedAt
+    const pPull = await pullProfile(cursors.profile)
+    next.profile = startedAt
 
     for (const t of TABLES) {
-      const count = await pullTable(t, since)
+      const count = await pullTable(t, cursors[t.name])
       detail[t.name].pulled = count
       pulled += count
+      next[t.name] = startedAt
     }
 
     detail.goals = { pushed: gPush, pulled: gPull }
@@ -662,17 +679,16 @@ export async function syncAll(): Promise<SyncReport> {
     pushed += gPush + pPush
     pulled += gPull + pPull
 
-    await setLastSyncedAt(startedAt)
     return { pushed, pulled, detail }
   } catch (err) {
-    // The cursor is deliberately not advanced on failure, so the next attempt
-    // retries the same range rather than skipping it.
     return {
       pushed,
       pulled,
       detail,
       error: err instanceof Error ? err.message : 'Unknown sync error',
     }
+  } finally {
+    if (Object.keys(next).length > 0) await setCursors(next)
   }
 }
 
@@ -680,7 +696,12 @@ if (import.meta.env.DEV) {
   ;(window as unknown as Record<string, unknown>).upkeepSyncTest = {
     syncAll,
     peek: async (table: string) => (await supabase.from(table).select('*')).data,
-    // Clears the sync cursor so the next run pushes everything from scratch.
-    resetCursor: () => setLastSyncedAt(''),
+    // Inspect what each table thinks it has synced.
+    cursors: getCursors,
+    // Force one table to resync from scratch — the targeted version of the old
+    // resetCursor, useful when a single table's foreign keys are misbehaving.
+    resetCursor: clearCursor,
+    // Force everything to resync from scratch.
+    resetCursors: clearCursors,
   }
 }
