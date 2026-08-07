@@ -472,6 +472,12 @@ const TABLES: TableSync<never>[] = [
   careStepDone,
 ] as unknown as TableSync<never>[]
 
+/**
+ * Server table names in push order. Exported so adopt.ts can iterate the same
+ * set without keeping a second copy that could drift out of step.
+ */
+export const SYNC_TABLE_NAMES: string[] = TABLES.map((t) => t.name)
+
 // ---------------------------------------------------------------------------
 // Singletons
 //
@@ -501,7 +507,7 @@ async function pushGoals(userId: string, since: string | undefined): Promise<num
   return 1
 }
 
-async function pullGoals(since: string | undefined): Promise<number> {
+export async function pullGoals(since: string | undefined): Promise<number> {
   let q = supabase.from('goals').select('*')
   if (since) q = q.gt('updated_at', since)
 
@@ -547,7 +553,7 @@ async function pushProfile(userId: string, since: string | undefined): Promise<n
   return 1
 }
 
-async function pullProfile(since: string | undefined): Promise<number> {
+export async function pullProfile(since: string | undefined): Promise<number> {
   let q = supabase.from('profile').select('*')
   if (since) q = q.gt('updated_at', since)
 

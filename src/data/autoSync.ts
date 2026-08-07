@@ -4,6 +4,7 @@ import { syncAll, type SyncReport } from './sync'
 import { isSyncWriting } from './syncWrites'
 import { getCurrentUser, onAuthChange } from './auth'
 import { getSyncUserId, setSyncUserId, clearSyncUser } from './syncState'
+import './adopt'
 
 /**
  * Decides *when* syncAll runs. syncAll itself knows nothing about this file.
