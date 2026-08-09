@@ -6,6 +6,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.8',
+    date: '2026-08-09',
+    changes: [
+      'Change your password from the Account screen',
+      'New passwords need at least 8 characters',
+      'Renaming yourself now updates the home screen straight away',
+      'A new app icon',
+    ],
+  },
+  {
     version: '1.7',
     date: '2026-08-09',
     changes: [

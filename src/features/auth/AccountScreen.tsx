@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, ShieldCheck, ShieldAlert } from 'lucide-react'
-import { getCurrentUser, signOut, type CurrentUser } from '../../data/auth'
+import { LogOut, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react'
+import { getCurrentUser, signOut, changePassword, type CurrentUser } from '../../data/auth'
 import { getProfile } from '../../data/profile'
 import { Button, ScreenHeader } from '../../components/ui'
 import { useConfirm } from '../../components/DialogProvider'
@@ -9,6 +9,8 @@ import { RegisterScreen } from './RegisterScreen'
 import { LoginScreen } from './LoginScreen'
 
 type View = 'menu' | 'register' | 'login'
+
+const MIN_PASSWORD = 8
 
 export function AccountScreen() {
   const navigate = useNavigate()
@@ -132,9 +134,14 @@ export function AccountScreen() {
       </div>
 
       <p className="faint">
-        Change your name in Settings. Changing your email or password is coming
-        soon.
+        Your name is part of your profile, not your account — change it in
+        Settings, and it works with or without one. Changing your email is not
+        available yet; it needs a confirmation message to both addresses, which
+        is not set up.
       </p>
+
+      <h3 style={{ marginTop: '1.25rem' }}>Password</h3>
+      <PasswordEditor />
 
       <h3 style={{ marginTop: '1.25rem' }}>Session</h3>
 
@@ -142,5 +149,126 @@ export function AccountScreen() {
         <LogOut size={16} /> Log out
       </Button>
     </div>
+  )
+}
+
+/**
+ * Three fields, not two. Supabase will change a password with only a live
+ * session, so the current one is asked for and verified before the update —
+ * otherwise a borrowed unlocked phone is enough to take the account.
+ */
+function PasswordEditor() {
+  const [open, setOpen] = useState(false)
+  const [current, setCurrent] = useState('')
+  const [next, setNext] = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
+
+  function reset() {
+    setCurrent('')
+    setNext('')
+    setConfirmPw('')
+    setError('')
+  }
+
+  const tooShort = next.length > 0 && next.length < MIN_PASSWORD
+  const mismatch = confirmPw.length > 0 && next !== confirmPw
+  const valid =
+    current.length > 0 && next.length >= MIN_PASSWORD && next === confirmPw && !busy
+
+  async function handleSave() {
+    setBusy(true)
+    setError('')
+
+    const result = await changePassword(current, next)
+
+    setBusy(false)
+
+    if (!result.ok) {
+      setError(result.message)
+      return
+    }
+
+    reset()
+    setOpen(false)
+    setDone(true)
+    setTimeout(() => setDone(false), 4000)
+  }
+
+  if (!open) {
+    return (
+      <>
+        <Button
+          block
+          onClick={() => {
+            reset()
+            setOpen(true)
+          }}
+        >
+          <KeyRound size={16} /> Change password
+        </Button>
+        {done && <p className="success">Password changed.</p>}
+      </>
+    )
+  }
+
+  return (
+    <>
+      <label className="field">
+        <span className="field-label">Current password</span>
+        <input
+          type="password"
+          autoComplete="current-password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+        />
+      </label>
+
+      <label className="field">
+        <span className="field-label">New password</span>
+        <input
+          type="password"
+          autoComplete="new-password"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+        />
+      </label>
+
+      <label className="field">
+        <span className="field-label">Confirm new password</span>
+        <input
+          type="password"
+          autoComplete="new-password"
+          value={confirmPw}
+          onChange={(e) => setConfirmPw(e.target.value)}
+        />
+      </label>
+
+      {tooShort && <p className="warn">At least {MIN_PASSWORD} characters.</p>}
+      {mismatch && <p className="warn">The two new passwords do not match.</p>}
+      {error && <p className="danger">{error}</p>}
+
+      <div className="form-actions">
+        <Button
+          variant="primary"
+          block
+          disabled={!valid}
+          onClick={handleSave}
+        >
+          {busy ? 'Saving…' : 'Save password'}
+        </Button>
+        <Button
+          block
+          onClick={() => {
+            reset()
+            setOpen(false)
+          }}
+        >
+          Cancel
+        </Button>
+      </div>
+    </>
   )
 }

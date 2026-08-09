@@ -13,6 +13,8 @@ export type AuthFailure =
   | 'invalid-credentials'
   | 'invalid-email'
   | 'weak-password'
+  | 'wrong-password'
+  | 'same-password'
   | 'offline'
   | 'unknown'
 
@@ -37,6 +39,7 @@ function classify(message: string): AuthFailure {
     return 'email-taken'
   }
   if (m.includes('invalid login credentials')) return 'invalid-credentials'
+  if (m.includes('should be different')) return 'same-password'
   if (m.includes('password')) return 'weak-password'
   if (m.includes('email')) return 'invalid-email'
   if (m.includes('fetch') || m.includes('network')) return 'offline'
@@ -53,6 +56,10 @@ function friendly(reason: AuthFailure): string {
       return 'That email address does not look right.'
     case 'weak-password':
       return 'Password needs to be at least 6 characters.'
+    case 'wrong-password':
+      return 'That is not your current password.'
+    case 'same-password':
+      return 'The new password must be different from the old one.'
     case 'offline':
       return 'No connection. Your data is safe on this device — try again later.'
     case 'unknown':
@@ -129,6 +136,55 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut()
 }
 
+/**
+ * Change the account password.
+ *
+ * Supabase's updateUser({ password }) does NOT require the current password —
+ * a live session is enough. On a phone that means anyone holding it unlocked
+ * could take the account permanently. So we re-authenticate first and only
+ * update if that succeeds.
+ *
+ * signInWithPassword with the wrong password fails without disturbing the
+ * existing session, so a failed attempt leaves the user signed in as they were.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<AuthResult> {
+  const user = await getCurrentUser()
+  if (!user) {
+    return { ok: false, reason: 'unknown', message: 'You are not signed in.' }
+  }
+
+  const { error: reauthError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  })
+
+  if (reauthError) {
+    const reason = classify(reauthError.message)
+    // Anything credential-shaped here means the current password was wrong.
+    // A network failure is still a network failure and should say so.
+    if (reason === 'invalid-credentials' || reason === 'unknown') {
+      return { ok: false, reason: 'wrong-password', message: friendly('wrong-password') }
+    }
+    return { ok: false, reason, message: friendly(reason) }
+  }
+
+  const { data, error } = await supabase.auth.updateUser({ password: newPassword })
+
+  if (error) {
+    const reason = classify(error.message)
+    return { ok: false, reason, message: friendly(reason) }
+  }
+
+  if (!data.user) {
+    return { ok: false, reason: 'unknown', message: friendly('unknown') }
+  }
+
+  return { ok: true, userId: data.user.id, email: data.user.email ?? '' }
+}
+
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const { data } = await supabase.auth.getSession()
   const user = data.session?.user
@@ -173,6 +229,7 @@ if (import.meta.env.DEV) {
     signUp,
     signIn,
     signOut,
+    changePassword,
     getCurrentUser,
     isSignedIn,
   }

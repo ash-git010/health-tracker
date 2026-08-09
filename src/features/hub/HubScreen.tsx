@@ -5,6 +5,7 @@ import { Utensils, Scale, Dumbbell, Sparkles, ChevronRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { SECTIONS } from '../../sections'
 import { hubSummary } from '../../data/overview'
+import { getProfile } from '../../data/profile'
 import { getCurrentUser, onAuthChange } from '../../data/auth'
 
 const ICONS: Record<string, LucideIcon> = {
@@ -14,8 +15,15 @@ const ICONS: Record<string, LucideIcon> = {
   routines: Sparkles,
 }
 
-export function HubScreen({ name }: { name: string }) {
+export function HubScreen() {
   const summary = useLiveQuery(() => hubSummary(), [])
+
+  // Read here rather than taking a prop from the stage machine. App.tsx sets
+  // its `name` state inside resolveStage, which runs on mount and on auth
+  // changes only — so renaming from Settings left this greeting stale until
+  // the next login. useLiveQuery watches the profile table directly, so any
+  // write from anywhere lands here immediately.
+  const profile = useLiveQuery(() => getProfile(), [])
 
   // undefined while unknown, so the nudge never flashes on screen for a
   // signed-in user during the first render.
@@ -70,7 +78,9 @@ export function HubScreen({ name }: { name: string }) {
         <p className="muted" style={{ margin: 0 }}>
           {greeting()}
         </p>
-        <h1 style={{ margin: '0.15rem 0 0' }}>{name}</h1>
+        {/* Non-breaking space while the profile read is in flight, so the
+            heading keeps its height and the page below does not jump. */}
+        <h1 style={{ margin: '0.15rem 0 0' }}>{profile?.name || '\u00A0'}</h1>
       </div>
 
       {stats.length > 0 && (

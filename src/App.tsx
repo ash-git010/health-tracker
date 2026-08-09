@@ -256,7 +256,7 @@ function AppStages() {
     <BrowserRouter basename="/health-tracker">
         <Routes>
           <Route element={<Layout />}>
-            <Route path="/" element={<HubScreen name={name} />} />
+            <Route path="/" element={<HubScreen />} />
 
             <Route path="account" element={<AccountScreen />} />
 

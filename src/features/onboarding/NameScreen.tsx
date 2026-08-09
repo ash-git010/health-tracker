@@ -18,7 +18,7 @@ export function NameScreen({ onDone }: { onDone: () => void }) {
       <h1>Welcome to Upkeep</h1>
       <p className="muted">What should we call you?</p>
 
-      <TextField label="Your name" value={name} onChange={setName} placeholder="Ash" />
+      <TextField label="Your name" value={name} onChange={setName} placeholder="John Doe" />
 
       <Button variant="primary" block onClick={handleContinue} disabled={!valid}>
         Continue

@@ -4,6 +4,11 @@ import { saveName } from '../../data/profile'
 import { clearSkippedAuth } from '../../data/syncState'
 import { Button } from '../../components/ui'
 
+// Above Supabase's own 6-character floor. Only applies to passwords being set
+// now — LoginScreen deliberately checks presence, not length, so accounts
+// created under the old minimum keep working.
+const MIN_PASSWORD = 8
+
 interface Props {
   /** Existing profile name, if this device has been used before. */
   existingName?: string
@@ -24,7 +29,8 @@ export function RegisterScreen({ existingName, onDone, onSwitchToLogin, onBack }
   const [error, setError] = useState('')
   const [emailTaken, setEmailTaken] = useState(false)
 
-  const valid = name.trim().length > 0 && email.trim().length > 3 && password.length >= 6
+  const valid =
+    name.trim().length > 0 && email.trim().length > 3 && password.length >= MIN_PASSWORD
 
   async function handleSubmit() {
     if (!valid || busy) return
@@ -71,7 +77,7 @@ export function RegisterScreen({ existingName, onDone, onSwitchToLogin, onBack }
             type="text"
             value={name}
             autoComplete="name"
-            placeholder="Ash"
+            placeholder="John Doe"
             onChange={(e) => setName(e.target.value)}
           />
         </label>
@@ -96,7 +102,7 @@ export function RegisterScreen({ existingName, onDone, onSwitchToLogin, onBack }
           type="password"
           value={password}
           autoComplete="new-password"
-          placeholder="At least 6 characters"
+          placeholder={`At least ${MIN_PASSWORD} characters`}
           onChange={(e) => setPassword(e.target.value)}
         />
       </label>
