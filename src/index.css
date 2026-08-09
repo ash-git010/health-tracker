@@ -907,6 +907,13 @@ main > * { animation: rise 0.22s var(--ease); }
   box-shadow: 0 8px 28px var(--accent-glow);
 }
 
+.onb-icon.is-bare {
+  background: none;
+  border: none;
+  box-shadow: 0 10px 34px var(--accent-glow);
+  overflow: hidden;
+}
+
 .onb-slide h1 {
   font-size: 1.875rem;
   letter-spacing: -0.035em;

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode, type PointerEvent } from 'react'
 import {
-  Sparkles, Utensils, Scale, Dumbbell, Droplets, ShieldCheck,
+  Utensils, Scale, Dumbbell, Droplets, ShieldCheck,
   Smartphone, Share, MoreVertical, CheckCircle2,
 } from 'lucide-react'
-import { Button } from '../../components/ui'
+import { Button, Mark } from '../../components/ui'
 import {
   canPromptInstall,
   onInstallChange,
@@ -15,6 +15,7 @@ import {
 type Slide = {
   key: string
   icon: ReactNode
+  bareIcon?: boolean
   title: string
   lead: string
   points?: string[]
@@ -26,7 +27,8 @@ const ICON = { size: 30, strokeWidth: 1.75 }
 const CONTENT: Slide[] = [
   {
     key: 'welcome',
-    icon: <Sparkles {...ICON} />,
+    icon: <Mark />,
+    bareIcon: true,
     title: 'Welcome to Upkeep',
     lead: 'Everything you do to look after yourself, kept in one place.',
     points: ['Four sections, one home screen', 'Works offline, opens instantly', 'No ads, no feed, no streak guilt'],
@@ -221,7 +223,9 @@ export function OnboardingScreen({ onDone, onLogin }: { onDone: () => void; onLo
                   transition: motion,
                 }}
               >
-                <div className="onb-icon">{slide.icon}</div>
+                <div className={slide.bareIcon ? 'onb-icon is-bare' : 'onb-icon'}>
+                  {slide.icon}
+                </div>
                 <h1>{slide.title}</h1>
                 <p className="onb-lead">{slide.lead}</p>
 

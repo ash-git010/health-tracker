@@ -128,3 +128,35 @@ export function InlineRename({
     </div>
   )
 }
+
+/**
+ * The app mark. Inline rather than an <img> so it inherits nothing from the
+ * server and needs no base-path handling — and so it cannot flash in late on
+ * the first screen a new user ever sees.
+ */
+export function Mark({ size = 60 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 512 512" aria-hidden="true">
+      <defs>
+        <linearGradient id="mark-uv" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stopColor="#7c5cff" />
+          <stop offset="1" stopColor="#c084fc" />
+        </linearGradient>
+        <linearGradient id="mark-ground" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#16161f" />
+          <stop offset="1" stopColor="#0a0a10" />
+        </linearGradient>
+        <radialGradient id="mark-glow" cx="0.5" cy="0.46" r="0.5">
+          <stop offset="0" stopColor="#7c5cff" stopOpacity="0.42" />
+          <stop offset="0.55" stopColor="#7c5cff" stopOpacity="0.12" />
+          <stop offset="1" stopColor="#7c5cff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <rect width="512" height="512" rx="112" fill="url(#mark-ground)" />
+      <circle cx="256" cy="236" r="210" fill="url(#mark-glow)" />
+      <circle cx="256" cy="256" r="160" fill="none" stroke="url(#mark-uv)" strokeWidth="34" strokeLinecap="round" strokeDasharray="754.0 251.3" transform="rotate(-90 256 256)" />
+      <circle cx="256" cy="256" r="114" fill="none" stroke="url(#mark-uv)" strokeWidth="30" strokeLinecap="round" strokeDasharray="537.2 179.1" opacity="0.6" transform="rotate(-30 256 256)" />
+      <circle cx="256" cy="256" r="68" fill="none" stroke="url(#mark-uv)" strokeWidth="26" strokeLinecap="round" strokeDasharray="320.4 106.8" opacity="0.35" transform="rotate(30 256 256)" />
+    </svg>
+  )
+}

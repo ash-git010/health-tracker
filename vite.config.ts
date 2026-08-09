@@ -13,7 +13,7 @@ export default defineConfig({
         skipWaiting: true,
         cleanupOutdatedCaches: true,
       },
-      includeAssets: ['favicon.ico'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon-v3.png'],
       manifest: {
         name: 'Upkeep',
         short_name: 'Upkeep',
@@ -26,17 +26,25 @@ export default defineConfig({
         scope: '/health-tracker/',
         icons: [
           {
-            src: 'icon-192-v2.png',
+            src: 'icon-192-v3.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
-            src: 'icon-512-v2.png',
+            src: 'icon-512-v3.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
           },
           {
-            src: 'icon-512-v2.png',
+            src: 'icon-maskable-192-v3.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+          {
+            src: 'icon-maskable-512-v3.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
