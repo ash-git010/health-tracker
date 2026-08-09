@@ -122,8 +122,12 @@ async function singletonPreview(
   if (!accountAt) return { winner: 'local', localUpdatedAt: localAt }
   if (!localAt) return { winner: 'account', accountUpdatedAt: accountAt }
 
+   // Compared as instants, not strings. Postgres returns '+00:00' where
+  // JavaScript's toISOString gives 'Z' — the same moment, but 'Z' sorts after
+  // '+' as text, so a string comparison calls two identical timestamps
+  // different and picks local as the winner.
   return {
-    winner: localAt > accountAt ? 'local' : 'account',
+    winner: Date.parse(localAt) > Date.parse(accountAt) ? 'local' : 'account',
     localUpdatedAt: localAt,
     accountUpdatedAt: accountAt,
   }
@@ -157,6 +161,19 @@ export async function previewAdoption(): Promise<AdoptPreview> {
     goals,
     profile,
   }
+}
+
+/**
+ * True if this device holds anything worth deciding about. Stops at the first
+ * hit rather than counting everything, since the answer is usually yes.
+ */
+export async function hasLocalData(): Promise<boolean> {
+  for (const name of SYNC_TABLE_NAMES) {
+    const count = await LOCAL_BY_SERVER[name].filter(isLive).count()
+    if (count > 0) return true
+  }
+  // A name typed at onboarding counts, even on a device with no rows anywhere.
+  return (await db.profile.get(1)) !== undefined
 }
 
 // ---------------------------------------------------------------------------
@@ -214,16 +231,23 @@ export interface AdoptResult {
  * keep-account is the only path in the app that destroys local data. The
  * confirmation for it belongs in the UI; this function assumes it was given.
  */
-export async function adoptAccount(mode: AdoptMode): Promise<AdoptResult> {
+export async function adoptAccount(
+  mode: AdoptMode,
+  options: { backup?: boolean } = {}
+): Promise<AdoptResult> {
   const user = await getCurrentUser()
   if (!user) throw new Error('Not signed in')
 
   // Captured and written to disk before anything is touched. A merge cannot
   // lose a row, but it can produce duplicates that are tedious to unpick by
   // hand, and this file is what makes that recoverable.
-  const backup = await exportAll()
-  downloadBackup(backup)
-
+  //
+  // Skipped when the caller knows there is nothing to lose — an empty device,
+  // or an empty account. Downloading an empty backup would only confuse.
+  if (options.backup !== false) {
+    const backup = await exportAll()
+    downloadBackup(backup)
+  }
   let removedFromAccount: number | undefined
 
   if (mode === 'merge') {
@@ -246,9 +270,20 @@ export async function adoptAccount(mode: AdoptMode): Promise<AdoptResult> {
   }
 
   await clearCursors()
-  await setSyncUserId(user.id)
 
   const sync = await syncAll()
+
+  // syncAll reports errors rather than throwing, so an unchecked call is
+  // indistinguishable from success — which is how a device got claimed by an
+  // account it had failed to push a single row into.
+  //
+  // Throwing leaves the device unclaimed, and autoSync refuses unclaimed
+  // devices, so nothing syncs behind the user's back while the screen offers
+  // a retry.
+  if (sync.error) throw new Error(sync.error)
+
+  await setSyncUserId(user.id)
+
   return { mode, removedFromAccount, sync }
 }
 

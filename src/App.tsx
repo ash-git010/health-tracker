@@ -23,7 +23,7 @@ import { AccountScreen } from './features/auth/AccountScreen'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
 import { getCurrentUser, onAuthChange } from './data/auth'
-import { hasSkippedAuth, setSkippedAuth } from './data/syncState'
+import { hasSkippedAuth, setSkippedAuth, getSyncUserId } from './data/syncState'
 import { syncBeforeFirstRun } from './data/autoSync'
 import { unlockAudio } from './data/audio'
 import { ActiveWorkoutScreen } from './features/workouts/ActiveWorkoutScreen'
@@ -42,10 +42,12 @@ import { ensureSortOrders } from './data/routines'
 import { RoutineTodayScreen } from './features/routines/RoutineTodayScreen'
 import { RoutineManageScreen } from './features/routines/RoutineManageScreen'
 import { CareRoutineFormScreen } from './features/routines/CareRoutineFormScreen'
+import { AdoptScreen } from './features/auth/AdoptScreen'
 
 type Stage =
   | 'checking'
   | 'syncing'
+  | 'adopt'
   | 'gate'
   | 'register'
   | 'login'
@@ -53,7 +55,7 @@ type Stage =
   | 'goals'
   | 'ready'
 
-export default function App() {
+function AppStages() {
   const [stage, setStage] = useState<Stage>('checking')
   const [name, setName] = useState('')
 
@@ -66,25 +68,28 @@ export default function App() {
    * needs to be offered an account, but only once.
    */
   const resolveStage = useCallback(async () => {
-    const [profile, goals, user, skipped] = await Promise.all([
+    const [profile, goals, user, skipped, owner] = await Promise.all([
       getProfile(),
       getGoals(),
       getCurrentUser(),
       hasSkippedAuth(),
+      getSyncUserId(),
     ])
 
     setName(profile?.name ?? '')
 
     if (!user && !skipped) return setStage('gate')
 
-    // Signed in with nothing local: either a genuinely new account, or an
-    // existing one being opened on a new device. Those look identical from
-    // here, so pull before deciding — otherwise the account's own name and
-    // goals arrive moments after the user has been asked to invent new ones.
-    //
-    // Bounded inside syncBeforeFirstRun. On timeout or offline this falls
-    // through to the same questions it would have asked anyway.
+    // Signed in on a device this account has not claimed. Covers a genuinely
+    // new device, a new account, and someone else's phone — they are
+    // indistinguishable from here, so AdoptScreen sorts out which it is and
+    // only asks when there is a real decision. Automatic sync refuses to run
+    // until this resolves, so nothing moves in the meantime.
+    if (user && owner !== user.id) return setStage('adopt')
+
     if (user && !profile) {
+      // Claimed, but nothing local — adoption's pull did not finish. Retry it,
+      // bounded, rather than asking for a name the account already has.
       setStage('syncing')
       await syncBeforeFirstRun()
 
@@ -145,6 +150,10 @@ export default function App() {
     )
   }
 
+  if (stage === 'adopt') {
+    return <AdoptScreen onDone={resolveStage} />
+  }
+
   if (stage === 'gate') {
     return (
       <AuthGateScreen
@@ -203,8 +212,7 @@ export default function App() {
   }
 
   return (
-    <DialogProvider>
-      <BrowserRouter basename="/health-tracker">
+    <BrowserRouter basename="/health-tracker">
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<HubScreen name={name} />} />
@@ -254,6 +262,18 @@ export default function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+  )
+}
+
+/**
+ * DialogProvider wraps every stage, not just the routed app. The adoption
+ * screen runs before routing exists and needs useConfirm for the destructive
+ * option, and any future first-run screen would hit the same wall.
+ */
+export default function App() {
+  return (
+    <DialogProvider>
+      <AppStages />
     </DialogProvider>
   )
 }

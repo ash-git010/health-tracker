@@ -3,8 +3,7 @@ import { db } from './db'
 import { syncAll, type SyncReport } from './sync'
 import { isSyncWriting } from './syncWrites'
 import { getCurrentUser, onAuthChange } from './auth'
-import { getSyncUserId, setSyncUserId, clearSyncUser } from './syncState'
-import './adopt'
+import { getSyncUserId, clearSyncUser } from './syncState'
 
 /**
  * Decides *when* syncAll runs. syncAll itself knows nothing about this file.
@@ -41,14 +40,17 @@ async function run(): Promise<SyncReport | null> {
   const user = await getCurrentUser()
   if (!user) return null
 
+  // Only adoption claims a device. An unclaimed device is refused here just as
+  // firmly as one belonging to someone else: at login the auth trigger fires
+  // while the decision screen is still rendering, and letting it through would
+  // merge two people's data before the user had chosen anything.
   const owner = await getSyncUserId()
-  if (owner && owner !== user.id) {
+  if (owner !== user.id) {
     console.warn(
-      '[autoSync] Signed-in account differs from the one this device last ' +
-      'synced with. Automatic sync is paused to avoid merging one person\'s ' +
-      'data into another\'s account. Data adoption (§10.4) will handle this.'
+      '[autoSync] This device has not been claimed by the signed-in account. ' +
+      'Automatic sync is paused until the adoption screen resolves it.'
     )
-    runs.push({ at: new Date().toISOString(), trigger, pushed: 0, pulled: 0, error: 'wrong account' })
+    runs.push({ at: new Date().toISOString(), trigger, pushed: 0, pulled: 0, error: 'unclaimed device' })
     return null
   }
 
@@ -73,9 +75,6 @@ async function run(): Promise<SyncReport | null> {
     // and the next natural trigger picks the same range back up because the
     // cursors did not advance.
     console.warn('[autoSync] sync failed:', report.error)
-  } else if (!owner) {
-    // Claim the device only once a sync has actually succeeded.
-    await setSyncUserId(user.id)
   }
 
   return report
