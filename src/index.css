@@ -359,13 +359,6 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   padding-top: max(env(safe-area-inset-top), 0.75rem);
 }
 
-.wordmark {
-  font-size: 1.0625rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-.wordmark span { color: var(--accent); }
-
 /* Tab bar */
 .tabbar {
   position: fixed;
@@ -823,4 +816,282 @@ main > * { animation: rise 0.22s var(--ease); }
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Onboarding
+   Full-screen, pre-router. Fixed rather than in flow because it must not
+   scroll behind the phone's chrome, and nothing here overflows.
+--------------------------------------------------------------------------- */
+
+.onb {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  overflow: hidden;
+  animation: fade-in 0.3s var(--ease);
+}
+
+/* Soft accent wash behind the icon. Decorative only. */
+.onb::before {
+  content: '';
+  position: absolute;
+  top: -22%;
+  left: 50%;
+  width: 130vw;
+  height: 60vh;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, var(--accent-soft), transparent);
+  pointer-events: none;
+}
+
+.onb-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1.25rem;
+}
+
+
+.onb-skip {
+  color: var(--text-faint);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem;
+  margin-right: -0.5rem;
+  min-height: 44px;
+}
+
+.onb-viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.onb-track {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  will-change: transform;
+}
+
+.onb-slide {
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem 1.75rem;
+  text-align: left;
+  overflow-y: auto;
+  will-change: transform, opacity;
+}
+
+.onb-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  margin-bottom: 1.5rem;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  color: var(--accent);
+  box-shadow: 0 8px 28px var(--accent-glow);
+}
+
+.onb-slide h1 {
+  font-size: 1.875rem;
+  letter-spacing: -0.035em;
+  margin-bottom: 0.625rem;
+}
+
+.onb-lead {
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  max-width: 24rem;
+}
+
+.onb-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 24rem;
+}
+
+.onb-points li {
+  position: relative;
+  padding-left: 1.375rem;
+  margin-bottom: 0.625rem;
+  color: var(--text);
+  font-size: 0.9375rem;
+}
+
+.onb-points li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.onb-bottom {
+  position: relative;
+  padding: 0 1.25rem;
+}
+
+.onb-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.onb-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface-3);
+  cursor: pointer;
+  transition: width 0.32s var(--ease), background 0.32s var(--ease);
+}
+
+.onb-dot.is-active {
+  width: 22px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.onb-login {
+  display: block;
+  width: 100%;
+  margin-top: 0.875rem;
+  padding: 0.625rem;
+  min-height: 44px;
+  color: var(--text-faint);
+  font-size: 0.875rem;
+}
+
+.onb-login span {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Install guide */
+
+.install-why {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.install-why li {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.install-why svg {
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.install-steps {
+  counter-reset: install;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.install-steps li {
+  counter-increment: install;
+  position: relative;
+  padding-left: 2.125rem;
+  margin-bottom: 0.875rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.install-steps li:last-child {
+  margin-bottom: 0;
+}
+
+.install-steps li::before {
+  content: counter(install);
+  position: absolute;
+  left: 0;
+  top: 0.0625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.install-tick {
+  color: var(--success);
+  flex: 0 0 auto;
+  margin-top: 0.125rem;
+}
+
+/* Install block inside the onboarding slides */
+
+.onb-install {
+  margin-top: 1.25rem;
+  max-width: 24rem;
+}
+
+.onb-install-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.875rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.onb-install .install-steps li {
+  font-size: 0.875rem;
+  margin-bottom: 0.625rem;
+}
+
+.onb-install-done {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 1.25rem;
+  padding: 0.875rem 1rem;
+  max-width: 24rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  font-size: 0.9375rem;
+}
+
+.onb-install-done svg {
+  color: var(--success);
+  flex: 0 0 auto;
 }

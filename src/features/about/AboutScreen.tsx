@@ -1,9 +1,12 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { Smartphone, ChevronRight } from 'lucide-react'
 import { CHANGELOG } from '../../data/changelog'
 import { Card, ScreenHeader } from '../../components/ui'
+import { useState } from 'react'
 
 export function AboutScreen() {
   const navigate = useNavigate()
+  const [showAll, setShowAll] = useState(false)
 
   return (
     <div className="stack">
@@ -17,54 +20,56 @@ export function AboutScreen() {
       />
 
       <p className="muted" style={{ margin: '0.5rem 0 0' }}>
-          Version {CHANGELOG[0].version}
+        Version {CHANGELOG[0].version}
       </p>
+
       <Card>
         <p style={{ margin: 0 }}>
-          Upkeep is a personal health tracker — food, macros, and body measurements,
-          with workouts and routines on the way.
+          Upkeep is a personal health tracker — food and macros, body weight, strength
+          training, and daily care routines.
         </p>
         <p className="muted" style={{ margin: '0.5rem 0 0' }}>
-          Everything is stored on this device. Nothing is uploaded anywhere.
+          Everything is stored on this device, so the app works with no signal. If you
+          create an account, your data is also synced to a server so your devices stay
+          in step.
         </p>
       </Card>
 
-      <h3>Installing on Android</h3>
-      <Card>
-        <ol style={{ margin: 0, paddingLeft: '1.1rem' }}>
-          <li>Open this page in <strong>Chrome</strong>.</li>
-          <li>Tap the ⋮ menu in the top right.</li>
-          <li>Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
-        </ol>
-        <p className="muted" style={{ margin: '0.75rem 0 0' }}>
-          Chrome is recommended. Samsung Internet and Firefox work but handle
-          installed apps less consistently.
-        </p>
-      </Card>
+      <h3>Installing</h3>
+
+      <Link to="/settings/about/install" className="btn btn-block" style={{ textDecoration: 'none' }}>
+        <Smartphone size={16} /> <span className="grow" style={{ textAlign: 'left' }}>Install on your phone</span>
+        <ChevronRight size={16} />
+      </Link>
+
+      <p className="muted">
+        Step-by-step for Android and iPhone. Installed, Upkeep gets its own icon, opens
+        full screen, and keeps you signed in for longer.
+      </p>
 
       <h3>Barcode scanning</h3>
       <Card>
         <p style={{ margin: 0 }}>
-          Camera scanning works on Android and iPhone. On iPhone, add Upkeep to your
-          home screen first — Safari handles camera access better that way.
-          NOTE: Scanning may take up to 3-5 seconds on iPhones due to the limitations of Safari
+          Camera scanning works on Android and iPhone. On iPhone, add Upkeep to your home
+          screen first — Safari handles camera access better that way, and scanning can
+          still take a few seconds because Safari has no built-in barcode support.
         </p>
         <p className="muted" style={{ margin: '0.5rem 0 0' }}>
-          You can also type the barcode number by hand. Product data comes from Open
-          Food Facts, a free community database.
+          You can also type the barcode number by hand. Product data comes from Open Food
+          Facts, a free community database.
         </p>
       </Card>
 
       <h3>Backing up</h3>
       <Card>
         <p className="muted" style={{ margin: 0 }}>
-          Clearing your browser data will erase everything. Export a backup from
-          Settings now and then.
+          Clearing your browser data will erase everything stored on this device. Export a
+          backup from Settings now and then, even if you have an account.
         </p>
       </Card>
 
       <h3>What's changed</h3>
-      {CHANGELOG.map((release) => (
+      {(showAll ? CHANGELOG : CHANGELOG.slice(0, 3)).map((release) => (
         <Card key={release.version}>
           <div className="row">
             <strong className="grow">Version {release.version}</strong>
@@ -77,6 +82,12 @@ export function AboutScreen() {
           </ul>
         </Card>
       ))}
+
+      {CHANGELOG.length > 3 && (
+        <button className="btn btn-ghost btn-block" onClick={() => setShowAll(!showAll)}>
+          {showAll ? 'Show recent only' : `Show all ${CHANGELOG.length} versions`}
+        </button>
+      )}
     </div>
   )
 }

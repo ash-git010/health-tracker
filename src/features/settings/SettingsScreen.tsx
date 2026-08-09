@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Download, Upload, Info, MessageSquare } from 'lucide-react'
+import { Download, Upload, Info, MessageSquare, Smartphone } from 'lucide-react'
 import { exportAll, importAll, downloadBackup } from '../../data/backup'
 import { getProfile, saveName } from '../../data/profile'
 import { Button, ScreenHeader } from '../../components/ui'
@@ -64,6 +64,10 @@ export function SettingsScreen() {
       {status && <p className="muted">{status}</p>}
 
       <h3 style={{ marginTop: '1.25rem' }}>App</h3>
+
+      <Link to="/settings/about/install" className="btn btn-block" style={{ textDecoration: 'none' }}>
+        <Smartphone size={16} /> Install on your phone
+      </Link>
 
       <Link to="/settings/about" className="btn btn-block" style={{ textDecoration: 'none' }}>
         <Info size={16} /> About Upkeep

@@ -23,7 +23,13 @@ import { AccountScreen } from './features/auth/AccountScreen'
 import { getGoals } from './data/goals'
 import { getProfile } from './data/profile'
 import { getCurrentUser, onAuthChange } from './data/auth'
-import { hasSkippedAuth, setSkippedAuth, getSyncUserId } from './data/syncState'
+import {
+  hasSkippedAuth,
+  setSkippedAuth,
+  getSyncUserId,
+  hasSeenOnboarding,
+  setOnboardingSeen,
+} from './data/syncState'
 import { syncBeforeFirstRun } from './data/autoSync'
 import { unlockAudio } from './data/audio'
 import { ActiveWorkoutScreen } from './features/workouts/ActiveWorkoutScreen'
@@ -43,9 +49,12 @@ import { RoutineTodayScreen } from './features/routines/RoutineTodayScreen'
 import { RoutineManageScreen } from './features/routines/RoutineManageScreen'
 import { CareRoutineFormScreen } from './features/routines/CareRoutineFormScreen'
 import { AdoptScreen } from './features/auth/AdoptScreen'
+import { OnboardingScreen } from './features/onboarding/OnboardingScreen'
+import { InstallScreen } from './features/about/InstallScreen'
 
 type Stage =
   | 'checking'
+  | 'onboarding'
   | 'syncing'
   | 'adopt'
   | 'gate'
@@ -68,15 +77,32 @@ function AppStages() {
    * needs to be offered an account, but only once.
    */
   const resolveStage = useCallback(async () => {
-    const [profile, goals, user, skipped, owner] = await Promise.all([
+    const [profile, goals, user, skipped, owner, seenIntro] = await Promise.all([
       getProfile(),
       getGoals(),
       getCurrentUser(),
       hasSkippedAuth(),
       getSyncUserId(),
+      hasSeenOnboarding(),
     ])
 
     setName(profile?.name ?? '')
+
+    // The intro runs before the gate — it sells the app before asking for an
+    // email. Two exclusions:
+    //
+    //   A profile already exists — an existing tester updating to this version.
+    //     Stamp the flag rather than explaining an app they have been using for
+    //     weeks.
+    //   Already signed in — a restored session means a returning user, whatever
+    //     the local data looks like.
+    //
+    // At this point the app cannot tell a new user from a returning one on a
+    // second phone, so the screen carries its own "log in" shortcut.
+    if (!seenIntro) {
+      if (profile) await setOnboardingSeen()
+      else if (!user) return setStage('onboarding')
+    }
 
     if (!user && !skipped) return setStage('gate')
 
@@ -147,6 +173,21 @@ function AppStages() {
       <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>
         Getting your data…
       </p>
+    )
+  }
+
+  if (stage === 'onboarding') {
+    return (
+      <OnboardingScreen
+        onDone={async () => {
+          await setOnboardingSeen()
+          await resolveStage()
+        }}
+        onLogin={async () => {
+          await setOnboardingSeen()
+          setStage('login')
+        }}
+      />
     )
   }
 
@@ -256,6 +297,7 @@ function AppStages() {
 
             <Route path="settings" element={<SettingsScreen />} />
             <Route path="settings/about" element={<AboutScreen />} />
+            <Route path="settings/about/install" element={<InstallScreen />} />
             <Route path="settings/feedback" element={<FeedbackScreen />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />

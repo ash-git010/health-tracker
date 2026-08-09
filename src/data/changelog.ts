@@ -6,6 +6,16 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.7',
+    date: '2026-08-09',
+    changes: [
+      'A short intro the first time you open Upkeep, showing what each section does',
+      'Add Upkeep to your home screen in one tap on Android, with step-by-step instructions for iPhone',
+      'New install guide in Settings',
+      'About now explains how your data is actually stored',
+    ],
+  },
+  {
     version: '1.6',
     date: '2026-08-09',
     changes: [

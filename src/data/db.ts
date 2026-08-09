@@ -19,6 +19,12 @@ export interface SyncState {
   userId?: string
   migratedAt?: string
   authSkippedAt?: string
+  /**
+   * When the intro slideshow was finished, skipped, or bypassed via its log-in
+   * link. Also stamped silently for anyone who already had a profile when this
+   * version arrived — an existing tester does not need the app explained.
+   */
+  onboardingSeenAt?: string
 }
 
 export class UpkeepDB extends Dexie {

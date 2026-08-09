@@ -41,6 +41,28 @@ export async function clearSkippedAuth(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Onboarding
+//
+// Stamped when the intro is finished, skipped, or bypassed via its log-in link.
+// Also stamped silently by resolveStage for anyone who already has a profile —
+// an existing tester updating to this version has been using the app for weeks
+// and does not need it explained.
+// ---------------------------------------------------------------------------
+
+export async function hasSeenOnboarding(): Promise<boolean> {
+  return Boolean((await getSyncState()).onboardingSeenAt)
+}
+
+export async function setOnboardingSeen(): Promise<void> {
+  await patch({ onboardingSeenAt: now() })
+}
+
+/** Lets the intro be watched again from About, and re-tested in development. */
+export async function clearOnboardingSeen(): Promise<void> {
+  await patch({ onboardingSeenAt: undefined })
+}
+
+// ---------------------------------------------------------------------------
 // Sync cursors
 //
 // One cursor per table, keyed by SERVER table name ('log_entries', not
@@ -107,5 +129,6 @@ if (import.meta.env.DEV) {
     getSyncState,
     setSkippedAuth,
     clearSkippedAuth,
+    clearOnboardingSeen,
   }
 }

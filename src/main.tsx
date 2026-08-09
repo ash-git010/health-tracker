@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { migrateIfNeeded } from './data/migrate'
 import { startAutoSync } from './data/autoSync'
+import { startInstallWatch } from './data/install'
 import '@fontsource/bricolage-grotesque/600.css'
 import '@fontsource/bricolage-grotesque/700.css'
 
@@ -47,6 +48,8 @@ function MigrationFailed({ message }: { message: string }) {
 // screens would read an empty new database and briefly look as though all the
 // data had vanished.
 root.render(<Booting />)
+
+startInstallWatch()
 
 migrateIfNeeded()
   .then(() => {
