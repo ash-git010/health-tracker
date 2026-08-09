@@ -6,6 +6,17 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.6',
+    date: '2026-08-09',
+    changes: [
+      'Accounts are here — create one and your data syncs automatically in the background',
+      'Log in on another device to pick up where you left off',
+      'Signing in on a device that already has data asks what you want to keep, and backs everything up first',
+      'Your name and goals come with you when you log in somewhere new',
+      'Home screen reminds you when no account is linked',
+    ],
+  },
+  {
     version: '1.5',
     date: '2026-08-03',
     changes: [

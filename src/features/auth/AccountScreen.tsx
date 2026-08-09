@@ -90,8 +90,8 @@ export function AccountScreen() {
         </div>
 
         <p className="muted">
-          Creating an account keeps your data safe and syncs it between devices.
-          Everything already on this phone comes with you.
+          Creating an account syncs your data in the background and lets you log
+          in on another device. Everything already on this phone comes with you.
         </p>
 
         <Button variant="primary" block onClick={() => setView('register')}>
@@ -115,7 +115,7 @@ export function AccountScreen() {
           <strong className="grow">Account linked</strong>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Your data is backed up and will follow you to any device you log in on.
+          Your data syncs automatically in the background.
         </p>
       </div>
 
