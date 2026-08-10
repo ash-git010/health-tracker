@@ -24,7 +24,9 @@ export function FeedbackScreen() {
       setSentUrl(url)
     } catch (err) {
       console.error('Feedback failed:', err)
-      setError('Could not send that. Check your connection and try again.')
+      setError(
+        err instanceof Error ? err.message : 'Could not send that. Try again in a moment.'
+      )
     }
     setSending(false)
   }
