@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      selfDestroying: true,
       registerType: 'autoUpdate',
       workbox: {
         clientsClaim: true,
@@ -25,30 +26,10 @@ export default defineConfig({
         start_url: '/health-tracker/',
         scope: '/health-tracker/',
         icons: [
-          {
-            src: 'icon-192-v3.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any',
-          },
-          {
-            src: 'icon-512-v3.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any',
-          },
-          {
-            src: 'icon-maskable-192-v3.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-          {
-            src: 'icon-maskable-512-v3.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
+          { src: 'icon-192-v3.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512-v3.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icon-maskable-192-v3.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon-maskable-512-v3.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
     }),

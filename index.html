@@ -4,21 +4,287 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0a0a0f" />
+    <link rel="icon" type="image/svg+xml" href="/health-tracker/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Upkeep has moved</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0a0a0f;
+        --surface: #16161d;
+        --surface-2: #1e1e26;
+        --text: #f2f2f5;
+        --text-muted: #9b9bb0;
+        --text-faint: #74748c;
+        --border: #22222c;
+        --accent: #7c5cff;
+        --accent-dim: #5b41c4;
+        --accent-text: #ffffff;
+        --accent-glow: rgba(124, 92, 255, 0.28);
+        --gradient: linear-gradient(135deg, #7c5cff 0%, #a855f7 100%);
+        --success: #4ade80;
+        --warn: #fbbf24;
+        --radius: 16px;
+        --radius-sm: 10px;
+        --ease: cubic-bezier(0.2, 0, 0.2, 1);
+      }
 
-    <title>Upkeep</title>
-    <meta name="description" content="Personal health, nutrition and routine tracker" />
+      * { box-sizing: border-box; }
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        letter-spacing: -0.011em;
+        -webkit-font-smoothing: antialiased;
+        -webkit-tap-highlight-color: transparent;
+        display: flex;
+        justify-content: center;
+      }
 
-    <!-- iOS ignores the web app manifest entirely and reads these instead. -->
-    <link rel="apple-touch-icon" href="/apple-touch-icon-v3.png" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Upkeep" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+      main {
+        width: 100%;
+        max-width: 480px;
+        padding: 3rem 1rem 4rem;
+      }
+
+      .brand { text-align: center; margin-bottom: 2.5rem; }
+
+      .brand-icon {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 0.875rem;
+      }
+      .brand-icon::after {
+        content: "";
+        position: absolute;
+        inset: -28%;
+        background: var(--gradient);
+        filter: blur(34px);
+        opacity: 0.32;
+        z-index: -1;
+      }
+      .brand-icon img { display: block; width: 72px; height: 72px; }
+
+      .wordmark {
+        font-family: "Bricolage Grotesque", system-ui, sans-serif;
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: -0.035em;
+      }
+      .wordmark span { color: var(--accent); }
+
+      h1 {
+        font-size: 1.625rem;
+        font-weight: 680;
+        letter-spacing: -0.03em;
+        margin: 0 0 0.75rem;
+      }
+      h2 {
+        font-size: 1.1875rem;
+        font-weight: 640;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.5rem;
+      }
+      p { margin: 0 0 0.75rem; }
+      .muted { color: var(--text-muted); font-size: 0.875rem; }
+      .faint { color: var(--text-faint); font-size: 0.8125rem; }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        padding: 0.7rem 1.125rem;
+        font: inherit;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--text);
+        background: var(--surface-2);
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        text-decoration: none;
+        transition: transform 0.12s var(--ease), background 0.15s var(--ease),
+          opacity 0.15s var(--ease);
+      }
+      .btn:active { transform: scale(0.97); }
+      .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+      .btn-primary {
+        background: var(--accent);
+        color: var(--accent-text);
+        box-shadow: 0 4px 20px var(--accent-glow);
+      }
+      .btn-primary:active { background: var(--accent-dim); }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.125rem;
+        margin-top: 2.5rem;
+      }
+
+      ol { margin: 0.75rem 0 0; padding-left: 1.15rem; }
+      li { margin-bottom: 0.4rem; color: var(--text-muted); font-size: 0.875rem; }
+
+      #status { margin: 0.875rem 0 0; font-size: 0.875rem; min-height: 1.4em; }
+      .ok { color: var(--success); }
+      .bad { color: var(--warn); }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <main>
+      <div class="brand">
+        <div class="brand-icon">
+          <img src="/health-tracker/icon-192-v3.png" alt="" width="72" height="72" />
+        </div>
+        <div class="wordmark">Up<span>keep</span></div>
+      </div>
+
+      <h1>Upkeep has moved</h1>
+      <p class="muted">
+        The app now lives at its own address. This one is going away.
+      </p>
+
+      <a class="btn btn-primary" href="https://upkeepdaily.com">Open upkeepdaily.com</a>
+
+      <ol>
+        <li>Sign in with your account — your data comes back automatically.</li>
+        <li>Add the app to your home screen from the new address.</li>
+        <li>Delete this old one.</li>
+      </ol>
+
+      <div class="card">
+        <h2>No account?</h2>
+        <p class="muted">
+          Your data is stored against this old address, so it can't follow you on
+          its own. Save it to a file and load it in at the new address.
+        </p>
+        <button class="btn" id="rescue">Save my data to a file</button>
+        <p id="status" aria-live="polite"></p>
+        <ol>
+          <li>Save the file here — from your installed Upkeep icon, not a browser tab.</li>
+          <li>Go to upkeepdaily.com and create your account.</li>
+          <li>Import the file straight away, in Settings.</li>
+          <li>Importing replaces everything, so don't log anything before you do.</li>
+        </ol>
+        <p class="faint" style="margin-top: 0.75rem">
+          This address stops working in a few weeks. Don't uninstall the old app
+          until you've saved the file.
+        </p>
+      </div>
+    </main>
+
+    <script>
+      // Standalone rescue export. Reads IndexedDB directly and reproduces the
+      // shape of exportAll() in src/data/backup.ts (version 2). syncState is
+      // deliberately excluded: it holds the userId and per-table sync cursors,
+      // which must never be carried onto a different install.
+      var STORES = [
+        'goals', 'profile', 'foods', 'logEntries', 'measurements',
+        'exercises', 'workouts', 'workoutSets',
+        'routines', 'routineExercises',
+        'careRoutines', 'careSteps', 'careDoneLog', 'careStepDone'
+      ];
+
+      function openDB() {
+        return new Promise(function (resolve, reject) {
+          var req = indexedDB.open('UpkeepDB');
+          var created = false;
+          // Opening with no version creates the DB if absent. If this fires,
+          // there was no Upkeep data here — clean up and bail.
+          req.onupgradeneeded = function () { created = true; };
+          req.onsuccess = function () {
+            var db = req.result;
+            if (created) {
+              db.close();
+              indexedDB.deleteDatabase('UpkeepDB');
+              reject(new Error('NO_DB'));
+              return;
+            }
+            resolve(db);
+          };
+          req.onerror = function () { reject(req.error || new Error('OPEN_FAILED')); };
+          req.onblocked = function () { reject(new Error('BLOCKED')); };
+        });
+      }
+
+      function readStore(db, name) {
+        return new Promise(function (resolve) {
+          if (!db.objectStoreNames.contains(name)) { resolve([]); return; }
+          try {
+            var r = db.transaction(name, 'readonly').objectStore(name).getAll();
+            r.onsuccess = function () { resolve(r.result || []); };
+            r.onerror = function () { resolve([]); };
+          } catch (e) {
+            resolve([]);
+          }
+        });
+      }
+
+      function say(msg, cls) {
+        var el = document.getElementById('status');
+        el.textContent = msg;
+        el.className = cls || '';
+      }
+
+      document.getElementById('rescue').addEventListener('click', function () {
+        var btn = this;
+        btn.disabled = true;
+        say('Reading your data…');
+
+        openDB()
+          .then(function (db) {
+            return Promise.all(STORES.map(function (s) { return readStore(db, s); }))
+              .then(function (results) { db.close(); return results; });
+          })
+          .then(function (results) {
+            var payload = { version: 2, exportedAt: new Date().toISOString() };
+            var total = 0;
+            STORES.forEach(function (name, i) {
+              payload[name] = results[i];
+              total += results[i].length;
+            });
+
+            if (total === 0) {
+              say('No Upkeep data found here. Open this page from your installed Upkeep icon rather than a browser tab, then try again.', 'bad');
+              btn.disabled = false;
+              return;
+            }
+
+            var json = JSON.stringify(payload, null, 2);
+            var blob = new Blob([json], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'upkeep-' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            say('Saved ' + total + ' items. Check your downloads for the file.', 'ok');
+            btn.disabled = false;
+          })
+          .catch(function (err) {
+            if (err && err.message === 'NO_DB') {
+              say('No Upkeep data found here. Open this page from your installed Upkeep icon rather than a browser tab.', 'bad');
+            } else {
+              say('Could not read your data: ' + (err && err.message ? err.message : 'unknown error'), 'bad');
+            }
+            btn.disabled = false;
+          });
+      });
+    </script>
   </body>
 </html>
