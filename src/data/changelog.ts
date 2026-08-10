@@ -6,6 +6,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '1.9',
+    date: '2026-08-10',
+    changes: [
+      'Create an account to keep your data safe if you lose your phone',
+      'You can now sign into a different account on a device that has already synced with one',
+      'Fixed an error when moving a device to a second account',
+    ],
+  },
+  {
     version: '1.8',
     date: '2026-08-09',
     changes: [
