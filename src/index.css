@@ -890,6 +890,7 @@ main > * { animation: rise 0.22s var(--ease); }
   padding: 1rem 1.75rem;
   text-align: left;
   overflow-y: auto;
+  touch-action: pan-y;
   will-change: transform, opacity;
 }
 
