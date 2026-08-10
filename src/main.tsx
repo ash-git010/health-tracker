@@ -12,11 +12,6 @@ window.addEventListener('unhandledrejection', (e) => {
   console.error('Unhandled rejection:', e.reason)
 })
 
-const redirect = sessionStorage.redirect
-if (redirect) {
-  delete sessionStorage.redirect
-  history.replaceState(null, '', redirect)
-}
 
 const root = createRoot(document.getElementById('root')!)
 
