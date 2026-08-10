@@ -63,8 +63,10 @@ export function AboutScreen() {
       <h3>Backing up</h3>
       <Card>
         <p className="muted" style={{ margin: 0 }}>
-          Clearing your browser data will erase everything stored on this device. Export a
-          backup from Settings now and then, even if you have an account.
+          Losing this phone, clearing your browser, or reinstalling erases
+          everything stored on this device. Export a backup from Settings now
+          and then, even if you have an account — it is the only copy that does
+          not depend on anything else working.
         </p>
       </Card>
 
