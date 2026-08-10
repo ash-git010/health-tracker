@@ -603,7 +603,15 @@ async function pushTable(
   const SIZE = 500
   for (let i = 0; i < changed.length; i += SIZE) {
     const batch = changed.slice(i, i + SIZE).map((row) => t.toRow(row, userId))
-    const { error } = await supabase.from(t.name).upsert(batch)
+    // The conflict target must name both primary key columns. Server PKs are
+    // (user_id, id): a device that synced with one account carries those UUIDs
+    // into the next, and matching on id alone turned the insert into an update
+    // of another user's row, which RLS refused with a 403. Left implicit this
+    // happens to work, because PostgREST infers the primary key — but the
+    // inference is invisible and the failure it would cause is not obvious.
+    const { error } = await supabase
+      .from(t.name)
+      .upsert(batch, { onConflict: 'user_id,id' })
     if (error) throw new Error(`${t.name} push: ${error.message}`)
   }
 
