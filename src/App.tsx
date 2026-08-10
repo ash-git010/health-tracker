@@ -253,7 +253,7 @@ function AppStages() {
   }
 
   return (
-    <BrowserRouter basename="/health-tracker">
+    <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<HubScreen />} />

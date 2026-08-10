@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  base: '/health-tracker/',
   plugins: [
     react(),
     VitePWA({
@@ -22,33 +21,13 @@ export default defineConfig({
         background_color: '#0a0a0f',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/health-tracker/',
-        scope: '/health-tracker/',
+        start_url: '/',
+        scope: '/',
         icons: [
-          {
-            src: 'icon-192-v3.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any',
-          },
-          {
-            src: 'icon-512-v3.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any',
-          },
-          {
-            src: 'icon-maskable-192-v3.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-          {
-            src: 'icon-maskable-512-v3.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
+          { src: 'icon-192-v3.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512-v3.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icon-maskable-192-v3.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon-maskable-512-v3.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
     }),
