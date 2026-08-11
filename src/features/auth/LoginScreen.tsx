@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { signIn } from '../../data/auth'
 import { clearSkippedAuth } from '../../data/syncState'
 import { Button } from '../../components/ui'
+import { PasswordField } from '../../components/PasswordField'
 import { ForgotPasswordScreen } from './ForgotPasswordScreen'
 
 interface Props {
@@ -70,15 +71,12 @@ export function LoginScreen({ onDone, onSwitchToRegister, onBack }: Props) {
         />
       </label>
 
-      <label className="field">
-        <span className="field-label">Password</span>
-        <input
-          type="password"
-          value={password}
-          autoComplete="current-password"
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </label>
+      <PasswordField
+        label="Password"
+        value={password}
+        autoComplete="current-password"
+        onChange={setPassword}
+      />
 
       {error && <p className="warn">{error}</p>}
 

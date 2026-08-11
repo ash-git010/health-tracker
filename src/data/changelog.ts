@@ -6,6 +6,18 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: '2.0',
+    date: '2026-08-11',
+    changes: [
+      'Forgotten your password? Get a code by email and set a new one, without losing anything',
+      'New accounts now confirm your email address with a code, so nobody can sign up as you',
+      'Upkeep has moved to upkeepdaily.com — update any bookmark you have',
+      'Emails from Upkeep now come from upkeepdaily.com and look like the app',
+      'You get an email if your password or email address ever changes, so you know if it was not you',
+      'Fixed swiping through the intro on phones, which did nothing before',
+    ],
+  },
+  {
     version: '1.9',
     date: '2026-08-10',
     changes: [

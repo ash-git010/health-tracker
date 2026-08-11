@@ -9,6 +9,7 @@ import {
 import { saveName } from '../../data/profile'
 import { clearSkippedAuth } from '../../data/syncState'
 import { Button } from '../../components/ui'
+import { PasswordField } from '../../components/PasswordField'
 
 /** Matches Supabase's minimum interval per user, so the button is disabled
  *  for exactly as long as a resend would be refused. */
@@ -211,16 +212,13 @@ export function RegisterScreen({ existingName, onDone, onSwitchToLogin, onBack }
         />
       </label>
 
-      <label className="field">
-        <span className="field-label">Password</span>
-        <input
-          type="password"
-          value={password}
-          autoComplete="new-password"
-          placeholder={`At least ${MIN_PASSWORD} characters`}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </label>
+      <PasswordField
+        label="Password"
+        value={password}
+        autoComplete="new-password"
+        placeholder={`At least ${MIN_PASSWORD} characters`}
+        onChange={setPassword}
+      />
 
       {error && <p className="warn">{error}</p>}
 

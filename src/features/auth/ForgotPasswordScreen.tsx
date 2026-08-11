@@ -7,6 +7,7 @@ import {
 } from '../../data/auth'
 import { clearSkippedAuth } from '../../data/syncState'
 import { Button } from '../../components/ui'
+import { PasswordField } from '../../components/PasswordField'
 
 /**
  * Supabase's "minimum interval per user" is 60 seconds. Matching it here means
@@ -167,26 +168,20 @@ export function ForgotPasswordScreen({ initialEmail, onDone, onBack }: Props) {
         />
       </label>
 
-      <label className="field">
-        <span className="field-label">New password</span>
-        <input
-          type="password"
-          value={password}
-          autoComplete="new-password"
-          placeholder={`At least ${MIN_PASSWORD} characters`}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </label>
+      <PasswordField
+        label="New password"
+        value={password}
+        autoComplete="new-password"
+        placeholder={`At least ${MIN_PASSWORD} characters`}
+        onChange={setPassword}
+      />
 
-      <label className="field">
-        <span className="field-label">Confirm new password</span>
-        <input
-          type="password"
-          value={confirmPw}
-          autoComplete="new-password"
-          onChange={(e) => setConfirmPw(e.target.value)}
-        />
-      </label>
+      <PasswordField
+        label="Confirm new password"
+        value={confirmPw}
+        autoComplete="new-password"
+        onChange={setConfirmPw}
+      />
 
       {tooShort && <p className="warn">At least {MIN_PASSWORD} characters.</p>}
       {mismatch && <p className="warn">The two passwords do not match.</p>}

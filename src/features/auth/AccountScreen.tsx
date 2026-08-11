@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react'
-import { getCurrentUser, signOut, changePassword, MIN_PASSWORD, type CurrentUser } from '../../data/auth'
+import { getCurrentUser, signOut, changePassword, type CurrentUser } from '../../data/auth'
 import { getProfile } from '../../data/profile'
 import { Button, ScreenHeader } from '../../components/ui'
+import { PasswordField } from '../../components/PasswordField'
 import { useConfirm } from '../../components/DialogProvider'
 import { RegisterScreen } from './RegisterScreen'
 import { LoginScreen } from './LoginScreen'
 
 type View = 'menu' | 'register' | 'login'
+
+const MIN_PASSWORD = 8
 
 export function AccountScreen() {
   const navigate = useNavigate()
@@ -216,35 +219,27 @@ function PasswordEditor() {
 
   return (
     <>
-      <label className="field">
-        <span className="field-label">Current password</span>
-        <input
-          type="password"
-          autoComplete="current-password"
-          value={current}
-          onChange={(e) => setCurrent(e.target.value)}
-        />
-      </label>
+      <PasswordField
+        label="Current password"
+        value={current}
+        autoComplete="current-password"
+        onChange={setCurrent}
+      />
 
-      <label className="field">
-        <span className="field-label">New password</span>
-        <input
-          type="password"
-          autoComplete="new-password"
-          value={next}
-          onChange={(e) => setNext(e.target.value)}
-        />
-      </label>
+      <PasswordField
+        label="New password"
+        value={next}
+        autoComplete="new-password"
+        placeholder={`At least ${MIN_PASSWORD} characters`}
+        onChange={setNext}
+      />
 
-      <label className="field">
-        <span className="field-label">Confirm new password</span>
-        <input
-          type="password"
-          autoComplete="new-password"
-          value={confirmPw}
-          onChange={(e) => setConfirmPw(e.target.value)}
-        />
-      </label>
+      <PasswordField
+        label="Confirm new password"
+        value={confirmPw}
+        autoComplete="new-password"
+        onChange={setConfirmPw}
+      />
 
       {tooShort && <p className="warn">At least {MIN_PASSWORD} characters.</p>}
       {mismatch && <p className="warn">The two new passwords do not match.</p>}
