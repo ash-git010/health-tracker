@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react'
-import { getCurrentUser, signOut, changePassword, type CurrentUser } from '../../data/auth'
+import { getCurrentUser, signOut, changePassword, MIN_PASSWORD, type CurrentUser } from '../../data/auth'
 import { getProfile } from '../../data/profile'
 import { Button, ScreenHeader } from '../../components/ui'
 import { useConfirm } from '../../components/DialogProvider'
@@ -9,8 +9,6 @@ import { RegisterScreen } from './RegisterScreen'
 import { LoginScreen } from './LoginScreen'
 
 type View = 'menu' | 'register' | 'login'
-
-const MIN_PASSWORD = 8
 
 export function AccountScreen() {
   const navigate = useNavigate()

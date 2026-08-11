@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { signIn } from '../../data/auth'
 import { clearSkippedAuth } from '../../data/syncState'
 import { Button } from '../../components/ui'
+import { ForgotPasswordScreen } from './ForgotPasswordScreen'
 
 interface Props {
   onDone: () => void
@@ -14,6 +15,7 @@ export function LoginScreen({ onDone, onSwitchToRegister, onBack }: Props) {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [forgot, setForgot] = useState(false)
 
   const valid = email.trim().length > 3 && password.length > 0
 
@@ -36,6 +38,19 @@ export function LoginScreen({ onDone, onSwitchToRegister, onBack }: Props) {
     // device already has data AND the account has data is the next session's
     // job — silently merging or overwriting now would risk losing something.
     onDone()
+  }
+
+  // Held here rather than routed. LoginScreen has two call sites — the
+  // first-run gate and AccountScreen — and a new prop would mean editing both
+  // for a flow neither needs to know about.
+  if (forgot) {
+    return (
+      <ForgotPasswordScreen
+        initialEmail={email}
+        onDone={onDone}
+        onBack={() => setForgot(false)}
+      />
+    )
   }
 
   return (
@@ -69,6 +84,10 @@ export function LoginScreen({ onDone, onSwitchToRegister, onBack }: Props) {
 
       <Button variant="primary" block onClick={handleSubmit} disabled={!valid || busy}>
         {busy ? 'Logging in…' : 'Log in'}
+      </Button>
+
+      <Button block onClick={() => setForgot(true)}>
+        Forgot password
       </Button>
 
       <Button block onClick={onSwitchToRegister}>
