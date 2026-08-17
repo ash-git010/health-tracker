@@ -25,7 +25,7 @@ import { EquipmentIcon } from '../../components/EquipmentIcon'
 import { Button, Card, Empty, Fab } from '../../components/ui'
 import type { SetType, WorkoutSet } from '../../data/types'
 import { useConfirm } from '../../components/DialogProvider'
-
+import { OptionSheet } from '../../components/OptionSheet'
 
 const SET_TYPES: { value: SetType; label: string }[] = [
   { value: 'normal', label: 'Normal' },
@@ -244,40 +244,6 @@ export function ActiveWorkoutScreen() {
       </div>
 
       <Fab label="Add exercise" onClick={() => setPicking(true)} />
-    </div>
-  )
-}
-
-interface SheetOption {
-  label: string
-  onSelect: () => void
-  active?: boolean
-  className?: string
-}
-
-function OptionSheet({
-  title,
-  options,
-  onClose,
-}: {
-  title: string
-  options: SheetOption[]
-  onClose: () => void
-}) {
-  return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-title">{title}</div>
-        {options.map((o) => (
-          <button
-            key={o.label}
-            className={`sheet-item${o.active ? ' active' : ''}${o.className ? ` ${o.className}` : ''}`}
-            onClick={o.onSelect}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
     </div>
   )
 }

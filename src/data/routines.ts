@@ -1,5 +1,5 @@
 import { db } from './db'
-import { getSets, startWorkout, renameWorkout, addSet, setWorkoutRoutineId } from './workouts'
+import { getSets, startWorkout, renameWorkout, addSet, setWorkoutRoutineId, lastSetsFor } from './workouts'
 import { getFolderOrder, saveFolderOrder } from './profile'
 import { newId, now, isLive } from './ids'
 import type { Routine, RoutineExercise, RoutineSet, SetType, WorkoutSet } from './types'
@@ -47,7 +47,7 @@ export async function createRoutine(name: string, folder?: string): Promise<stri
 
 export async function updateRoutine(
   id: string,
-  changes: Partial<Pick<Routine, 'name' | 'folder' | 'sortOrder'>>
+  changes: Partial<Pick<Routine, 'name' | 'folder' | 'sortOrder' | 'notes'>>
 ): Promise<void> {
   await db.routines.update(id, { ...changes, updatedAt: now() })
 }
@@ -253,13 +253,20 @@ export async function startWorkoutFromRoutine(routineId: string): Promise<string
   const workoutId = await startWorkout(routineId)
   if (routine?.name) await renameWorkout(workoutId, routine.name)
 
-    for (const ex of exercises) {
+      for (const ex of exercises) {
     const targets: RoutineSet[] =
       ex.sets && ex.sets.length > 0
         ? ex.sets
         : Array.from({ length: Math.max(1, ex.targetSets) }, () => ({
             type: 'normal' as SetType,
           }))
+
+    // Routine targets are a starting point, not a permanent prescription.
+    // Once there's history for an exercise, the numbers come from what you
+    // actually lifted — shown as grey hints — and the routine only decides
+    // how many sets there are and which are warm-ups.
+    const history = await lastSetsFor(ex.exerciseKey)
+    const useTargets = history.length === 0
 
     for (let i = 0; i < targets.length; i++) {
       await addSet({
@@ -268,8 +275,8 @@ export async function startWorkoutFromRoutine(routineId: string): Promise<string
         exerciseName: ex.exerciseName,
         order: ex.order,
         setNumber: i + 1,
-        weightKg: targets[i].weightKg ?? 0,
-        reps: targets[i].reps ?? 0,
+        weightKg: useTargets ? (targets[i].weightKg ?? 0) : 0,
+        reps: useTargets ? (targets[i].reps ?? 0) : 0,
         type: targets[i].type ?? 'normal',
         restSeconds: ex.restSeconds,
       })
