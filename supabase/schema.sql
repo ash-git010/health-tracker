@@ -241,7 +241,7 @@ create table workout_sets (
   type text not null check (type in ('normal', 'warmup', 'drop', 'failure')),
   rest_seconds integer not null default 0,
   completed boolean not null default false,
-
+  rpe numeric check (rpe is null or (rpe >= 1 and rpe <= 10)),
   created_at timestamptz not null,
   updated_at timestamptz not null,
   deleted_at timestamptz,
@@ -267,7 +267,7 @@ create table routines (
   name text not null,
   folder text,
   sort_order integer,
-
+  notes text,
   created_at timestamptz not null,
   updated_at timestamptz not null,
   deleted_at timestamptz,
@@ -287,6 +287,10 @@ create table routine_exercises (
   sort_order integer not null,
   target_sets integer not null,
   rest_seconds integer not null default 0,
+  
+  notes text,
+  sets jsonb not null default '[]'::jsonb
+    check (jsonb_typeof(sets) = 'array'),
 
   created_at timestamptz not null,
   updated_at timestamptz not null,

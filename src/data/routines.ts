@@ -2,9 +2,12 @@ import { db } from './db'
 import { getSets, startWorkout, renameWorkout, addSet, setWorkoutRoutineId } from './workouts'
 import { getFolderOrder, saveFolderOrder } from './profile'
 import { newId, now, isLive } from './ids'
-import type { Routine, RoutineExercise, WorkoutSet } from './types'
+import type { Routine, RoutineExercise, RoutineSet, SetType, WorkoutSet } from './types'
 
-export type RoutineExerciseInput = Pick<RoutineExercise, 'exerciseKey' | 'exerciseName' | 'targetSets' | 'restSeconds'>
+export type RoutineExerciseInput = Pick <
+  RoutineExercise,
+  'exerciseKey' | 'exerciseName' | 'targetSets' | 'restSeconds' | 'sets' | 'notes'
+>
 
 export const UNGROUPED = 'Routines'
 
@@ -143,25 +146,36 @@ export interface RoutineUpdate {
   exercises: RoutineExerciseInput[]
 }
 
-/** Working sets only — a warm-up added on the day isn't a routine change. */
+/**
+ * Turns logged sets into routine targets. Warm-ups are carried into `sets` so
+ * a routine can prescribe them, but excluded from targetSets — targetSets
+ * means working sets, and that's what the update diff compares.
+ */
 function workoutExercises(sets: WorkoutSet[]): RoutineExerciseInput[] {
   const seen = new Map<string, RoutineExerciseInput>()
   const ordered: RoutineExerciseInput[] = []
 
   for (const set of sets) {
-    if (set.type === 'warmup') continue
+    const target: RoutineSet = {
+      type: set.type,
+      weightKg: set.weightKg || undefined,
+      reps: set.reps || undefined,
+      rpe: set.rpe,
+    }
 
     const existing = seen.get(set.exerciseKey)
     if (existing) {
-      existing.targetSets += 1
+      existing.sets!.push(target)
+      if (set.type !== 'warmup') existing.targetSets += 1
       continue
     }
 
     const entry: RoutineExerciseInput = {
       exerciseKey: set.exerciseKey,
       exerciseName: set.exerciseName,
-      targetSets: 1,
+      targetSets: set.type === 'warmup' ? 0 : 1,
       restSeconds: set.restSeconds ?? 90,
+      sets: [target],
     }
     seen.set(set.exerciseKey, entry)
     ordered.push(entry)
@@ -224,26 +238,7 @@ export async function saveWorkoutAsRoutine(
   name: string,
   folder?: string
 ): Promise<string> {
-  const sets = await getSets(workoutId)
-
-  const exercises: RoutineExerciseInput[] = []
-  const seen = new Map<string, RoutineExerciseInput>()
-
-  for (const set of sets) {
-    const existing = seen.get(set.exerciseKey)
-    if (existing) {
-      existing.targetSets += 1
-    } else {
-      const entry: RoutineExerciseInput = {
-        exerciseKey: set.exerciseKey,
-        exerciseName: set.exerciseName,
-        targetSets: 1,
-        restSeconds: set.restSeconds ?? 90,
-      }
-      seen.set(set.exerciseKey, entry)
-      exercises.push(entry)
-    }
-  }
+  const exercises = workoutExercises(await getSets(workoutId))
 
   const routineId = await createRoutine(name, folder)
   await setRoutineExercises(routineId, exercises)
@@ -258,20 +253,24 @@ export async function startWorkoutFromRoutine(routineId: string): Promise<string
   const workoutId = await startWorkout(routineId)
   if (routine?.name) await renameWorkout(workoutId, routine.name)
 
-  for (const ex of exercises) {
-    // targetSets was stored but never used — routines always started with a
-    // single row no matter what they specified.
-    const count = Math.max(1, ex.targetSets)
-    for (let i = 0; i < count; i++) {
+    for (const ex of exercises) {
+    const targets: RoutineSet[] =
+      ex.sets && ex.sets.length > 0
+        ? ex.sets
+        : Array.from({ length: Math.max(1, ex.targetSets) }, () => ({
+            type: 'normal' as SetType,
+          }))
+
+    for (let i = 0; i < targets.length; i++) {
       await addSet({
         workoutId,
         exerciseKey: ex.exerciseKey,
         exerciseName: ex.exerciseName,
         order: ex.order,
         setNumber: i + 1,
-        weightKg: 0,
-        reps: 0,
-        type: 'normal',
+        weightKg: targets[i].weightKg ?? 0,
+        reps: targets[i].reps ?? 0,
+        type: targets[i].type ?? 'normal',
         restSeconds: ex.restSeconds,
       })
     }

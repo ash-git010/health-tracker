@@ -4,7 +4,7 @@ import { getCurrentUser } from './auth'
 import { getCursors, setCursors, clearCursor, clearCursors } from './syncState'
 import type {
   Goals, Profile, Food, LogEntry, BodyMeasurement, Exercise, Workout, WorkoutSet,
-  Routine, RoutineExercise, CareRoutine, CareStep, CareDone, CareStepDone,
+  Routine, RoutineExercise, RoutineSet, CareRoutine, CareStep, CareDone, CareStepDone,
 } from './types'
 import { asSyncWrite } from './syncWrites'
 
@@ -46,6 +46,24 @@ function os(v: unknown): string | undefined {
 
 function arr(v: unknown): string[] {
   return Array.isArray(v) ? v.map(String) : []
+}
+
+
+const ROUTINE_SET_TYPES = new Set(['normal', 'warmup', 'drop', 'failure'])
+
+/** jsonb arrives untyped. Coerce every field rather than trusting the blob. */
+function routineSets(v: unknown): RoutineSet[] {
+  if (!Array.isArray(v)) return []
+  return v.map((raw) => {
+    const item = (raw ?? {}) as Record<string, unknown>
+    const type = String(item.type ?? 'normal')
+    return {
+      type: (ROUTINE_SET_TYPES.has(type) ? type : 'normal') as RoutineSet['type'],
+      weightKg: on(item.weightKg),
+      reps: on(item.reps),
+      rpe: on(item.rpe),
+    }
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -265,6 +283,7 @@ const workoutSets: TableSync<WorkoutSet> = {
     type: w.type,
     rest_seconds: w.restSeconds ?? 0,
     completed: w.completed ?? false,
+    rpe: w.rpe ?? null,
     created_at: w.createdAt,
     updated_at: w.updatedAt,
     deleted_at: w.deletedAt ?? null,
@@ -281,6 +300,7 @@ const workoutSets: TableSync<WorkoutSet> = {
     type: r.type as WorkoutSet['type'],
     restSeconds: n(r.rest_seconds),
     completed: Boolean(r.completed),
+    rpe: on(r.rpe),
     createdAt: s(r.created_at),
     updatedAt: s(r.updated_at),
     deletedAt: os(r.deleted_at),
@@ -298,6 +318,7 @@ const routines: TableSync<Routine> = {
     name: r.name,
     folder: r.folder ?? null,
     sort_order: r.sortOrder ?? null,
+    notes: r.notes ?? null,
     created_at: r.createdAt,
     updated_at: r.updatedAt,
     deleted_at: r.deletedAt ?? null,
@@ -307,6 +328,7 @@ const routines: TableSync<Routine> = {
     name: s(r.name),
     folder: os(r.folder),
     sortOrder: on(r.sort_order),
+    notes: os(r.notes),
     createdAt: s(r.created_at),
     updatedAt: s(r.updated_at),
     deletedAt: os(r.deleted_at),
@@ -327,6 +349,8 @@ const routineExercises: TableSync<RoutineExercise> = {
     sort_order: r.order,
     target_sets: r.targetSets,
     rest_seconds: r.restSeconds ?? 0,
+    notes: r.notes ?? null,
+    sets: r.sets ?? [],
     created_at: r.createdAt,
     updated_at: r.updatedAt,
     deleted_at: r.deletedAt ?? null,
@@ -339,6 +363,8 @@ const routineExercises: TableSync<RoutineExercise> = {
     order: n(r.sort_order),
     targetSets: n(r.target_sets),
     restSeconds: n(r.rest_seconds),
+    notes: os(r.notes),
+    sets: routineSets(r.sets),
     createdAt: s(r.created_at),
     updatedAt: s(r.updated_at),
     deletedAt: os(r.deleted_at),

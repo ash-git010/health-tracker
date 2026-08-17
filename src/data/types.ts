@@ -111,6 +111,7 @@ export interface WorkoutSet {
   setNumber: number
   weightKg: number
   reps: number
+  rpe?: number
   type: SetType
   restSeconds: number
   completed: boolean
@@ -119,10 +120,20 @@ export interface WorkoutSet {
   deletedAt?: string
 }
 
+// A target, not a record. Every field except type is optional: a routine may
+// specify 3 sets with no numbers at all, or 60kg × 8 at RPE 8.
+export interface RoutineSet {
+  type: SetType
+  weightKg?: number
+  reps?: number
+  rpe?: number
+}
+
 export interface Routine {
   id: string
   name: string
   folder?: string
+  notes?: string
   sortOrder?: number
   createdAt: string
   updatedAt: string
@@ -135,7 +146,10 @@ export interface RoutineExercise {
   exerciseKey: string
   exerciseName: string
   order: number
+    /** Count of non-warmup entries in `sets`. Kept in step with it on write. */
   targetSets: number
+  sets?: RoutineSet[]
+  notes?: string
   restSeconds: number
   createdAt: string
   updatedAt: string
