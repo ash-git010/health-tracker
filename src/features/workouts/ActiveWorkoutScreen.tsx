@@ -36,7 +36,7 @@ const SET_TYPES: { value: SetType; label: string }[] = [
 
 const SET_COL = '1.75rem'
 const NUM_COL = '3.5rem'
-const CHECK_COL = '2.5rem'
+const CHECK_COL = '2.625rem'
 const DEL_COL = '2rem'
 
 interface RestTimer {
@@ -531,7 +531,7 @@ function SetRow({
       </button>
 
       <button
-        className="icon-btn"
+        className="set-delete"
         style={{ width: DEL_COL }}
         aria-label={`Remove set ${label}`}
         onClick={() => set.id && deleteSet(set.id)}
