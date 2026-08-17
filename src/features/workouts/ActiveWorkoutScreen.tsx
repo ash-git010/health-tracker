@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
@@ -39,9 +39,11 @@ const NUM_COL = '3.5rem'
 const CHECK_COL = '2.625rem'
 const DEL_COL = '2rem'
 
+// Stores the wall-clock end time rather than a counter. A counter driven by
+// setTimeout stops advancing when the phone locks; the clock doesn't.
 interface RestTimer {
   exerciseKey: string
-  remaining: number
+  endsAt: number
 }
 
 export function ActiveWorkoutScreen() {
@@ -61,17 +63,39 @@ export function ActiveWorkoutScreen() {
   useEffect(() => {
     if (!timer) return
 
-    if (timer.remaining <= 0) {
-      playBeep()
-      if ('vibrate' in navigator) navigator.vibrate(400)
-      setTimer(null)
-      return
+    let cancelled = false
+
+    function check() {
+      if (cancelled || !timer) return
+
+      if (Date.now() >= timer.endsAt) {
+        playBeep()
+        if ('vibrate' in navigator) navigator.vibrate([120, 80, 120, 80, 320])
+        setTimer(null)
+        return
+      }
+
+      // Only re-render when the displayed second actually changes.
+      const stamp = Date.now()
+      setNow((cur) => (Math.floor(stamp / 1000) === Math.floor(cur / 1000) ? cur : stamp))
     }
 
-    const handle = setTimeout(() => {
-      setTimer((cur) => (cur ? { ...cur, remaining: cur.remaining - 1 } : cur))
-    }, 1000)
-    return () => clearTimeout(handle)
+    // 250ms so returning to the foreground fires the chime promptly
+    // rather than up to a second late.
+    const handle = setInterval(check, 250)
+
+    function onVisible() {
+      if (document.visibilityState === 'visible') check()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+
+    check()
+
+    return () => {
+      cancelled = true
+      clearInterval(handle)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [timer])
 
   useEffect(() => {
@@ -82,7 +106,7 @@ export function ActiveWorkoutScreen() {
 
   function startTimer(exerciseKey: string, seconds: number) {
     if (seconds <= 0) return
-    setTimer({ exerciseKey, remaining: seconds })
+    setTimer({ exerciseKey, endsAt: Date.now() + seconds * 1000 })
   }
 
   function skipTimer() {
@@ -90,7 +114,7 @@ export function ActiveWorkoutScreen() {
   }
 
   function extendTimer(delta: number) {
-    setTimer((cur) => (cur ? { ...cur, remaining: cur.remaining + delta } : cur))
+    setTimer((cur) => (cur ? { ...cur, endsAt: cur.endsAt + delta * 1000 } : cur))
   }
 
   if (workout === undefined) return <Empty>Loading…</Empty>
@@ -159,6 +183,7 @@ export function ActiveWorkoutScreen() {
   const volume = workoutVolume(sets ?? [])
   const setCount = completedSets(sets ?? []).length
   const elapsedSeconds = Math.max(0, Math.floor((now - new Date(workout.startedAt).getTime()) / 1000))
+  const restRemaining = timer ? Math.max(0, Math.ceil((timer.endsAt - now) / 1000)) : 0
 
   async function handleDiscard() {
     const ok = await confirm({
@@ -209,7 +234,8 @@ export function ActiveWorkoutScreen() {
             exerciseName={group.name}
             order={group.order}
             sets={group.sets}
-            timer={timer}
+            activeRestKey={timer?.exerciseKey ?? null}
+            restRemaining={restRemaining}
             onStartTimer={startTimer}
             onExtendTimer={extendTimer}
             onSkipTimer={skipTimer}
@@ -262,7 +288,8 @@ function ExerciseBlock({
   exerciseName,
   order,
   sets,
-  timer,
+  activeRestKey,
+  restRemaining,
   onStartTimer,
   onExtendTimer,
   onSkipTimer,
@@ -272,7 +299,8 @@ function ExerciseBlock({
   exerciseName: string
   order: number
   sets: WorkoutSet[]
-  timer: RestTimer | null
+  activeRestKey: string | null
+  restRemaining: number
   onStartTimer: (exerciseKey: string, seconds: number) => void
   onExtendTimer: (delta: number) => void
   onSkipTimer: () => void
@@ -360,9 +388,9 @@ function ExerciseBlock({
       </div>
 
       <div className="row rest-row">
-        {timer?.exerciseKey === exerciseKey ? (
+        {activeRestKey === exerciseKey ? (
           <>
-            <span className="grow rest-live">⏱ Rest {formatTime(timer.remaining)}</span>
+            <span className="grow rest-live">⏱ Rest {formatTime(restRemaining)}</span>
             <Button size="sm" onClick={() => onExtendTimer(15)}>
               +15s
             </Button>
@@ -462,11 +490,19 @@ function SetRow({
   const [weight, setWeight] = useState(String(set.weightKg || ''))
   const [reps, setReps] = useState(String(set.reps || ''))
   const [typeMenuOpen, setTypeMenuOpen] = useState(false)
+  const [needsReps, setNeedsReps] = useState(false)
+  const repsRef = useRef<HTMLInputElement>(null)
 
   const completed = isSetCompleted(set)
 
   async function commit(changes: { weightKg?: number; reps?: number; type?: SetType }) {
     await updateSet(set.id!, changes)
+  }
+
+  function flagMissingReps() {
+    setNeedsReps(true)
+    repsRef.current?.focus()
+    window.setTimeout(() => setNeedsReps(false), 1400)
   }
 
   async function toggleComplete() {
@@ -475,10 +511,22 @@ function SetRow({
       return
     }
 
-    const weightVal = weight.trim() ? Number(weight) || 0 : hint?.weightKg ?? set.weightKg ?? 0
-    const repsVal = reps.trim() ? Number(reps) || 0 : hint?.reps ?? set.reps ?? 0
+    // Reps decide whether a set counts. Weight does not: 0 kg is a
+    // bodyweight set, which is a real answer rather than a missing one.
+    const typedReps = reps.trim() ? Number(reps) : NaN
+    const repsVal = Number.isFinite(typedReps) && typedReps > 0 ? typedReps : (hint?.reps ?? 0)
+
+    if (repsVal <= 0) {
+      flagMissingReps()
+      return
+    }
+
+    const typedWeight = weight.trim() ? Number(weight) : NaN
+    const weightVal =
+      Number.isFinite(typedWeight) && typedWeight >= 0 ? typedWeight : (hint?.weightKg ?? 0)
+
     setWeight(String(weightVal || ''))
-    setReps(String(repsVal || ''))
+    setReps(String(repsVal))
     await updateSet(set.id!, { weightKg: weightVal, reps: repsVal, completed: true })
     onCompleted(set.restSeconds ?? 90)
   }
@@ -494,30 +542,35 @@ function SetRow({
         {label}
       </button>
 
-      <span 
+      <span
         className="faint grow"
         style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
       >
-        {hint ? `${hint.weightKg}kg × ${hint.reps}` : '–'}
+        {hint ? (hint.weightKg > 0 ? `${hint.weightKg}kg × ${hint.reps}` : `${hint.reps} reps`) : '–'}
       </span>
 
       <input
         type="number"
         inputMode="decimal"
         value={weight}
-        placeholder={hint ? String(hint.weightKg) : '–'}
+        placeholder={hint && hint.weightKg > 0 ? String(hint.weightKg) : '–'}
         onChange={(e) => setWeight(e.target.value)}
-        onBlur={() => commit({ weightKg: Number(weight) || 0 })}
+        onBlur={() => commit({ weightKg: weight.trim() ? Number(weight) || 0 : 0 })}
         style={{ width: NUM_COL }}
       />
 
       <input
+        ref={repsRef}
         type="number"
         inputMode="numeric"
+        className={needsReps ? 'set-input-invalid' : undefined}
         value={reps}
         placeholder={hint ? String(hint.reps) : '–'}
-        onChange={(e) => setReps(e.target.value)}
-        onBlur={() => commit({ reps: Number(reps) || 0 })}
+        onChange={(e) => {
+          setNeedsReps(false)
+          setReps(e.target.value)
+        }}
+        onBlur={() => commit({ reps: reps.trim() ? Number(reps) || 0 : 0 })}
         style={{ width: NUM_COL }}
       />
 

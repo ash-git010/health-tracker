@@ -542,6 +542,11 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   background: rgba(248, 113, 113, 0.12);
 }
 
+.set-row input.set-input-invalid {
+  border-color: var(--danger);
+  background: rgba(248, 113, 113, 0.12);
+}
+
 .check-btn {
   display: inline-flex;
   align-items: center;

@@ -13,8 +13,18 @@ import {
 import { ExercisePicker } from './ExercisePicker'
 import { FolderPicker } from './FolderPicker'
 import { TextField } from '../../components/TextField'
+import { NumberField } from '../../components/NumberField'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 import { useConfirm } from '../../components/DialogProvider'
+
+// While editing, a number field is allowed to be empty. RoutineExerciseInput
+// insists on numbers, so the form works in drafts and converts on save.
+type ExerciseDraft = {
+  exerciseKey: string
+  exerciseName: string
+  targetSets: number | ''
+  restSeconds: number | ''
+}
 
 export function RoutineFormScreen() {
   const { id } = useParams()
@@ -25,9 +35,10 @@ export function RoutineFormScreen() {
   const [loading, setLoading] = useState(!!routineId)
   const [name, setName] = useState('')
   const [folder, setFolder] = useState('')
-  const [exercises, setExercises] = useState<RoutineExerciseInput[]>([])
+  const [exercises, setExercises] = useState<ExerciseDraft[]>([])
   const [picking, setPicking] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!routineId) return
@@ -59,19 +70,20 @@ export function RoutineFormScreen() {
             ...prev,
             { exerciseKey: ex.key, exerciseName: ex.name, targetSets: 3, restSeconds: 90 },
           ])
+          setError(null)
           setPicking(false)
         }}
       />
     )
   }
 
-  const canSave = name.trim().length > 0
-
-  function updateExercise(index: number, changes: Partial<RoutineExerciseInput>) {
+  function updateExercise(index: number, changes: Partial<ExerciseDraft>) {
+    setError(null)
     setExercises((prev) => prev.map((ex, i) => (i === index ? { ...ex, ...changes } : ex)))
   }
 
   function removeExercise(index: number) {
+    setError(null)
     setExercises((prev) => prev.filter((_, i) => i !== index))
   }
 
@@ -85,14 +97,46 @@ export function RoutineFormScreen() {
     })
   }
 
+  // Returns the first problem, or null when the form is good to save.
+  function findProblem(): string | null {
+    if (!name.trim()) return 'Give the routine a name.'
+
+    for (const ex of exercises) {
+      if (ex.targetSets === '') return `${ex.exerciseName}: target sets is empty.`
+      if (!Number.isInteger(ex.targetSets) || ex.targetSets < 1)
+        return `${ex.exerciseName}: target sets must be a whole number, 1 or more.`
+      if (ex.restSeconds === '') return `${ex.exerciseName}: rest is empty.`
+      if (!Number.isInteger(ex.restSeconds) || ex.restSeconds < 0)
+        return `${ex.exerciseName}: rest must be a whole number of seconds.`
+    }
+
+    return null
+  }
+
   async function handleSave() {
-    if (!canSave || saving) return
+    if (saving) return
+
+    const problem = findProblem()
+    if (problem) {
+      setError(problem)
+      return
+    }
+
+    setError(null)
     setSaving(true)
+
+    // Validation above guarantees every draft field is a real number.
+    const clean: RoutineExerciseInput[] = exercises.map((ex) => ({
+      exerciseKey: ex.exerciseKey,
+      exerciseName: ex.exerciseName,
+      targetSets: Number(ex.targetSets),
+      restSeconds: Number(ex.restSeconds),
+    }))
 
     const cleanFolder = folder.trim() || undefined
     const finalId = routineId ?? (await createRoutine(name.trim(), cleanFolder))
     if (routineId) await updateRoutine(routineId, { name: name.trim(), folder: cleanFolder })
-    await setRoutineExercises(finalId, exercises)
+    await setRoutineExercises(finalId, clean)
 
     setSaving(false)
     navigate('/workouts/routines')
@@ -118,7 +162,15 @@ export function RoutineFormScreen() {
         onBack={() => navigate('/workouts/routines')}
       />
 
-      <TextField label="Name" value={name} onChange={setName} placeholder="Push day" />
+      <TextField
+        label="Name"
+        value={name}
+        onChange={(v) => {
+          setError(null)
+          setName(v)
+        }}
+        placeholder="Push day"
+      />
 
       <FolderPicker value={folder} onChange={setFolder} />
 
@@ -160,27 +212,25 @@ export function RoutineFormScreen() {
           </div>
 
           <div className="row" style={{ marginTop: '0.5rem', alignItems: 'flex-start' }}>
-            <label className="field grow" style={{ marginBottom: 0 }}>
-              <span className="field-label">Target sets</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                value={ex.targetSets}
-                onChange={(e) => updateExercise(i, { targetSets: Number(e.target.value) || 1 })}
-              />
-            </label>
-            <label className="field grow" style={{ marginBottom: 0 }}>
-              <span className="field-label">Rest (sec)</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                step={15}
-                value={ex.restSeconds}
-                onChange={(e) => updateExercise(i, { restSeconds: Number(e.target.value) || 0 })}
-              />
-            </label>
+            <NumberField
+              label="Target sets"
+              className="grow"
+              style={{ marginBottom: 0 }}
+              inputMode="numeric"
+              min={1}
+              value={ex.targetSets}
+              onChange={(v) => updateExercise(i, { targetSets: v })}
+            />
+            <NumberField
+              label="Rest (sec)"
+              className="grow"
+              style={{ marginBottom: 0 }}
+              inputMode="numeric"
+              min={0}
+              step={15}
+              value={ex.restSeconds}
+              onChange={(v) => updateExercise(i, { restSeconds: v })}
+            />
           </div>
         </Card>
       ))}
@@ -189,6 +239,8 @@ export function RoutineFormScreen() {
         <Plus size={16} /> Add exercise
       </Button>
 
+      {error && <p className="danger" style={{ margin: 0 }}>{error}</p>}
+
       <div className="form-actions">
         {routineId && (
           <Button variant="ghost" className="btn-warn" onClick={handleDelete}>
@@ -196,7 +248,7 @@ export function RoutineFormScreen() {
           </Button>
         )}
         <span className="grow">
-          <Button variant="primary" block onClick={handleSave} disabled={!canSave || saving}>
+          <Button variant="primary" block onClick={handleSave} disabled={saving}>
             {saving ? 'Saving…' : 'Save routine'}
           </Button>
         </span>
