@@ -2,7 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { activeWorkout, finishWorkout, deleteWorkout, defaultWorkoutName } from '../../data/workouts'
-import { saveWorkoutAsRoutine, getRoutine } from '../../data/routines'
+import {
+  saveWorkoutAsRoutine,
+  getRoutine,
+  setRoutineExercises,
+  diffWorkoutAgainstRoutine,
+} from '../../data/routines'
 import { formatDay } from '../../data/dates'
 import { FolderPicker } from './FolderPicker'
 import { TextField } from '../../components/TextField'
@@ -17,9 +22,17 @@ export function FinishWorkoutScreen() {
     () => (workout?.routineId ? getRoutine(workout.routineId) : Promise.resolve(null)),
     [workout?.routineId]
   )
+  const routineDiff = useLiveQuery(
+    () =>
+      workout?.id && workout?.routineId
+        ? diffWorkoutAgainstRoutine(workout.id, workout.routineId)
+        : Promise.resolve(null),
+    [workout?.id, workout?.routineId]
+  )
   const [name, setName] = useState<string | null>(null)
   const [notes, setNotes] = useState<string | null>(null)
   const [saveAsRoutine, setSaveAsRoutine] = useState(false)
+  const [applyRoutineUpdate, setApplyRoutineUpdate] = useState(false)
   const [routineName, setRoutineName] = useState<string | null>(null)
   const [routineFolder, setRoutineFolder] = useState('')
   const [saving, setSaving] = useState(false)
@@ -38,6 +51,7 @@ export function FinishWorkoutScreen() {
   async function handleSave() {
     if (!displayName.trim() || saving) return
     setSaving(true)
+
     if (saveAsRoutine && !workout!.routineId && displayRoutineName.trim()) {
       await saveWorkoutAsRoutine(
         workout!.id!,
@@ -45,6 +59,11 @@ export function FinishWorkoutScreen() {
         routineFolder.trim() || undefined
       )
     }
+
+    if (applyRoutineUpdate && workout!.routineId && routineDiff) {
+      await setRoutineExercises(workout!.routineId, routineDiff.exercises)
+    }
+
     await finishWorkout(workout!.id!, {
       name: displayName.trim(),
       notes: displayNotes.trim() || undefined,
@@ -91,7 +110,39 @@ export function FinishWorkoutScreen() {
       </label>
 
       {workout.routineId ? (
-        <p className="muted">Saved as {savedRoutine?.name ?? '…'}</p>
+        <>
+          <p className="muted">Saved as {savedRoutine?.name ?? '…'}</p>
+
+          {routineDiff && (
+            <>
+              <label className="toggle-row">
+                <span>
+                  <span className="toggle-row-title">
+                    Update {savedRoutine?.name ?? 'this routine'}
+                  </span>
+                  <span className="muted">You changed things during this workout</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={applyRoutineUpdate}
+                  onChange={(e) => setApplyRoutineUpdate(e.target.checked)}
+                />
+              </label>
+
+              <ul
+                className="muted"
+                style={{ margin: 0, paddingLeft: '1.15rem', fontSize: '0.875rem' }}
+              >
+                {routineDiff.changes.slice(0, 5).map((change) => (
+                  <li key={change}>{change}</li>
+                ))}
+                {routineDiff.changes.length > 5 && (
+                  <li>…and {routineDiff.changes.length - 5} more</li>
+                )}
+              </ul>
+            </>
+          )}
+        </>
       ) : (
         <>
           <label className="toggle-row">

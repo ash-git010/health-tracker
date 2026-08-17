@@ -2,7 +2,7 @@ import { db } from './db'
 import { getSets, startWorkout, renameWorkout, addSet, setWorkoutRoutineId } from './workouts'
 import { getFolderOrder, saveFolderOrder } from './profile'
 import { newId, now, isLive } from './ids'
-import type { Routine, RoutineExercise } from './types'
+import type { Routine, RoutineExercise, WorkoutSet } from './types'
 
 export type RoutineExerciseInput = Pick<RoutineExercise, 'exerciseKey' | 'exerciseName' | 'targetSets' | 'restSeconds'>
 
@@ -138,6 +138,87 @@ export async function setRoutineExercises(
   })
 }
 
+export interface RoutineUpdate {
+  changes: string[]
+  exercises: RoutineExerciseInput[]
+}
+
+/** Working sets only — a warm-up added on the day isn't a routine change. */
+function workoutExercises(sets: WorkoutSet[]): RoutineExerciseInput[] {
+  const seen = new Map<string, RoutineExerciseInput>()
+  const ordered: RoutineExerciseInput[] = []
+
+  for (const set of sets) {
+    if (set.type === 'warmup') continue
+
+    const existing = seen.get(set.exerciseKey)
+    if (existing) {
+      existing.targetSets += 1
+      continue
+    }
+
+    const entry: RoutineExerciseInput = {
+      exerciseKey: set.exerciseKey,
+      exerciseName: set.exerciseName,
+      targetSets: 1,
+      restSeconds: set.restSeconds ?? 90,
+    }
+    seen.set(set.exerciseKey, entry)
+    ordered.push(entry)
+  }
+
+  return ordered
+}
+
+/**
+ * What this workout would change about the routine it came from.
+ * Returns null when nothing meaningful differs, which is the common case —
+ * a prompt that fires every time is a prompt people stop reading.
+ */
+export async function diffWorkoutAgainstRoutine(
+  workoutId: string,
+  routineId: string
+): Promise<RoutineUpdate | null> {
+  const [sets, routineExercises] = await Promise.all([
+    getSets(workoutId),
+    getRoutineExercises(routineId),
+  ])
+
+  const current = workoutExercises(sets)
+  if (current.length === 0) return null
+
+  const before = new Map(routineExercises.map((e) => [e.exerciseKey, e]))
+  const after = new Map(current.map((e) => [e.exerciseKey, e]))
+  const changes: string[] = []
+
+  for (const ex of current) {
+    if (!before.has(ex.exerciseKey)) changes.push(`Added ${ex.exerciseName}`)
+  }
+
+  for (const ex of routineExercises) {
+    if (!after.has(ex.exerciseKey)) changes.push(`Removed ${ex.exerciseName}`)
+  }
+
+  for (const ex of current) {
+    const was = before.get(ex.exerciseKey)
+    if (!was) continue
+    if (was.targetSets !== ex.targetSets) {
+      changes.push(`${ex.exerciseName}: ${was.targetSets} → ${ex.targetSets} sets`)
+    }
+    if (was.restSeconds !== ex.restSeconds) {
+      changes.push(`${ex.exerciseName}: rest ${was.restSeconds}s → ${ex.restSeconds}s`)
+    }
+  }
+
+  const sameOrder =
+    current.length === routineExercises.length &&
+    current.every((ex, i) => routineExercises[i]?.exerciseKey === ex.exerciseKey)
+
+  if (!sameOrder && changes.length === 0) changes.push('Reordered exercises')
+
+  return changes.length > 0 ? { changes, exercises: current } : null
+}
+
 export async function saveWorkoutAsRoutine(
   workoutId: string,
   name: string,
@@ -178,17 +259,22 @@ export async function startWorkoutFromRoutine(routineId: string): Promise<string
   if (routine?.name) await renameWorkout(workoutId, routine.name)
 
   for (const ex of exercises) {
-    await addSet({
-      workoutId,
-      exerciseKey: ex.exerciseKey,
-      exerciseName: ex.exerciseName,
-      order: ex.order,
-      setNumber: 1,
-      weightKg: 0,
-      reps: 0,
-      type: 'normal',
-      restSeconds: ex.restSeconds,
-    })
+    // targetSets was stored but never used — routines always started with a
+    // single row no matter what they specified.
+    const count = Math.max(1, ex.targetSets)
+    for (let i = 0; i < count; i++) {
+      await addSet({
+        workoutId,
+        exerciseKey: ex.exerciseKey,
+        exerciseName: ex.exerciseName,
+        order: ex.order,
+        setNumber: i + 1,
+        weightKg: 0,
+        reps: 0,
+        type: 'normal',
+        restSeconds: ex.restSeconds,
+      })
+    }
   }
 
   return workoutId
