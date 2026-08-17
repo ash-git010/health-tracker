@@ -15,6 +15,7 @@ import { findExercise } from '../../data/exercises'
 import { ExercisePicker } from './ExercisePicker'
 import { FolderPicker } from './FolderPicker'
 import { REST_OPTIONS, formatRestLabel } from './rest'
+import { RPE_OPTIONS, formatRpe } from './rpe'
 import { TextField } from '../../components/TextField'
 import { OptionSheet } from '../../components/OptionSheet'
 import { EquipmentIcon } from '../../components/EquipmentIcon'
@@ -45,6 +46,8 @@ type ExerciseDraft = {
   exerciseKey: string
   exerciseName: string
   restSeconds: number
+  /** A guideline for the whole exercise, not per set. Stored on every set. */
+  rpe?: number
   notes: string
   sets: SetDraft[]
 }
@@ -92,6 +95,7 @@ export function RoutineFormScreen() {
             exerciseKey: ex.exerciseKey,
             exerciseName: ex.exerciseName,
             restSeconds: ex.restSeconds,
+            rpe: ex.sets?.[0]?.rpe,
             notes: ex.notes ?? '',
             sets: toDraftSets(ex),
           }))
@@ -178,6 +182,7 @@ export function RoutineFormScreen() {
         type: s.type,
         weightKg: s.weightKg === '' ? undefined : Number(s.weightKg),
         reps: s.reps === '' ? undefined : Number(s.reps),
+        rpe: ex.rpe,
       })),
     }))
 
@@ -299,7 +304,7 @@ function ExerciseCard({
   const confirm = useConfirm()
   const [equipment, setEquipment] = useState<string | undefined>()
   const [previous, setPrevious] = useState<WorkoutSet[]>([])
-  const [menu, setMenu] = useState<'none' | 'actions' | 'rest'>('none')
+  const [menu, setMenu] = useState<'none' | 'actions' | 'rest' | 'rpe'>('none')
   const [typeMenu, setTypeMenu] = useState<number | null>(null)
 
   useEffect(() => {
@@ -384,6 +389,12 @@ function ExerciseCard({
       <div className="row rest-row">
         <button className="btn-plain rest-live grow" onClick={() => setMenu('rest')}>
           ⏱ Rest timer: {formatRestLabel(draft.restSeconds)}
+        </button>
+      </div>
+
+      <div className="row rest-row">
+        <button className="btn-plain muted grow" onClick={() => setMenu('rpe')}>
+          ◎ Target RPE: {formatRpe(draft.rpe)}
         </button>
       </div>
 
@@ -473,6 +484,7 @@ function ExerciseCard({
               },
             },
             { label: 'Set rest timer', onSelect: () => setMenu('rest') },
+            { label: 'Set target RPE', onSelect: () => setMenu('rpe') },
             ...(isFirst
               ? []
               : [
@@ -515,6 +527,21 @@ function ExerciseCard({
             active: o.seconds === draft.restSeconds,
             onSelect: () => {
               onChange({ restSeconds: o.seconds })
+              setMenu('none')
+            },
+          }))}
+        />
+      )}
+
+      {menu === 'rpe' && (
+        <OptionSheet
+          title="Target RPE"
+          onClose={() => setMenu('none')}
+          options={RPE_OPTIONS.map((o) => ({
+            label: o.label,
+            active: o.value === draft.rpe,
+            onSelect: () => {
+              onChange({ rpe: o.value })
               setMenu('none')
             },
           }))}

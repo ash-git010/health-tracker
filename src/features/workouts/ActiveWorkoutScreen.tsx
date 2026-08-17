@@ -11,6 +11,7 @@ import {
   updateSet,
   deleteSet,
   setRestSecondsForExercise,
+  setRpeForExercise,
   lastSetsFor,
   workoutVolume,
   completedSets,
@@ -26,6 +27,7 @@ import { Button, Card, Empty, Fab } from '../../components/ui'
 import type { SetType, WorkoutSet } from '../../data/types'
 import { useConfirm } from '../../components/DialogProvider'
 import { OptionSheet } from '../../components/OptionSheet'
+import { RPE_OPTIONS, formatRpe } from './rpe'
 
 const SET_TYPES: { value: SetType; label: string }[] = [
   { value: 'normal', label: 'Normal' },
@@ -275,7 +277,7 @@ function ExerciseBlock({
   const confirm = useConfirm()
   const [previous, setPrevious] = useState<WorkoutSet[]>([])
   const [equipment, setEquipment] = useState<string | undefined>()
-  const [menu, setMenu] = useState<'none' | 'actions' | 'rest'>('none')
+  const [menu, setMenu] = useState<'none' | 'actions' | 'rest' | 'rpe'>('none')
 
   useEffect(() => {
     lastSetsFor(exerciseKey, workoutId).then(setPrevious)
@@ -286,6 +288,7 @@ function ExerciseBlock({
   }, [exerciseKey])
 
   const restSeconds = sets[0]?.restSeconds ?? 90
+  const targetRpe = sets[0]?.rpe
   const nonWarmup = sets.filter((s) => s.type !== 'warmup')
   const doneCount = nonWarmup.filter(isSetCompleted).length
 
@@ -371,6 +374,12 @@ function ExerciseBlock({
         )}
       </div>
 
+      <div className="row rest-row">
+        <button className="btn-plain muted grow" onClick={() => setMenu('rpe')}>
+          ◎ Target RPE: {formatRpe(targetRpe)}
+        </button>
+      </div>
+
       <div className="row set-header">
         <span style={{ width: SET_COL, textAlign: 'center' }}>SET</span>
         <span className="grow">PREVIOUS</span>
@@ -413,6 +422,7 @@ function ExerciseBlock({
               },
             },
             { label: 'Set rest timer', onSelect: () => setMenu('rest') },
+            { label: 'Set target RPE', onSelect: () => setMenu('rpe') },
             {
               label: 'Remove exercise',
               onSelect: () => {
@@ -433,6 +443,20 @@ function ExerciseBlock({
             active: o.seconds === restSeconds,
             onSelect: () => {
               setRest(o.seconds)
+              setMenu('none')
+            },
+          }))}
+        />
+      )}
+            {menu === 'rpe' && (
+        <OptionSheet
+          title="Target RPE"
+          onClose={() => setMenu('none')}
+          options={RPE_OPTIONS.map((o) => ({
+            label: o.label,
+            active: o.value === targetRpe,
+            onSelect: () => {
+              setRpeForExercise(workoutId, exerciseKey, o.value)
               setMenu('none')
             },
           }))}

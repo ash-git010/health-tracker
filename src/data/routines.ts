@@ -160,7 +160,6 @@ function workoutExercises(sets: WorkoutSet[]): RoutineExerciseInput[] {
       type: set.type,
       weightKg: set.weightKg || undefined,
       reps: set.reps || undefined,
-      rpe: set.rpe,
     }
 
     const existing = seen.get(set.exerciseKey)
@@ -230,6 +229,14 @@ export async function diffWorkoutAgainstRoutine(
 
   if (!sameOrder && changes.length === 0) changes.push('Reordered exercises')
 
+  // RPE is set in the routine editor, never inherited from a workout: the
+  // in-session value may record what you managed rather than what you're
+  // aiming for, and a bad day shouldn't rewrite your programming.
+  for (const ex of current) {
+    const targetRpe = before.get(ex.exerciseKey)?.sets?.[0]?.rpe
+    for (const set of ex.sets ?? []) set.rpe = targetRpe
+  }
+
   return changes.length > 0 ? { changes, exercises: current } : null
 }
 
@@ -279,6 +286,7 @@ export async function startWorkoutFromRoutine(routineId: string): Promise<string
         reps: useTargets ? (targets[i].reps ?? 0) : 0,
         type: targets[i].type ?? 'normal',
         restSeconds: ex.restSeconds,
+        rpe: targets[i].rpe,
       })
     }
   }

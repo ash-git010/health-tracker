@@ -5,6 +5,23 @@ export interface Release {
 }
 
 export const CHANGELOG: Release[] = [
+    {
+    version: '2.1',
+    date: '2026-08-18',
+    changes: [
+      'Routines now remember the weight and reps you are aiming for on every set, not just how many sets',
+      'Routines can include warm-up sets, and starting one gives you every set it asks for',
+      'The first time you do an exercise your targets are filled in; after that you see your last session instead',
+      'Set a target RPE for an exercise and adjust it mid-workout without changing the routine',
+      'Pick a rest timer from a list instead of counting out seconds, and add notes to a routine or an exercise',
+      'Changed something mid-workout? Finishing offers to save it back to the routine, and tells you what changed',
+      'Bodyweight exercises: leave the weight blank and tick the set on reps alone',
+      'The rest timer keeps proper time while your phone is locked, with a longer sound you can actually hear',
+      'Clearing a number no longer jumps it to 1 — the box stays empty and tells you if something is missing when you save',
+      'Set columns line up with their headings and stop shifting when you tick a set',
+      'The delete button on a set is smaller and red, and the header no longer shows the page through it',
+    ],
+  },
   {
     version: '2.0',
     date: '2026-08-11',

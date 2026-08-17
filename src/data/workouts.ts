@@ -117,6 +117,7 @@ export async function addSet(input: {
   reps: number
   type: SetType
   restSeconds?: number
+  rpe?: number
   completed?: boolean
 }): Promise<string> {
   const timestamp = now()
@@ -134,7 +135,7 @@ export async function addSet(input: {
 
 export async function updateSet(
   id: string,
-  changes: Partial<Pick<WorkoutSet, 'weightKg' | 'reps' | 'type' | 'completed'>>
+  changes: Partial<Pick<WorkoutSet, 'weightKg' | 'reps' | 'type' | 'rpe' | 'completed'>>
 ): Promise<void> {
   await db.workoutSets.update(id, { ...changes, updatedAt: now() })
 }
@@ -154,6 +155,21 @@ export async function setRestSecondsForExercise(
     .equals(workoutId)
     .filter((s) => s.exerciseKey === exerciseKey && isLive(s))
     .modify({ restSeconds, updatedAt: now() })
+}
+
+// RPE is a per-exercise guideline, but there is no per-exercise row to hang it
+// on — an exercise in a workout is just a group of sets. Same approach as
+// restSeconds: write it to every set, read it from the first.
+export async function setRpeForExercise(
+  workoutId: string,
+  exerciseKey: string,
+  rpe: number | undefined
+): Promise<void> {
+  await db.workoutSets
+    .where('workoutId')
+    .equals(workoutId)
+    .filter((s) => s.exerciseKey === exerciseKey && isLive(s))
+    .modify({ rpe, updatedAt: now() })
 }
 
 // Sets logged before the completed field existed have no stored value for it;
