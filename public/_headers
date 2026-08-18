@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://images.openfoodfacts.org; font-src 'self'; connect-src 'self' https://xpgvjvtluljbqyywnenl.supabase.co wss://xpgvjvtluljbqyywnenl.supabase.co https://world.openfoodfacts.org https://upkeep-search.aswin010pk.workers.dev https://upkeep-feedback.aswin010pk.workers.dev; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://images.openfoodfacts.org; font-src 'self'; connect-src 'self' https://xpgvjvtluljbqyywnenl.supabase.co wss://xpgvjvtluljbqyywnenl.supabase.co https://world.openfoodfacts.org https://upkeep-search.aswin010pk.workers.dev https://upkeep-feedback.aswin010pk.workers.dev; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(self), microphone=(self), geolocation=(), payment=()
