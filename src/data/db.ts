@@ -25,6 +25,16 @@ export interface SyncState {
    * version arrived — an existing tester does not need the app explained.
    */
   onboardingSeenAt?: string
+    /**
+   * Chosen UI language. Local-only and deliberately not mirrored into
+   * `profile`: syncing it would mean a schema change, a sync.ts edit, and a
+   * pull that flips the UI mid-session under last-write-wins. A new device
+   * asks at first run anyway.
+   *
+   * Not indexed, so this needs no new Dexie version block — Dexie stores
+   * whole objects and only the `stores()` string declares indexes.
+   */
+  language?: 'en' | 'de'
 }
 
 export class UpkeepDB extends Dexie {

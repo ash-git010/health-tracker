@@ -63,6 +63,22 @@ export async function clearOnboardingSeen(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Language
+//
+// undefined means "never chosen", which is what puts the language screen in
+// front of a new user. Distinct from 'en', which means they chose English.
+// ---------------------------------------------------------------------------
+
+export async function getStoredLanguage(): Promise<'en' | 'de' | undefined> {
+  return (await getSyncState()).language
+}
+
+export async function setStoredLanguage(language: 'en' | 'de'): Promise<void> {
+  await patch({ language })
+}
+
+
+// ---------------------------------------------------------------------------
 // Sync cursors
 //
 // One cursor per table, keyed by SERVER table name ('log_entries', not

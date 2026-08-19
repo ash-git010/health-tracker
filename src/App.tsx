@@ -29,6 +29,8 @@ import {
   getSyncUserId,
   hasSeenOnboarding,
   setOnboardingSeen,
+  getStoredLanguage,
+  setStoredLanguage
 } from './data/syncState'
 import { syncBeforeFirstRun } from './data/autoSync'
 import { unlockAudio } from './data/audio'
@@ -51,9 +53,12 @@ import { CareRoutineFormScreen } from './features/routines/CareRoutineFormScreen
 import { AdoptScreen } from './features/auth/AdoptScreen'
 import { OnboardingScreen } from './features/onboarding/OnboardingScreen'
 import { InstallScreen } from './features/about/InstallScreen'
+import { LanguageScreen } from './features/onboarding/LanguageScreen'
+import { applyLanguage, detectLanguage, useLanguage, type Language } from './data/i18n'
 
 type Stage =
   | 'checking'
+  | 'language'
   | 'onboarding'
   | 'syncing'
   | 'adopt'
@@ -77,16 +82,29 @@ function AppStages() {
    * needs to be offered an account, but only once.
    */
   const resolveStage = useCallback(async () => {
-    const [profile, goals, user, skipped, owner, seenIntro] = await Promise.all([
+    const [profile, goals, user, skipped, owner, seenIntro, storedLanguage] = await Promise.all([
       getProfile(),
       getGoals(),
       getCurrentUser(),
       hasSkippedAuth(),
       getSyncUserId(),
       hasSeenOnboarding(),
+      getStoredLanguage(),
     ])
 
     setName(profile?.name ?? '')
+
+        // Language comes before everything, including the intro — the intro is
+    // content and cannot render until we know what to render it in.
+    //
+    // An existing tester keeps English silently rather than being switched
+    // under them by detection; the switch is in Settings.
+    if (!storedLanguage) {
+      if (profile) await setStoredLanguage('en')
+      else return setStage('language')
+    } else {
+      applyLanguage(storedLanguage)
+    }
 
     // The intro runs before the gate — it sells the app before asking for an
     // email. Two exclusions:
@@ -173,6 +191,19 @@ function AppStages() {
       <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>
         Getting your data…
       </p>
+    )
+  }
+
+    if (stage === 'language') {
+    return (
+      <LanguageScreen
+        detected={detectLanguage()}
+        onPick={async (language: Language) => {
+          await setStoredLanguage(language)
+          applyLanguage(language)
+          await resolveStage()
+        }}
+      />
     )
   }
 
@@ -313,9 +344,14 @@ function AppStages() {
  * option, and any future first-run screen would hit the same wall.
  */
 export default function App() {
+  const language = useLanguage()
+
+  // Remounting on language change is blunt but correct: t() is read during
+  // render all over the app, and this guarantees nothing keeps a stale string.
+  // It happens once, on a deliberate user action.
   return (
     <DialogProvider>
-      <AppStages />
+      <AppStages key={language} />
     </DialogProvider>
   )
 }

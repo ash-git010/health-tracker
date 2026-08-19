@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Download, Upload, Info, MessageSquare, Smartphone } from 'lucide-react'
+import { Download, Upload, Info, MessageSquare, Smartphone, Languages } from 'lucide-react'
 import { exportAll, importAll, downloadBackup } from '../../data/backup'
 import { getProfile, saveName } from '../../data/profile'
+import { setStoredLanguage } from '../../data/syncState'
+import { applyLanguage, getLanguage, t, type Language } from '../../data/i18n'
 import { Button, ScreenHeader } from '../../components/ui'
 import { TextField } from '../../components/TextField'
 import { useConfirm } from '../../components/DialogProvider'
@@ -13,43 +15,48 @@ export function SettingsScreen() {
 
   async function handleExport() {
     downloadBackup(await exportAll())
-    setStatus('Backup downloaded')
+    setStatus(t('settings.backupDownloaded'))
   }
 
   async function handleImport(file: File) {
     const ok = await confirm({
-      title: 'Restore from backup?',
-      message: 'This replaces everything currently stored on this device.',
-      confirmLabel: 'Restore',
+      title: t('settings.restoreTitle'),
+      message: t('settings.restoreMessage'),
+      confirmLabel: t('settings.restoreConfirm'),
       destructive: true,
     })
     if (!ok) return
     try {
       await importAll(await file.text())
-      setStatus('Restored. Reload the app to see it.')
+      setStatus(t('settings.restored'))
     } catch (err) {
-      setStatus(`Import failed: ${err instanceof Error ? err.message : 'unknown error'}`)
+      setStatus(
+        t('settings.importFailed', {
+          message: err instanceof Error ? err.message : t('settings.unknownError'),
+        })
+      )
     }
   }
 
   return (
     <div className="stack" style={{ paddingBottom: '2rem' }}>
-      <ScreenHeader title="Settings" />
+      <ScreenHeader title={t('settings.title')} />
 
-      <h3>Name</h3>
+      <h3>{t('settings.name')}</h3>
       <NameEditor />
 
-      <h3 style={{ marginTop: '1.25rem' }}>Your data</h3>
-      <p className="muted">
-        Stored on this device only. Export regularly — clearing browser data erases everything.
-      </p>
+      <h3 style={{ marginTop: '1.25rem' }}>{t('settings.language')}</h3>
+      <LanguagePicker />
+
+      <h3 style={{ marginTop: '1.25rem' }}>{t('settings.yourData')}</h3>
+      <p className="muted">{t('settings.dataNote')}</p>
 
       <Button onClick={handleExport} block>
-        <Download size={16} /> Export backup
+        <Download size={16} /> {t('settings.exportBackup')}
       </Button>
 
       <label className="btn btn-block" style={{ cursor: 'pointer' }}>
-        <Upload size={16} /> Restore from backup
+        <Upload size={16} /> {t('settings.restore')}
         <input
           type="file"
           accept="application/json"
@@ -63,19 +70,53 @@ export function SettingsScreen() {
 
       {status && <p className="muted">{status}</p>}
 
-      <h3 style={{ marginTop: '1.25rem' }}>App</h3>
+      <h3 style={{ marginTop: '1.25rem' }}>{t('settings.app')}</h3>
 
       <Link to="/settings/about/install" className="btn btn-block" style={{ textDecoration: 'none' }}>
-        <Smartphone size={16} /> Install on your phone
+        <Smartphone size={16} /> {t('settings.install')}
       </Link>
 
       <Link to="/settings/about" className="btn btn-block" style={{ textDecoration: 'none' }}>
-        <Info size={16} /> About Upkeep
+        <Info size={16} /> {t('settings.about')}
       </Link>
 
       <Link to="/settings/feedback" className="btn btn-block" style={{ textDecoration: 'none' }}>
-        <MessageSquare size={16} /> Report a problem
+        <MessageSquare size={16} /> {t('settings.feedback')}
       </Link>
+    </div>
+  )
+}
+
+/**
+ * Applies immediately rather than after a save button. App remounts on the
+ * change, which lands the user back on this screen in the new language — the
+ * result is its own confirmation.
+ */
+function LanguagePicker() {
+  const active = getLanguage()
+
+  async function pick(language: Language) {
+    if (language === active) return
+    await setStoredLanguage(language)
+    applyLanguage(language)
+  }
+
+  return (
+    <div className="row">
+      <Button
+        block
+        variant={active === 'en' ? 'primary' : 'default'}
+        onClick={() => pick('en')}
+      >
+        <Languages size={16} /> English
+      </Button>
+      <Button
+        block
+        variant={active === 'de' ? 'primary' : 'default'}
+        onClick={() => pick('de')}
+      >
+        <Languages size={16} /> Deutsch
+      </Button>
     </div>
   )
 }
@@ -96,7 +137,7 @@ function NameEditor() {
 
   return (
     <>
-      <TextField label="What we call you" value={value} onChange={setValue} />
+      <TextField label={t('settings.nameLabel')} value={value} onChange={setValue} />
       <Button
         block
         disabled={!value.trim()}
@@ -106,7 +147,7 @@ function NameEditor() {
           setTimeout(() => setDone(false), 2000)
         }}
       >
-        {done ? 'Saved' : 'Update name'}
+        {done ? t('settings.saved') : t('settings.updateName')}
       </Button>
     </>
   )
