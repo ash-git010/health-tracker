@@ -173,6 +173,17 @@ export function downloadBackup(json: string) {
   const a = document.createElement('a')
   a.href = url
   a.download = `upkeep-${new Date().toISOString().slice(0, 10)}.json`
+
+  // The anchor goes into the document because Firefox ignores synthetic clicks
+  // on detached elements. The revoke is deferred because it can otherwise land
+  // before the browser has finished reading the blob, producing a zero-byte or
+  // failed download — the exact failure a backup must not have.
+  a.style.display = 'none'
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+
+  setTimeout(() => {
+    a.remove()
+    URL.revokeObjectURL(url)
+  }, 1000)
 }

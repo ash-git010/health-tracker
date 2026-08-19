@@ -552,9 +552,13 @@ export async function pullGoals(since: string | undefined): Promise<number> {
     updatedAt: s(r.updated_at),
   }
 
-  // Singletons cannot merge, so the most recently edited wins.
+    // Singletons cannot merge, so the most recently edited wins. Compare
+  // instants, not strings: Postgres returns '+00:00' where toISOString() gives
+  // 'Z', and 'Z' sorts after '+' as text, so two identical moments compare
+  // unequal. NaN from an unparseable value falls through to the write, which is
+  // the safe direction — the server copy wins.
   const local = await db.goals.get(1)
-  if (local && local.updatedAt > incoming.updatedAt) return 0
+  if (local && Date.parse(local.updatedAt) > Date.parse(incoming.updatedAt)) return 0
 
   await asSyncWrite(() => db.goals.put(incoming))
   return 1
@@ -596,8 +600,9 @@ export async function pullProfile(since: string | undefined): Promise<number> {
     updatedAt: s(r.updated_at),
   }
 
+  // See pullGoals — compare instants, not strings.
   const local = await db.profile.get(1)
-  if (local && local.updatedAt > incoming.updatedAt) return 0
+  if (local && Date.parse(local.updatedAt) > Date.parse(incoming.updatedAt)) return 0
 
   await asSyncWrite(() => db.profile.put(incoming))
   return 1
