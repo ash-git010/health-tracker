@@ -130,7 +130,135 @@ const en = {
   'goals.greeting': 'Nice to meet you, {name}',
   'goals.lead': 'Set your daily goals to get started.',
 
-    'sections.meals.title': 'Meals',
+    'auth.err.emailTaken': 'That email already has an account. Log in instead.',
+  'auth.err.invalidCredentials': 'Email or password is wrong.',
+  'auth.err.invalidEmail': 'That email address does not look right.',
+  'auth.err.weakPassword': 'Password needs to be at least 6 characters.',
+  'auth.err.wrongPassword': 'That is not your current password.',
+  'auth.err.samePassword': 'The new password must be different from the old one.',
+  'auth.err.invalidCode': 'That code is wrong or has expired. Request a new one.',
+  'auth.err.rateLimited': 'Too many attempts. Wait a minute and try again.',
+  'auth.err.offline':
+    'No connection. Your data is safe on this device — try again later.',
+  'auth.err.unknown': 'Something went wrong. Try again.',
+  'auth.err.notSignedIn': 'You are not signed in.',
+
+  'auth.email': 'Email',
+  'auth.emailPlaceholder': 'you@example.com',
+  'auth.password': 'Password',
+  'auth.newPassword': 'New password',
+  'auth.confirmNewPassword': 'Confirm new password',
+  'auth.currentPassword': 'Current password',
+  'auth.minChars': 'At least {n} characters',
+  'auth.minCharsWarn': 'At least {n} characters.',
+  'auth.pwMismatch': 'The two passwords do not match.',
+  'auth.code': 'Code',
+  'auth.resend': 'Resend code',
+  'auth.resendIn': 'Resend code in {n}s',
+  'auth.saving': 'Saving…',
+
+  'login.title': 'Log in',
+  'login.submit': 'Log in',
+  'login.busy': 'Logging in…',
+  'login.forgot': 'Forgot password',
+  'login.createInstead': 'Create an account instead',
+
+  'forgot.title': 'Forgot password',
+  'forgot.lead': 'Check the address below, and we will send a {n}-digit code to it.',
+  'forgot.send': 'Send code',
+  'forgot.sending': 'Sending…',
+  'forgot.backToLogin': 'Back to log in',
+  'forgot.codeTitle': 'Enter your code',
+  'forgot.codeLead':
+    'If {email} has an account, a code is on its way. It expires in an hour.',
+  'forgot.wrongAddress': 'Wrong address?',
+  'forgot.changeIt': 'Change it',
+  'forgot.setPassword': 'Set new password',
+
+    'register.title': 'Create an account',
+  'register.creatingFor': 'Creating an account for {name}.',
+  'register.change': 'Change',
+  'register.submit': 'Create account',
+  'register.busy': 'Creating…',
+  'register.logInInstead': 'Log in instead',
+  'register.confirmTitle': 'Confirm your email',
+  'register.confirmLead':
+    'A {n}-digit code is on its way to {email}. Enter it to finish creating your account.',
+  'register.confirm': 'Confirm and continue',
+  'register.confirming': 'Confirming…',
+  'register.haveAccount': 'Already have an account? Log in',
+  'register.wrongAddress': 'Wrong address? Go back',
+
+  'account.noAccount': 'No account linked',
+  'account.noAccountWarn':
+    'Everything you have logged lives only on this phone. Losing it, clearing your browser, or reinstalling erases it permanently.',
+  'account.pitch':
+    'An account keeps your data safe if you lose your phone. It syncs in the background and lets you log in on another device. Everything already on this phone comes with you.',
+  'account.linked': 'Account linked',
+  'account.linkedNote':
+    'Your data syncs automatically in the background, so losing this phone does not mean losing what you have logged.',
+  'account.details': 'Details',
+  'account.nameNote':
+    'Your name is part of your profile, not your account — change it in Settings, and it works with or without one. Changing your email is not available yet; it needs a confirmation message to both addresses, which is not set up.',
+  'account.session': 'Session',
+  'account.logOut': 'Log out',
+  'account.logOutTitle': 'Log out?',
+  'account.logOutMessage':
+    'Your data stays on this device. You can log back in at any time to sync it again.',
+  'account.changePassword': 'Change password',
+  'account.passwordChanged': 'Password changed.',
+  'account.savePassword': 'Save password',
+
+    'adopt.checking': 'Checking your account…',
+  'adopt.working': 'Sorting out your data…',
+  'adopt.failedTitle': 'Could not check your account',
+  'adopt.failedLead':
+    'Nothing has been changed. Your data is still on this device exactly as it was.',
+  'adopt.tryAgain': 'Try again',
+  'adopt.logOutInstead': 'Log out instead',
+  'adopt.failedFoot':
+    'Your data stays on this device. Nothing has been sent to the account.',
+  'adopt.errCheck': 'Could not reach your account',
+  'adopt.errGeneric': 'Something went wrong',
+
+  'adopt.title': 'Two sets of data',
+  'adopt.lead':
+    'This device has data, and so does the account you just signed into. Choose what to keep.',
+  'adopt.colDevice': 'Device',
+  'adopt.colAccount': 'Account',
+  'adopt.entries': '{n} entry|{n} entries',
+  'adopt.unknownDate': 'an unknown date',
+
+  'adopt.keepBoth': 'Keep both',
+  'adopt.keepBothNote':
+    'Nothing is lost. Anything you have on both sides will appear twice, and you can delete the extras afterwards.',
+  'adopt.goalsNote':
+    'Your daily goals were last edited on this device on {local}, and the account’s on {account} — the account’s will replace yours.',
+  'adopt.keepLocal': 'Keep only this device’s',
+  'adopt.keepLocalNote':
+    'The account’s {entries} are removed and replaced with what is on this device. A backup downloads first.',
+  'adopt.keepAccount': 'Keep only the account’s',
+  'adopt.keepAccountNote':
+    'This device’s {entries} are erased. A backup downloads first, but this cannot be undone from inside the app.',
+  'adopt.eraseTitle': 'Delete this device’s data?',
+  'adopt.eraseMessage':
+    'Everything logged on this device will be erased and replaced with the account’s data. A backup file downloads first, but this cannot be undone from inside the app.',
+  'adopt.eraseConfirm': 'Erase and replace',
+
+  'adopt.table.foods': 'Foods',
+  'adopt.table.logEntries': 'Meal entries',
+  'adopt.table.measurements': 'Weight entries',
+  'adopt.table.customExercises': 'Custom exercises',
+  'adopt.table.routines': 'Workout routines',
+  'adopt.table.routineExercises': 'Routine exercises',
+  'adopt.table.workouts': 'Workouts',
+  'adopt.table.workoutSets': 'Sets logged',
+  'adopt.table.careRoutines': 'Care routines',
+  'adopt.table.careSteps': 'Care steps',
+  'adopt.table.careDoneLog': 'Routine days',
+  'adopt.table.careStepDone': 'Steps ticked',
+
+  'sections.meals.title': 'Meals',
   'sections.meals.blurb': 'Calories, macros and your food list',
   'sections.meals.today': 'Today',
   'sections.meals.foods': 'Foods',

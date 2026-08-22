@@ -130,7 +130,137 @@ const de: Record<TKey, string> = {
   'goals.greeting': 'Schön, dich kennenzulernen, {name}',
   'goals.lead': 'Lege deine Tagesziele fest, um loszulegen.',
 
-    'sections.meals.title': 'Mahlzeiten',
+  'auth.err.emailTaken':
+    'Diese E-Mail-Adresse hat bereits ein Konto. Melde dich stattdessen an.',
+  'auth.err.invalidCredentials': 'E-Mail oder Passwort ist falsch.',
+  'auth.err.invalidEmail': 'Diese E-Mail-Adresse sieht nicht richtig aus.',
+  'auth.err.weakPassword': 'Das Passwort muss mindestens 6 Zeichen haben.',
+  'auth.err.wrongPassword': 'Das ist nicht dein aktuelles Passwort.',
+  'auth.err.samePassword': 'Das neue Passwort muss sich vom alten unterscheiden.',
+  'auth.err.invalidCode': 'Dieser Code ist falsch oder abgelaufen. Fordere einen neuen an.',
+  'auth.err.rateLimited': 'Zu viele Versuche. Warte eine Minute und probiere es erneut.',
+  'auth.err.offline':
+    'Keine Verbindung. Deine Daten sind auf diesem Gerät sicher — probiere es später erneut.',
+  'auth.err.unknown': 'Etwas ist schiefgelaufen. Probiere es erneut.',
+  'auth.err.notSignedIn': 'Du bist nicht angemeldet.',
+
+  'auth.email': 'E-Mail',
+  'auth.emailPlaceholder': 'du@beispiel.de',
+  'auth.password': 'Passwort',
+  'auth.newPassword': 'Neues Passwort',
+  'auth.confirmNewPassword': 'Neues Passwort bestätigen',
+  'auth.currentPassword': 'Aktuelles Passwort',
+  'auth.minChars': 'Mindestens {n} Zeichen',
+  'auth.minCharsWarn': 'Mindestens {n} Zeichen.',
+  'auth.pwMismatch': 'Die beiden Passwörter stimmen nicht überein.',
+  'auth.code': 'Code',
+  'auth.resend': 'Code erneut senden',
+  'auth.resendIn': 'Erneut senden in {n}s',
+  'auth.saving': 'Wird gespeichert…',
+
+  'login.title': 'Anmelden',
+  'login.submit': 'Anmelden',
+  'login.busy': 'Wird angemeldet…',
+  'login.forgot': 'Passwort vergessen',
+  'login.createInstead': 'Stattdessen Konto erstellen',
+
+  'forgot.title': 'Passwort vergessen',
+  'forgot.lead':
+    'Prüfe die Adresse unten — wir senden einen {n}-stelligen Code dorthin.',
+  'forgot.send': 'Code senden',
+  'forgot.sending': 'Wird gesendet…',
+  'forgot.backToLogin': 'Zurück zur Anmeldung',
+  'forgot.codeTitle': 'Code eingeben',
+  'forgot.codeLead':
+    'Falls {email} ein Konto hat, ist ein Code unterwegs. Er läuft in einer Stunde ab.',
+  'forgot.wrongAddress': 'Falsche Adresse?',
+  'forgot.changeIt': 'Ändern',
+  'forgot.setPassword': 'Neues Passwort setzen',
+
+    'register.title': 'Konto erstellen',
+  'register.creatingFor': 'Du erstellst ein Konto für {name}.',
+  'register.change': 'Ändern',
+  'register.submit': 'Konto erstellen',
+  'register.busy': 'Wird erstellt…',
+  'register.logInInstead': 'Stattdessen anmelden',
+  'register.confirmTitle': 'E-Mail bestätigen',
+  'register.confirmLead':
+    'Ein {n}-stelliger Code ist unterwegs an {email}. Gib ihn ein, um dein Konto fertig zu erstellen.',
+  'register.confirm': 'Bestätigen und weiter',
+  'register.confirming': 'Wird bestätigt…',
+  'register.haveAccount': 'Schon ein Konto? Anmelden',
+  'register.wrongAddress': 'Falsche Adresse? Zurück',
+
+  'account.noAccount': 'Kein Konto verknüpft',
+  'account.noAccountWarn':
+    'Alles, was du erfasst hast, liegt nur auf diesem Handy. Wenn du es verlierst, deine Browserdaten löschst oder die App neu installierst, ist alles endgültig weg.',
+  'account.pitch':
+    'Ein Konto schützt deine Daten, falls du dein Handy verlierst. Es synchronisiert im Hintergrund und du kannst dich auf einem anderen Gerät anmelden. Alles, was schon auf diesem Handy ist, kommt mit.',
+  'account.linked': 'Konto verknüpft',
+  'account.linkedNote':
+    'Deine Daten werden automatisch im Hintergrund synchronisiert — dieses Handy zu verlieren heißt also nicht, deine Einträge zu verlieren.',
+  'account.details': 'Details',
+  'account.nameNote':
+    'Dein Name gehört zu deinem Profil, nicht zu deinem Konto — ändere ihn in den Einstellungen, er funktioniert mit und ohne Konto. Deine E-Mail-Adresse zu ändern geht noch nicht: das braucht eine Bestätigung an beide Adressen, und die ist noch nicht eingerichtet.',
+  'account.session': 'Sitzung',
+  'account.logOut': 'Abmelden',
+  'account.logOutTitle': 'Abmelden?',
+  'account.logOutMessage':
+    'Deine Daten bleiben auf diesem Gerät. Du kannst dich jederzeit wieder anmelden, um sie erneut zu synchronisieren.',
+  'account.changePassword': 'Passwort ändern',
+  'account.passwordChanged': 'Passwort geändert.',
+  'account.savePassword': 'Passwort speichern',
+
+    'adopt.checking': 'Dein Konto wird geprüft…',
+  'adopt.working': 'Deine Daten werden sortiert…',
+  'adopt.failedTitle': 'Dein Konto konnte nicht geprüft werden',
+  'adopt.failedLead':
+    'Es wurde nichts geändert. Deine Daten liegen unverändert auf diesem Gerät.',
+  'adopt.tryAgain': 'Erneut versuchen',
+  'adopt.logOutInstead': 'Stattdessen abmelden',
+  'adopt.failedFoot':
+    'Deine Daten bleiben auf diesem Gerät. Es wurde nichts an das Konto gesendet.',
+  'adopt.errCheck': 'Dein Konto war nicht erreichbar',
+  'adopt.errGeneric': 'Etwas ist schiefgelaufen',
+
+  'adopt.title': 'Zwei Datensätze',
+  'adopt.lead':
+    'Auf diesem Gerät liegen Daten, und im Konto, in das du dich gerade angemeldet hast, auch. Wähle, was behalten wird.',
+  'adopt.colDevice': 'Gerät',
+  'adopt.colAccount': 'Konto',
+  'adopt.entries': '{n} Eintrag|{n} Einträge',
+  'adopt.unknownDate': 'einem unbekannten Datum',
+
+  'adopt.keepBoth': 'Beide behalten',
+  'adopt.keepBothNote':
+    'Nichts geht verloren. Was auf beiden Seiten liegt, erscheint doppelt — die Dubletten kannst du danach löschen.',
+  'adopt.goalsNote':
+    'Deine Tagesziele wurden auf diesem Gerät zuletzt am {local} bearbeitet, die des Kontos am {account} — die des Kontos ersetzen deine.',
+  'adopt.keepLocal': 'Nur die von diesem Gerät',
+  'adopt.keepLocalNote':
+    'Die {entries} des Kontos werden entfernt und durch das ersetzt, was auf diesem Gerät liegt. Vorher wird eine Sicherung heruntergeladen.',
+  'adopt.keepAccount': 'Nur die des Kontos',
+  'adopt.keepAccountNote':
+    'Die {entries} auf diesem Gerät werden gelöscht. Vorher wird eine Sicherung heruntergeladen, aber das lässt sich in der App nicht rückgängig machen.',
+  'adopt.eraseTitle': 'Daten dieses Geräts löschen?',
+  'adopt.eraseMessage':
+    'Alles, was auf diesem Gerät erfasst wurde, wird gelöscht und durch die Daten des Kontos ersetzt. Vorher wird eine Sicherungsdatei heruntergeladen, aber das lässt sich in der App nicht rückgängig machen.',
+  'adopt.eraseConfirm': 'Löschen und ersetzen',
+
+  'adopt.table.foods': 'Essen',
+  'adopt.table.logEntries': 'Mahlzeiten-Einträge',
+  'adopt.table.measurements': 'Gewichts-Einträge',
+  'adopt.table.customExercises': 'Eigene Übungen',
+  'adopt.table.routines': 'Trainingspläne',
+  'adopt.table.routineExercises': 'Plan-Übungen',
+  'adopt.table.workouts': 'Einheiten',
+  'adopt.table.workoutSets': 'Erfasste Sätze',
+  'adopt.table.careRoutines': 'Routinen',
+  'adopt.table.careSteps': 'Routine-Schritte',
+  'adopt.table.careDoneLog': 'Routine-Tage',
+  'adopt.table.careStepDone': 'Abgehakte Schritte',
+
+  'sections.meals.title': 'Mahlzeiten',
   'sections.meals.blurb': 'Kalorien, Makros und deine Lebensmittel',
   'sections.meals.today': 'Heute',
   // 'Essen', not 'Lebensmittel' — correct but far too long for a four-tab bar.

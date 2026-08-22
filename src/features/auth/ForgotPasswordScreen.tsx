@@ -8,6 +8,7 @@ import {
 import { clearSkippedAuth } from '../../data/syncState'
 import { Button } from '../../components/ui'
 import { PasswordField } from '../../components/PasswordField'
+import { t, tParts } from '../../data/i18n'
 
 /**
  * Supabase's "minimum interval per user" is 60 seconds. Matching it here means
@@ -81,22 +82,19 @@ export function ForgotPasswordScreen({ initialEmail, onDone, onBack }: Props) {
 
     return (
       <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-        <h1>Forgot password</h1>
+        <h1>{t('forgot.title')}</h1>
 
-        <p className="muted">
-          Check the address below, and we will send a {RESET_CODE_LENGTH}-digit
-          code to it.
-        </p>
+        <p className="muted">{t('forgot.lead', { n: RESET_CODE_LENGTH })}</p>
 
         <label className="field">
-          <span className="field-label">Email</span>
+          <span className="field-label">{t('auth.email')}</span>
           <input
             type="email"
             value={email}
             inputMode="email"
             autoComplete="email"
             autoCapitalize="none"
-            placeholder="you@example.com"
+            placeholder={t('auth.emailPlaceholder')}
             onChange={(e) => setEmail(e.target.value)}
           />
         </label>
@@ -109,11 +107,11 @@ export function ForgotPasswordScreen({ initialEmail, onDone, onBack }: Props) {
           onClick={() => sendCode(true)}
           disabled={!valid || busy}
         >
-          {busy ? 'Sending…' : 'Send code'}
+          {busy ? t('forgot.sending') : t('forgot.send')}
         </Button>
 
         <Button variant="ghost" block onClick={onBack}>
-          Back to log in
+          {t('forgot.backToLogin')}
         </Button>
       </div>
     )
@@ -126,19 +124,24 @@ export function ForgotPasswordScreen({ initialEmail, onDone, onBack }: Props) {
     password.length >= MIN_PASSWORD &&
     password === confirmPw
 
+  // Split around the address rather than using two half-sentence keys, so the
+  // German sentence can put it wherever German wants it.
+  const [leadBefore, leadAfter] = tParts('forgot.codeLead', 'email')
+
   return (
     <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-      <h1>Enter your code</h1>
+      <h1>{t('forgot.codeTitle')}</h1>
 
       {/* Stated as a conditional on purpose. Supabase does not reveal whether
           an address has an account, so neither can we. */}
       <p className="muted">
-        If <strong style={{ wordBreak: 'break-all' }}>{email}</strong> has an
-        account, a code is on its way. It expires in an hour.
+        {leadBefore}
+        <strong style={{ wordBreak: 'break-all' }}>{email}</strong>
+        {leadAfter}
       </p>
 
       <p className="faint">
-        Wrong address?{' '}
+        {t('forgot.wrongAddress')}{' '}
         <button
           className="btn-plain"
           style={{ color: 'var(--accent)', textDecoration: 'underline' }}
@@ -147,12 +150,12 @@ export function ForgotPasswordScreen({ initialEmail, onDone, onBack }: Props) {
             setError('')
           }}
         >
-          Change it
+          {t('forgot.changeIt')}
         </button>
       </p>
 
       <label className="field">
-        <span className="field-label">Code</span>
+        <span className="field-label">{t('auth.code')}</span>
         <input
           type="text"
           value={code}
@@ -169,34 +172,34 @@ export function ForgotPasswordScreen({ initialEmail, onDone, onBack }: Props) {
       </label>
 
       <PasswordField
-        label="New password"
+        label={t('auth.newPassword')}
         value={password}
         autoComplete="new-password"
-        placeholder={`At least ${MIN_PASSWORD} characters`}
+        placeholder={t('auth.minChars', { n: MIN_PASSWORD })}
         onChange={setPassword}
       />
 
       <PasswordField
-        label="Confirm new password"
+        label={t('auth.confirmNewPassword')}
         value={confirmPw}
         autoComplete="new-password"
         onChange={setConfirmPw}
       />
 
-      {tooShort && <p className="warn">At least {MIN_PASSWORD} characters.</p>}
-      {mismatch && <p className="warn">The two passwords do not match.</p>}
+      {tooShort && <p className="warn">{t('auth.minCharsWarn', { n: MIN_PASSWORD })}</p>}
+      {mismatch && <p className="warn">{t('auth.pwMismatch')}</p>}
       {error && <p className="danger">{error}</p>}
 
       <Button variant="primary" block onClick={handleReset} disabled={!valid || busy}>
-        {busy ? 'Saving…' : 'Set new password'}
+        {busy ? t('auth.saving') : t('forgot.setPassword')}
       </Button>
 
       <Button block onClick={() => sendCode(false)} disabled={cooldown > 0 || busy}>
-        {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+        {cooldown > 0 ? t('auth.resendIn', { n: cooldown }) : t('auth.resend')}
       </Button>
 
       <Button variant="ghost" block onClick={onBack}>
-        Back to log in
+        {t('forgot.backToLogin')}
       </Button>
     </div>
   )

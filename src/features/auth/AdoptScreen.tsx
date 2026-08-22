@@ -4,13 +4,14 @@ import {
   previewAdoption,
   adoptAccount,
   hasLocalData,
-  TABLE_LABELS,
+  tableLabels,
   type AdoptMode,
   type AdoptPreview,
 } from '../../data/adopt'
 import { Button, ScreenHeader } from '../../components/ui'
 import { useConfirm } from '../../components/DialogProvider'
 import { signOut } from '../../data/auth'
+import { t, plural, locale } from '../../data/i18n'
 
 /**
  * Shown when a signed-in user's device has not been claimed by that account.
@@ -58,7 +59,10 @@ export function AdoptScreen({ onDone }: { onDone: () => void }) {
       setPreview(p)
       setPhase('choosing')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not reach your account')
+      // err.message is deliberately left in English — it comes from Supabase
+      // or from adopt.ts and is technical text a tester will screenshot. Only
+      // the fallback, which is ours, is translated.
+      setError(err instanceof Error ? err.message : t('adopt.errCheck'))
       setPhase('failed')
     }
   }, [onDone])
@@ -72,10 +76,9 @@ export function AdoptScreen({ onDone }: { onDone: () => void }) {
   async function choose(mode: AdoptMode) {
     if (mode === 'keep-account') {
       const ok = await confirm({
-        title: 'Delete this device\'s data?',
-        message:
-          'Everything logged on this device will be erased and replaced with the account\'s data. A backup file downloads first, but this cannot be undone from inside the app.',
-        confirmLabel: 'Erase and replace',
+        title: t('adopt.eraseTitle'),
+        message: t('adopt.eraseMessage'),
+        confirmLabel: t('adopt.eraseConfirm'),
       })
       if (!ok) return
     }
@@ -85,7 +88,7 @@ export function AdoptScreen({ onDone }: { onDone: () => void }) {
       await adoptAccount(mode)
       onDone()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setError(err instanceof Error ? err.message : t('adopt.errGeneric'))
       setPhase('failed')
     }
   }
@@ -93,7 +96,7 @@ export function AdoptScreen({ onDone }: { onDone: () => void }) {
   if (phase === 'checking' || phase === 'working') {
     return (
       <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>
-        {phase === 'working' ? 'Sorting out your data…' : 'Checking your account…'}
+        {phase === 'working' ? t('adopt.working') : t('adopt.checking')}
       </p>
     )
   }
@@ -101,14 +104,11 @@ export function AdoptScreen({ onDone }: { onDone: () => void }) {
   if (phase === 'failed') {
     return (
       <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-        <ScreenHeader title="Couldn't check your account" />
-        <p className="muted">
-          Nothing has been changed. Your data is still on this device exactly as
-          it was.
-        </p>
+        <ScreenHeader title={t('adopt.failedTitle')} />
+        <p className="muted">{t('adopt.failedLead')}</p>
         <p className="faint" style={{ wordBreak: 'break-word' }}>{error}</p>
         <Button variant="primary" block onClick={() => void check()}>
-          Try again
+          {t('adopt.tryAgain')}
         </Button>
         <Button
           block
@@ -117,18 +117,20 @@ export function AdoptScreen({ onDone }: { onDone: () => void }) {
             onDone()
           }}
         >
-          Log out instead
+          {t('adopt.logOutInstead')}
         </Button>
-        <p className="faint">
-          Your data stays on this device. Nothing has been sent to the account.
-        </p>
+        <p className="faint">{t('adopt.failedFoot')}</p>
       </div>
     )
   }
 
   if (!preview) return null
 
-  const rows = Object.keys(TABLE_LABELS).filter(
+  // Read during render rather than at module level, so a language switch is
+  // reflected. tableLabels() is a plain object build; there is nothing to memo.
+  const labels = tableLabels()
+
+  const rows = Object.keys(labels).filter(
     (k) => (preview.local[k] ?? 0) > 0 || (preview.account[k] ?? 0) > 0
   )
 
@@ -139,27 +141,24 @@ export function AdoptScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="stack" style={{ padding: '1.5rem 1rem 2rem' }}>
-      <ScreenHeader title="Two sets of data" />
+      <ScreenHeader title={t('adopt.title')} />
 
-      <p className="muted">
-        This device has data, and so does the account you just signed into.
-        Choose what to keep.
-      </p>
+      <p className="muted">{t('adopt.lead')}</p>
 
       <div className="card">
         <div className="row" style={{ marginBottom: '0.75rem' }}>
           <span className="grow" />
           <span className="faint" style={{ width: '4.5rem', textAlign: 'right' }}>
-            Device
+            {t('adopt.colDevice')}
           </span>
           <span className="faint" style={{ width: '4.5rem', textAlign: 'right' }}>
-            Account
+            {t('adopt.colAccount')}
           </span>
         </div>
 
         {rows.map((k) => (
           <div className="row" key={k} style={{ padding: '0.2rem 0' }}>
-            <span className="grow muted">{TABLE_LABELS[k]}</span>
+            <span className="grow muted">{labels[k]}</span>
             <span className="num" style={{ width: '4.5rem', textAlign: 'right' }}>
               {preview.local[k] ?? 0}
             </span>
@@ -173,17 +172,17 @@ export function AdoptScreen({ onDone }: { onDone: () => void }) {
       <div className="stack" style={{ gap: '1.25rem', marginTop: '0.5rem' }}>
         <div>
           <Button variant="primary" block onClick={() => void choose('merge')}>
-            <GitMerge size={16} /> Keep both
+            <GitMerge size={16} /> {t('adopt.keepBoth')}
           </Button>
           <p className="faint" style={{ margin: '0.4rem 0 0' }}>
-            Nothing is lost. Anything you have on both sides will appear twice,
-            and you can delete the extras afterwards.
+            {t('adopt.keepBothNote')}
             {goalsLost && (
               <>
-                {' '}Your daily goals were last edited on this device on{' '}
-                {formatDate(preview.goals.localUpdatedAt)}, and the account's on{' '}
-                {formatDate(preview.goals.accountUpdatedAt)} — the account's will
-                replace yours.
+                {' '}
+                {t('adopt.goalsNote', {
+                  local: formatDate(preview.goals.localUpdatedAt),
+                  account: formatDate(preview.goals.accountUpdatedAt),
+                })}
               </>
             )}
           </p>
@@ -191,25 +190,27 @@ export function AdoptScreen({ onDone }: { onDone: () => void }) {
 
         <div>
           <Button block onClick={() => void choose('keep-local')}>
-            <Smartphone size={16} /> Keep only this device's
+            <Smartphone size={16} /> {t('adopt.keepLocal')}
           </Button>
           <p className="faint" style={{ margin: '0.4rem 0 0' }}>
-            The account's {preview.accountTotal} entries are removed and replaced
-            with what is on this device. A backup downloads first.
+            {t('adopt.keepLocalNote', {
+              entries: plural(preview.accountTotal, 'adopt.entries'),
+            })}
           </p>
         </div>
 
         <div>
           <Button block onClick={() => void choose('keep-account')}>
-            <Cloud size={16} /> Keep only the account's
+            <Cloud size={16} /> {t('adopt.keepAccount')}
           </Button>
           <p className="faint" style={{ margin: '0.4rem 0 0' }}>
             <AlertTriangle
               size={13}
               style={{ verticalAlign: '-2px', marginRight: '0.25rem', color: 'var(--warn)' }}
             />
-            This device's {preview.localTotal} entries are erased. A backup
-            downloads first, but this cannot be undone from inside the app.
+            {t('adopt.keepAccountNote', {
+              entries: plural(preview.localTotal, 'adopt.entries'),
+            })}
           </p>
         </div>
       </div>
@@ -217,7 +218,12 @@ export function AdoptScreen({ onDone }: { onDone: () => void }) {
   )
 }
 
+/**
+ * locale() rather than undefined. Passing undefined means the *browser's*
+ * language, which is not necessarily the app's — a German UI on an
+ * English phone would print an English-format date.
+ */
 function formatDate(iso?: string): string {
-  if (!iso) return 'an unknown date'
-  return new Date(iso).toLocaleDateString()
+  if (!iso) return t('adopt.unknownDate')
+  return new Date(iso).toLocaleDateString(locale())
 }

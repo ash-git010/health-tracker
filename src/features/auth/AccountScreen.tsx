@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogOut, ShieldCheck, ShieldAlert, KeyRound } from 'lucide-react'
-import { getCurrentUser, signOut, changePassword, type CurrentUser } from '../../data/auth'
+import {
+  getCurrentUser,
+  signOut,
+  changePassword,
+  MIN_PASSWORD,
+  type CurrentUser,
+} from '../../data/auth'
 import { getProfile } from '../../data/profile'
 import { Button, ScreenHeader } from '../../components/ui'
 import { PasswordField } from '../../components/PasswordField'
 import { useConfirm } from '../../components/DialogProvider'
 import { RegisterScreen } from './RegisterScreen'
 import { LoginScreen } from './LoginScreen'
+import { t } from '../../data/i18n'
 
 type View = 'menu' | 'register' | 'login'
-
-const MIN_PASSWORD = 8
 
 export function AccountScreen() {
   const navigate = useNavigate()
@@ -35,10 +40,9 @@ export function AccountScreen() {
 
   async function handleSignOut() {
     const ok = await confirm({
-      title: 'Log out?',
-      message:
-        'Your data stays on this device. You can log back in at any time to sync it again.',
-      confirmLabel: 'Log out',
+      title: t('account.logOutTitle'),
+      message: t('account.logOutMessage'),
+      confirmLabel: t('account.logOut'),
     })
     if (!ok) return
     await signOut()
@@ -79,31 +83,26 @@ export function AccountScreen() {
   if (!user) {
     return (
       <div className="stack" style={{ paddingBottom: '2rem' }}>
-        <ScreenHeader title="Account" />
+        <ScreenHeader title={t('layout.account')} />
 
         <div className="card">
           <div className="row" style={{ marginBottom: '0.5rem' }}>
             <ShieldAlert size={18} style={{ color: 'var(--warn)' }} />
-            <strong className="grow">No account linked</strong>
+            <strong className="grow">{t('account.noAccount')}</strong>
           </div>
           <p className="muted" style={{ margin: 0 }}>
-            Everything you have logged lives only on this phone. Losing it,
-            clearing your browser, or reinstalling erases it permanently.
+            {t('account.noAccountWarn')}
           </p>
         </div>
 
-        <p className="muted">
-          An account keeps your data safe if you lose your phone. It syncs in
-          the background and lets you log in on another device. Everything
-          already on this phone comes with you.
-        </p>
+        <p className="muted">{t('account.pitch')}</p>
 
         <Button variant="primary" block onClick={() => setView('register')}>
-          Create an account
+          {t('gate.create')}
         </Button>
 
         <Button block onClick={() => setView('login')}>
-          I already have one
+          {t('gate.haveOne')}
         </Button>
       </div>
     )
@@ -111,45 +110,39 @@ export function AccountScreen() {
 
   return (
     <div className="stack" style={{ paddingBottom: '2rem' }}>
-      <ScreenHeader title="Account" />
+      <ScreenHeader title={t('layout.account')} />
 
       <div className="card">
         <div className="row" style={{ marginBottom: '0.5rem' }}>
           <ShieldCheck size={18} style={{ color: 'var(--success)' }} />
-          <strong className="grow">Account linked</strong>
+          <strong className="grow">{t('account.linked')}</strong>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Your data syncs automatically in the background, so losing this phone
-          does not mean losing what you have logged.
+          {t('account.linkedNote')}
         </p>
       </div>
 
-      <h3 style={{ marginTop: '1.25rem' }}>Details</h3>
+      <h3 style={{ marginTop: '1.25rem' }}>{t('account.details')}</h3>
 
       <div className="list-item">
-        <span className="grow muted">Name</span>
+        <span className="grow muted">{t('settings.name')}</span>
         <span>{profileName || '—'}</span>
       </div>
 
       <div className="list-item">
-        <span className="grow muted">Email</span>
+        <span className="grow muted">{t('auth.email')}</span>
         <span style={{ wordBreak: 'break-all' }}>{user.email}</span>
       </div>
 
-      <p className="faint">
-        Your name is part of your profile, not your account — change it in
-        Settings, and it works with or without one. Changing your email is not
-        available yet; it needs a confirmation message to both addresses, which
-        is not set up.
-      </p>
+      <p className="faint">{t('account.nameNote')}</p>
 
-      <h3 style={{ marginTop: '1.25rem' }}>Password</h3>
+      <h3 style={{ marginTop: '1.25rem' }}>{t('auth.password')}</h3>
       <PasswordEditor />
 
-      <h3 style={{ marginTop: '1.25rem' }}>Session</h3>
+      <h3 style={{ marginTop: '1.25rem' }}>{t('account.session')}</h3>
 
       <Button block onClick={handleSignOut}>
-        <LogOut size={16} /> Log out
+        <LogOut size={16} /> {t('account.logOut')}
       </Button>
     </div>
   )
@@ -210,9 +203,9 @@ function PasswordEditor() {
             setOpen(true)
           }}
         >
-          <KeyRound size={16} /> Change password
+          <KeyRound size={16} /> {t('account.changePassword')}
         </Button>
-        {done && <p className="success">Password changed.</p>}
+        {done && <p className="success">{t('account.passwordChanged')}</p>}
       </>
     )
   }
@@ -220,39 +213,34 @@ function PasswordEditor() {
   return (
     <>
       <PasswordField
-        label="Current password"
+        label={t('auth.currentPassword')}
         value={current}
         autoComplete="current-password"
         onChange={setCurrent}
       />
 
       <PasswordField
-        label="New password"
+        label={t('auth.newPassword')}
         value={next}
         autoComplete="new-password"
-        placeholder={`At least ${MIN_PASSWORD} characters`}
+        placeholder={t('auth.minChars', { n: MIN_PASSWORD })}
         onChange={setNext}
       />
 
       <PasswordField
-        label="Confirm new password"
+        label={t('auth.confirmNewPassword')}
         value={confirmPw}
         autoComplete="new-password"
         onChange={setConfirmPw}
       />
 
-      {tooShort && <p className="warn">At least {MIN_PASSWORD} characters.</p>}
-      {mismatch && <p className="warn">The two new passwords do not match.</p>}
+      {tooShort && <p className="warn">{t('auth.minCharsWarn', { n: MIN_PASSWORD })}</p>}
+      {mismatch && <p className="warn">{t('auth.pwMismatch')}</p>}
       {error && <p className="danger">{error}</p>}
 
       <div className="form-actions">
-        <Button
-          variant="primary"
-          block
-          disabled={!valid}
-          onClick={handleSave}
-        >
-          {busy ? 'Saving…' : 'Save password'}
+        <Button variant="primary" block disabled={!valid} onClick={handleSave}>
+          {busy ? t('auth.saving') : t('account.savePassword')}
         </Button>
         <Button
           block
@@ -261,7 +249,7 @@ function PasswordEditor() {
             setOpen(false)
           }}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     </>

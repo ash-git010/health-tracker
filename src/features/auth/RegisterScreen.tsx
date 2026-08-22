@@ -10,6 +10,7 @@ import { saveName } from '../../data/profile'
 import { clearSkippedAuth } from '../../data/syncState'
 import { Button } from '../../components/ui'
 import { PasswordField } from '../../components/PasswordField'
+import { t, tParts } from '../../data/i18n'
 
 /** Matches Supabase's minimum interval per user, so the button is disabled
  *  for exactly as long as a resend would be refused. */
@@ -110,18 +111,24 @@ export function RegisterScreen({ existingName, onDone, onSwitchToLogin, onBack }
   if (stage === 'code') {
     const codeValid = code.length === RESET_CODE_LENGTH
 
+    // Split around the address so the bolding is JSX rather than two
+    // half-sentence keys, which would freeze English word order.
+    const [leadBefore, leadAfter] = tParts('register.confirmLead', 'email', {
+      n: RESET_CODE_LENGTH,
+    })
+
     return (
       <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-        <h1>Confirm your email</h1>
+        <h1>{t('register.confirmTitle')}</h1>
 
         <p className="muted">
-          A {RESET_CODE_LENGTH}-digit code is on its way to{' '}
-          <strong style={{ wordBreak: 'break-all' }}>{email}</strong>. Enter it
-          to finish creating your account.
+          {leadBefore}
+          <strong style={{ wordBreak: 'break-all' }}>{email}</strong>
+          {leadAfter}
         </p>
 
         <label className="field">
-          <span className="field-label">Code</span>
+          <span className="field-label">{t('auth.code')}</span>
           <input
             type="text"
             value={code}
@@ -142,18 +149,18 @@ export function RegisterScreen({ existingName, onDone, onSwitchToLogin, onBack }
           onClick={handleConfirm}
           disabled={!codeValid || busy}
         >
-          {busy ? 'Confirming…' : 'Confirm and continue'}
+          {busy ? t('register.confirming') : t('register.confirm')}
         </Button>
 
         <Button block onClick={handleResend} disabled={cooldown > 0 || busy}>
-          {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+          {cooldown > 0 ? t('auth.resendIn', { n: cooldown }) : t('auth.resend')}
         </Button>
 
         {/* The only exit for someone who already has an account. Supabase will
             not say whether this email is already registered, so no code
             arrives and there is otherwise nothing to tell them. */}
         <Button variant="ghost" block onClick={onSwitchToLogin}>
-          Already have an account? Log in
+          {t('register.haveAccount')}
         </Button>
 
         <Button
@@ -165,58 +172,62 @@ export function RegisterScreen({ existingName, onDone, onSwitchToLogin, onBack }
             setError('')
           }}
         >
-          Wrong address? Go back
+          {t('register.wrongAddress')}
         </Button>
       </div>
     )
   }
 
+  const [forBefore, forAfter] = tParts('register.creatingFor', 'name')
+
   return (
     <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-      <h1>Create an account</h1>
+      <h1>{t('register.title')}</h1>
 
       {existingName && !editingName ? (
         <p className="muted">
-          Creating an account for <strong>{existingName}</strong>.{' '}
+          {forBefore}
+          <strong>{existingName}</strong>
+          {forAfter}{' '}
           <button
             className="btn-plain"
             style={{ color: 'var(--accent)', textDecoration: 'underline' }}
             onClick={() => setEditingName(true)}
           >
-            Change
+            {t('register.change')}
           </button>
         </p>
       ) : (
         <label className="field">
-          <span className="field-label">Your name</span>
+          <span className="field-label">{t('name.label')}</span>
           <input
             type="text"
             value={name}
             autoComplete="name"
-            placeholder="John Doe"
+            placeholder={t('name.placeholder')}
             onChange={(e) => setName(e.target.value)}
           />
         </label>
       )}
 
       <label className="field">
-        <span className="field-label">Email</span>
+        <span className="field-label">{t('auth.email')}</span>
         <input
           type="email"
           value={email}
           inputMode="email"
           autoComplete="email"
           autoCapitalize="none"
-          placeholder="you@example.com"
+          placeholder={t('auth.emailPlaceholder')}
           onChange={(e) => setEmail(e.target.value)}
         />
       </label>
 
       <PasswordField
-        label="Password"
+        label={t('auth.password')}
         value={password}
         autoComplete="new-password"
-        placeholder={`At least ${MIN_PASSWORD} characters`}
+        placeholder={t('auth.minChars', { n: MIN_PASSWORD })}
         onChange={setPassword}
       />
 
@@ -224,16 +235,16 @@ export function RegisterScreen({ existingName, onDone, onSwitchToLogin, onBack }
 
       {emailTaken && (
         <Button block onClick={onSwitchToLogin}>
-          Log in instead
+          {t('register.logInInstead')}
         </Button>
       )}
 
       <Button variant="primary" block onClick={handleSubmit} disabled={!valid || busy}>
-        {busy ? 'Creating…' : 'Create account'}
+        {busy ? t('register.busy') : t('register.submit')}
       </Button>
 
       <Button variant="ghost" block onClick={onBack}>
-        Back
+        {t('common.back')}
       </Button>
     </div>
   )

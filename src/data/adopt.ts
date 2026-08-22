@@ -7,6 +7,7 @@ import { asSyncWrite } from './syncWrites'
 import { clearCursors, setSyncUserId } from './syncState'
 import { exportAll, downloadBackup } from './backup'
 import { isLive, now } from './ids'
+import { t } from './i18n'
 
 /**
  * Deciding what happens when a device with local data signs into an account.
@@ -45,20 +46,32 @@ if (import.meta.env.DEV) {
   }
 }
 
-/** Display names, for the screen that shows both sides before choosing. */
-export const TABLE_LABELS: Record<string, string> = {
-  foods: 'Foods',
-  log_entries: 'Meal entries',
-  measurements: 'Weight entries',
-  custom_exercises: 'Custom exercises',
-  routines: 'Workout routines',
-  routine_exercises: 'Routine exercises',
-  workouts: 'Workouts',
-  workout_sets: 'Sets logged',
-  care_routines: 'Care routines',
-  care_steps: 'Care steps',
-  care_done_log: 'Routine days',
-  care_step_done: 'Steps ticked',
+/**
+ * Display names, for the screen that shows both sides before choosing.
+ *
+ * A function, not a const: a module-level object literal evaluates once at
+ * import and would freeze whatever language happened to be active then, so
+ * switching afterwards would leave this table in the old one. Called during
+ * render instead, which costs nothing at twelve keys.
+ *
+ * The keys are server table names and stay English — they are identifiers, not
+ * content, and they must keep matching SYNC_TABLE_NAMES.
+ */
+export function tableLabels(): Record<string, string> {
+  return {
+    foods: t('adopt.table.foods'),
+    log_entries: t('adopt.table.logEntries'),
+    measurements: t('adopt.table.measurements'),
+    custom_exercises: t('adopt.table.customExercises'),
+    routines: t('adopt.table.routines'),
+    routine_exercises: t('adopt.table.routineExercises'),
+    workouts: t('adopt.table.workouts'),
+    workout_sets: t('adopt.table.workoutSets'),
+    care_routines: t('adopt.table.careRoutines'),
+    care_steps: t('adopt.table.careSteps'),
+    care_done_log: t('adopt.table.careDoneLog'),
+    care_step_done: t('adopt.table.careStepDone'),
+  }
 }
 
 export type AdoptMode = 'merge' | 'keep-local' | 'keep-account'
@@ -291,6 +304,7 @@ if (import.meta.env.DEV) {
   ;(window as unknown as Record<string, unknown>).upkeepAdopt = {
     preview: previewAdoption,
     adopt: adoptAccount,
-    labels: TABLE_LABELS,
+    // Now a function — call it as upkeepAdopt.labels(), not upkeepAdopt.labels.
+    labels: tableLabels,
   }
 }

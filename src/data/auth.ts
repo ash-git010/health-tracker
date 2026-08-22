@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { t } from './i18n'
 
 /**
  * Auth plumbing. No UI, no sync, no data adoption — those come later.
@@ -87,28 +88,38 @@ function classify(message: string): AuthFailure {
   return 'unknown'
 }
 
+/**
+ * Called when the failure happens, not at import, so the string is in whatever
+ * language is current at that moment. A module-level lookup table here would
+ * freeze itself at import time — see the i18n rules in the handover.
+ *
+ * Note 'weak-password' names 6, not MIN_PASSWORD. That is deliberate: this
+ * message only ever comes from Supabase rejecting a password below its own
+ * floor, and every form here already blocks anything under MIN_PASSWORD, so it
+ * is effectively unreachable from our own screens.
+ */
 function friendly(reason: AuthFailure): string {
   switch (reason) {
     case 'email-taken':
-      return 'That email already has an account. Log in instead.'
+      return t('auth.err.emailTaken')
     case 'invalid-credentials':
-      return 'Email or password is wrong.'
+      return t('auth.err.invalidCredentials')
     case 'invalid-email':
-      return 'That email address does not look right.'
+      return t('auth.err.invalidEmail')
     case 'weak-password':
-      return 'Password needs to be at least 6 characters.'
+      return t('auth.err.weakPassword')
     case 'wrong-password':
-      return 'That is not your current password.'
+      return t('auth.err.wrongPassword')
     case 'same-password':
-      return 'The new password must be different from the old one.'
+      return t('auth.err.samePassword')
     case 'invalid-code':
-      return 'That code is wrong or has expired. Request a new one.'
+      return t('auth.err.invalidCode')
     case 'rate-limited':
-      return 'Too many attempts. Wait a minute and try again.'
+      return t('auth.err.rateLimited')
     case 'offline':
-      return 'No connection. Your data is safe on this device — try again later.'
+      return t('auth.err.offline')
     case 'unknown':
-      return 'Something went wrong. Try again.'
+      return t('auth.err.unknown')
   }
 }
 
@@ -194,7 +205,7 @@ export async function changePassword(
 ): Promise<AuthResult> {
   const user = await getCurrentUser()
   if (!user) {
-    return { ok: false, reason: 'unknown', message: 'You are not signed in.' }
+        return { ok: false, reason: 'unknown', message: t('auth.err.notSignedIn') }
   }
 
   const { error: reauthError } = await supabase.auth.signInWithPassword({
