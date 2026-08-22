@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { parseDecimal } from '../data/numbers'
 
 interface Props {
   label: string
@@ -15,32 +16,10 @@ interface Props {
   max?: number
   step?: number
   inputMode?: 'numeric' | 'decimal'
+  autoFocus?: boolean
   placeholder?: string
   className?: string
   style?: CSSProperties
-}
-
-/**
- * Turns typed text into a number, accepting both '.' and ',' as the decimal
- * separator. German keyboards produce ',' and German users type it.
- *
- * Returns:
- *   number — a committable value
- *   ''     — the field is empty
- *   null   — mid-typing, not yet a number ('67.', '-', ','). The draft is
- *            kept on screen but nothing is emitted, so the user can keep going.
- */
-function parse(raw: string): number | '' | null {
-  const trimmed = raw.trim()
-  if (trimmed === '') return ''
-
-  const normalised = trimmed.replace(',', '.')
-  // One optional sign, digits, one optional point, digits. Rejects a second
-  // separator, so '6,7,5' never silently becomes something else.
-  if (!/^-?\d*\.?\d*$/.test(normalised)) return null
-
-  const n = Number(normalised)
-  return Number.isFinite(n) ? n : null
 }
 
 export function NumberField({
@@ -49,6 +28,7 @@ export function NumberField({
   onChange,
   suffix,
   inputMode = 'decimal',
+  autoFocus,
   placeholder,
   className,
   style,
@@ -80,13 +60,14 @@ export function NumberField({
         <input
           type="text"
           inputMode={inputMode}
+          autoFocus={autoFocus}
           value={draft}
           placeholder={placeholder}
           onChange={(e) => {
             const raw = e.target.value
             setDraft(raw)
 
-            const parsed = parse(raw)
+            const parsed = parseDecimal(raw)
             if (parsed === null) return // mid-typing; keep the draft, emit nothing
 
             lastEmitted.current = parsed

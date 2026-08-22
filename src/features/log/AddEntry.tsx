@@ -6,6 +6,7 @@ import { listFoods, macrosForAmount, amountInBaseUnit, hasPieces } from '../../d
 import { fuzzySearch } from '../../data/search'
 import { logFood, MEALS, type Meal } from '../../data/log'
 import { Button, Card, ScreenHeader } from '../../components/ui'
+import { NumberField } from '../../components/NumberField'
 import type { Food } from '../../data/types'
 
 interface Props {
@@ -150,21 +151,13 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
         </div>
       )}
 
-      <label className="field">
-        <span className="field-label">Amount</span>
-        <span className="row">
-          <input
-            type="number"
-            inputMode="decimal"
-            value={amount}
-            autoFocus
-            onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
-          />
-          <span className="muted" style={{ minWidth: '3.5rem' }}>
-            {mode === 'piece' ? selected.pieceLabel || 'pcs' : selected.unit}
-          </span>
-        </span>
-      </label>
+      <NumberField
+        label="Amount"
+        value={amount}
+        onChange={setAmount}
+        autoFocus
+        suffix={mode === 'piece' ? selected.pieceLabel || 'pcs' : selected.unit}
+      />
 
       <label className="field">
         <span className="field-label">Meal</span>
