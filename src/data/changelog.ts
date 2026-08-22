@@ -6,6 +6,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
     {
+    version: '2.1.1',
+    date: '2026-08-22',
+    changes: [
+      'Typing a weight or an amount with a comma, like 67,5, now saves the number you actually typed — it used to silently drop the comma and save ten times too much',
+      'Tap a set number to change its type or remove it; the small × next to each set is gone',
+    ],
+  },
+  {
     version: '2.1',
     date: '2026-08-18',
     changes: [

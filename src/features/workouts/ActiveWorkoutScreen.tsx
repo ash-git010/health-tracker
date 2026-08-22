@@ -25,6 +25,7 @@ import { REST_OPTIONS, formatTime, formatRestLabel } from './rest'
 import { EquipmentIcon } from '../../components/EquipmentIcon'
 import { Button, Card, Empty, Fab } from '../../components/ui'
 import type { SetType, WorkoutSet } from '../../data/types'
+import { parseDecimal } from '../../data/numbers'
 import { useConfirm } from '../../components/DialogProvider'
 import { OptionSheet } from '../../components/OptionSheet'
 import { rpeOptions, formatRpe } from './rpe'
@@ -39,7 +40,6 @@ const SET_TYPES: { value: SetType; label: string }[] = [
 const SET_COL = '1.75rem'
 const NUM_COL = '3.5rem'
 const CHECK_COL = '2.625rem'
-const DEL_COL = '2rem'
 
 // Stores the wall-clock end time rather than a counter. A counter driven by
 // setTimeout stops advancing when the phone locks; the clock doesn't.
@@ -386,7 +386,6 @@ function ExerciseBlock({
         <span style={{ width: NUM_COL, textAlign: 'center' }}>KG</span>
         <span style={{ width: NUM_COL, textAlign: 'center' }}>REPS</span>
         <span style={{ width: CHECK_COL, textAlign: 'center' }}>✓</span>
-        <span style={{ width: DEL_COL }} aria-hidden="true" />
       </div>
 
       <div>
@@ -489,6 +488,33 @@ function SetRow({
     await updateSet(set.id!, changes)
   }
 
+  /**
+   * Both inputs are text, not number. `type="number"` let Chrome sanitise the
+   * value before we ever saw it: typing '67,5' on a German keyboard dropped
+   * the comma and closed the digits up, saving 675kg with no error anywhere.
+   * A wrong set weight is worse than a wrong body weight because it also
+   * poisons volume, 1RM and the PR list, which stay wrong after the row is
+   * corrected.
+   *
+   * On blur the draft is rewritten to what was actually stored, so what is on
+   * screen and what is in Dexie can never disagree — the 2.1.1 bug was
+   * precisely a field that looked like it had accepted the input.
+   */
+  function commitWeight() {
+    const parsed = parseDecimal(weight)
+    const value = typeof parsed === 'number' ? parsed : 0
+    setWeight(value ? String(value) : '')
+    void commit({ weightKg: value })
+  }
+
+  function commitReps() {
+    const parsed = parseDecimal(reps)
+    // Reps are whole. A typed decimal is a slip, not an intention.
+    const value = typeof parsed === 'number' ? Math.round(parsed) : 0
+    setReps(value ? String(value) : '')
+    void commit({ reps: value })
+  }
+
   function flagMissingReps() {
     setNeedsReps(true)
     repsRef.current?.focus()
@@ -503,7 +529,8 @@ function SetRow({
 
     // Reps decide whether a set counts. Weight does not: 0 kg is a
     // bodyweight set, which is a real answer rather than a missing one.
-    const typedReps = reps.trim() ? Number(reps) : NaN
+    const parsedReps = parseDecimal(reps)
+    const typedReps = typeof parsedReps === 'number' ? Math.round(parsedReps) : NaN
     const repsVal = Number.isFinite(typedReps) && typedReps > 0 ? typedReps : (hint?.reps ?? 0)
 
     if (repsVal <= 0) {
@@ -511,7 +538,8 @@ function SetRow({
       return
     }
 
-    const typedWeight = weight.trim() ? Number(weight) : NaN
+    const parsedWeight = parseDecimal(weight)
+    const typedWeight = typeof parsedWeight === 'number' ? parsedWeight : NaN
     const weightVal =
       Number.isFinite(typedWeight) && typedWeight >= 0 ? typedWeight : (hint?.weightKg ?? 0)
 
@@ -540,18 +568,18 @@ function SetRow({
       </span>
 
       <input
-        type="number"
+        type="text"
         inputMode="decimal"
         value={weight}
         placeholder={hint && hint.weightKg > 0 ? String(hint.weightKg) : '–'}
         onChange={(e) => setWeight(e.target.value)}
-        onBlur={() => commit({ weightKg: weight.trim() ? Number(weight) || 0 : 0 })}
+        onBlur={commitWeight}
         style={{ width: NUM_COL }}
       />
 
       <input
         ref={repsRef}
-        type="number"
+        type="text"
         inputMode="numeric"
         className={needsReps ? 'set-input-invalid' : undefined}
         value={reps}
@@ -560,7 +588,7 @@ function SetRow({
           setNeedsReps(false)
           setReps(e.target.value)
         }}
-        onBlur={() => commit({ reps: reps.trim() ? Number(reps) || 0 : 0 })}
+        onBlur={commitReps}
         style={{ width: NUM_COL }}
       />
 
@@ -571,15 +599,6 @@ function SetRow({
         onClick={toggleComplete}
       >
         ✓
-      </button>
-
-      <button
-        className="set-delete"
-        style={{ width: DEL_COL }}
-        aria-label={`Remove set ${label}`}
-        onClick={() => set.id && deleteSet(set.id)}
-      >
-        ×
       </button>
 
       {typeMenuOpen && (

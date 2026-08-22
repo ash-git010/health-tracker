@@ -18,6 +18,7 @@ import { formatRestLabel } from './rest'
 import { Button, Card, Empty, InlineRename, ScreenHeader } from '../../components/ui'
 import { useConfirm } from '../../components/DialogProvider'
 import type { SetType, WorkoutSet } from '../../data/types'
+import { parseDecimal } from '../../data/numbers'
 
 const SET_TYPES: { value: SetType; label: string }[] = [
   { value: 'normal', label: 'Normal' },
@@ -169,22 +170,32 @@ function SetRow({ set, index }: { set: WorkoutSet; index: number }) {
       </span>
 
       <input
-        type="number"
+        type="text"
         inputMode="decimal"
         value={weight}
         onChange={(e) => setWeight(e.target.value)}
-        onBlur={() => save({ weightKg: Number(weight) || 0 })}
+        onBlur={() => {
+          const parsed = parseDecimal(weight)
+          const value = typeof parsed === 'number' ? parsed : 0
+          setWeight(value ? String(value) : '')
+          void save({ weightKg: value })
+        }}
         style={{ flex: 1 }}
       />
 
       <span className="faint">×</span>
 
       <input
-        type="number"
+        type="text"
         inputMode="numeric"
         value={reps}
         onChange={(e) => setReps(e.target.value)}
-        onBlur={() => save({ reps: Number(reps) || 0 })}
+        onBlur={() => {
+          const parsed = parseDecimal(reps)
+          const value = typeof parsed === 'number' ? Math.round(parsed) : 0
+          setReps(value ? String(value) : '')
+          void save({ reps: value })
+        }}
         style={{ flex: 1 }}
       />
 

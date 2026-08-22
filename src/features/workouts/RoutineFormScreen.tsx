@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import {
@@ -22,10 +22,10 @@ import { EquipmentIcon } from '../../components/EquipmentIcon'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 import { useConfirm } from '../../components/DialogProvider'
 import type { RoutineSet, SetType, WorkoutSet } from '../../data/types'
+import { parseDecimal } from '../../data/numbers'
 
 const SET_COL = '1.75rem'
 const NUM_COL = '3.5rem'
-const DEL_COL = '2rem'
 
 const SET_TYPES: { value: SetType; label: string }[] = [
   { value: 'normal', label: 'Normal' },
@@ -403,7 +403,6 @@ function ExerciseCard({
         <span className="grow">PREVIOUS</span>
         <span style={{ width: NUM_COL, textAlign: 'center' }}>KG</span>
         <span style={{ width: NUM_COL, textAlign: 'center' }}>REPS</span>
-        <span style={{ width: DEL_COL }} aria-hidden="true" />
       </div>
 
       {draft.sets.map((set, i) => {
@@ -433,36 +432,18 @@ function ExerciseCard({
                 : '–'}
             </span>
 
-            <input
-              type="number"
-              inputMode="decimal"
+            <DraftNumber
               value={set.weightKg}
-              placeholder="–"
-              onChange={(e) =>
-                updateSet(i, { weightKg: e.target.value === '' ? '' : Number(e.target.value) })
-              }
-              style={{ width: NUM_COL }}
+              inputMode="decimal"
+              onChange={(v) => updateSet(i, { weightKg: v })}
             />
 
-            <input
-              type="number"
-              inputMode="numeric"
+            <DraftNumber
               value={set.reps}
-              placeholder="–"
-              onChange={(e) =>
-                updateSet(i, { reps: e.target.value === '' ? '' : Number(e.target.value) })
-              }
-              style={{ width: NUM_COL }}
+              inputMode="numeric"
+              whole
+              onChange={(v) => updateSet(i, { reps: v })}
             />
-
-            <button
-              className="set-delete"
-              style={{ width: DEL_COL }}
-              aria-label={`Remove set ${label}`}
-              onClick={() => removeSet(i)}
-            >
-              ×
-            </button>
           </div>
         )
       })}
@@ -581,4 +562,59 @@ function setLabel(type: SetType, seqNumber: number): string {
   if (type === 'drop') return 'D'
   if (type === 'failure') return 'F'
   return String(seqNumber)
+}
+
+/**
+ * A bare number input that survives a comma.
+ *
+ * The parent holds `number | ''`, which cannot represent a half-typed '67,' —
+ * so the raw text is held here instead and only committed once it parses.
+ * This is NumberField's contract without NumberField's label and .field
+ * wrapper, which do not fit a set row.
+ *
+ * Rows are keyed by index, so React reuses this component when a set is
+ * removed and the props change underneath it. The lastEmitted ref is what
+ * makes that safe: a value that did not come from us resets the draft.
+ */
+function DraftNumber({
+  value,
+  onChange,
+  inputMode,
+  whole,
+}: {
+  value: number | ''
+  onChange: (value: number | '') => void
+  inputMode: 'numeric' | 'decimal'
+  whole?: boolean
+}) {
+  const [draft, setDraft] = useState(value === '' ? '' : String(value))
+  const lastEmitted = useRef<number | ''>(value)
+
+  useEffect(() => {
+    if (value !== lastEmitted.current) {
+      setDraft(value === '' ? '' : String(value))
+      lastEmitted.current = value
+    }
+  }, [value])
+
+  return (
+    <input
+      type="text"
+      inputMode={inputMode}
+      value={draft}
+      placeholder="–"
+      onChange={(e) => {
+        const raw = e.target.value
+        setDraft(raw)
+
+        const parsed = parseDecimal(raw)
+        if (parsed === null) return // mid-typing; keep the draft, emit nothing
+
+        const next = whole && typeof parsed === 'number' ? Math.round(parsed) : parsed
+        lastEmitted.current = next
+        onChange(next)
+      }}
+      style={{ width: NUM_COL }}
+    />
+  )
 }
