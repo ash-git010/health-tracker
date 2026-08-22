@@ -27,7 +27,7 @@ import { Button, Card, Empty, Fab } from '../../components/ui'
 import type { SetType, WorkoutSet } from '../../data/types'
 import { useConfirm } from '../../components/DialogProvider'
 import { OptionSheet } from '../../components/OptionSheet'
-import { RPE_OPTIONS, formatRpe } from './rpe'
+import { rpeOptions, formatRpe } from './rpe'
 
 const SET_TYPES: { value: SetType; label: string }[] = [
   { value: 'normal', label: 'Normal' },
@@ -452,7 +452,7 @@ function ExerciseBlock({
         <OptionSheet
           title="Target RPE"
           onClose={() => setMenu('none')}
-          options={RPE_OPTIONS.map((o) => ({
+          options={rpeOptions().map((o) => ({
             label: o.label,
             active: o.value === targetRpe,
             onSelect: () => {

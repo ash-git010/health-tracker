@@ -54,7 +54,7 @@ import { AdoptScreen } from './features/auth/AdoptScreen'
 import { OnboardingScreen } from './features/onboarding/OnboardingScreen'
 import { InstallScreen } from './features/about/InstallScreen'
 import { LanguageScreen } from './features/onboarding/LanguageScreen'
-import { applyLanguage, detectLanguage, useLanguage, type Language } from './data/i18n'
+import { applyLanguage, detectLanguage, useLanguage, t, type Language } from './data/i18n'
 
 type Stage =
   | 'checking'
@@ -181,7 +181,7 @@ function AppStages() {
   if (stage === 'checking') {
     return (
       <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>
-        Loading…
+        {t('app.loading')}
       </p>
     )
   }
@@ -189,7 +189,7 @@ function AppStages() {
   if (stage === 'syncing') {
     return (
       <p className="muted" style={{ padding: '2rem', textAlign: 'center' }}>
-        Getting your data…
+        {t('app.gettingData')}
       </p>
     )
   }
@@ -276,8 +276,8 @@ function AppStages() {
   if (stage === 'goals') {
     return (
       <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-        <h1>Nice to meet you, {name}</h1>
-        <p className="muted">Set your daily goals to get started.</p>
+        <h1>{t('goals.greeting', { name })}</h1>
+        <p className="muted">{t('goals.lead')}</p>
         <GoalsScreen onSaved={() => setStage('ready')} />
       </div>
     )

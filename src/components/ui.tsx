@@ -1,5 +1,6 @@
 import { useState, type ReactNode, type CSSProperties } from 'react'
 import { ChevronLeft } from 'lucide-react'
+import { t } from '../data/i18n'
 
 export function Button({
   children,
@@ -44,7 +45,7 @@ export function Button({
 
 export function Fab({
   onClick,
-  label = 'Add',
+  label = t('common.add'),
   children = '+',
 }: {
   onClick: () => void
@@ -80,7 +81,7 @@ export function ScreenHeader({
       {onBack && (
         <button
           className="icon-btn"
-          aria-label="Back"
+          aria-label={t('common.back')}
           onClick={onBack}
           style={{ marginLeft: '-0.5rem' }}
         >
@@ -120,10 +121,10 @@ export function InlineRename({
         style={{ flex: 1 }}
       />
       <Button size="sm" variant="primary" onClick={() => name.trim() && onSave(name.trim())}>
-        Save
+        {t('common.save')}
       </Button>
       <Button size="sm" onClick={onCancel}>
-        Cancel
+        {t('common.cancel')}
       </Button>
     </div>
   )

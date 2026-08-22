@@ -11,6 +11,7 @@ import {
   isInstalled,
   detectPlatform,
 } from '../../data/install'
+import { t } from '../../data/i18n'
 
 type Slide = {
   key: string
@@ -24,51 +25,57 @@ type Slide = {
 
 const ICON = { size: 30, strokeWidth: 1.75 }
 
-const CONTENT: Slide[] = [
-  {
-    key: 'welcome',
-    icon: <Mark />,
-    bareIcon: true,
-    title: 'Welcome to Upkeep',
-    lead: 'Everything you do to look after yourself, kept in one place.',
-    points: ['Four sections, one home screen', 'Works offline, opens instantly', 'No ads, no feed, no streak guilt'],
-  },
-  {
-    key: 'meals',
-    icon: <Utensils {...ICON} />,
-    title: 'Meals',
-    lead: 'Log what you eat without fighting the app to do it.',
-    points: ['Scan a barcode or search the food database', 'Log by weight or by piece', 'Daily macro goals and charts'],
-  },
-  {
-    key: 'body',
-    icon: <Scale {...ICON} />,
-    title: 'Body',
-    lead: 'Weight, smoothed — so one heavy morning does not read as a trend.',
-    points: ['7-entry rolling average', '7 and 30 day change at a glance', 'Optional height and BMI'],
-  },
-  {
-    key: 'workouts',
-    icon: <Dumbbell {...ICON} />,
-    title: 'Workouts',
-    lead: 'Train from a routine or freestyle it, and see the progress.',
-    points: ['1,300+ exercises, plus your own', 'Sets, warmups, drop sets, rest timer', 'Personal records and volume trends'],
-  },
-  {
-    key: 'routines',
-    icon: <Droplets {...ICON} />,
-    title: 'Routines',
-    lead: 'The small daily things that only work when you actually do them.',
-    points: ['Morning, evening and anytime routines', 'Named steps with product notes', 'Streaks that survive a skipped day'],
-  },
-  {
-    key: 'account',
-    icon: <ShieldCheck {...ICON} />,
-    title: 'Your data stays yours',
-    lead: 'Everything is stored on this device first. It works with no signal.',
-    points: ['An account syncs it across your devices', 'Sign in anywhere to pick up where you left off', 'Export a full backup whenever you like'],
-  },
-]
+/**
+ * A function, not a const. Module-level arrays evaluate once at import, which
+ * would freeze these strings in whatever language was active at first load.
+ */
+function contentSlides(): Slide[] {
+  return [
+    {
+      key: 'welcome',
+      icon: <Mark />,
+      bareIcon: true,
+      title: t('onb.welcome.title'),
+      lead: t('onb.welcome.lead'),
+      points: [t('onb.welcome.p1'), t('onb.welcome.p2'), t('onb.welcome.p3')],
+    },
+    {
+      key: 'meals',
+      icon: <Utensils {...ICON} />,
+      title: t('onb.meals.title'),
+      lead: t('onb.meals.lead'),
+      points: [t('onb.meals.p1'), t('onb.meals.p2'), t('onb.meals.p3')],
+    },
+    {
+      key: 'body',
+      icon: <Scale {...ICON} />,
+      title: t('onb.body.title'),
+      lead: t('onb.body.lead'),
+      points: [t('onb.body.p1'), t('onb.body.p2'), t('onb.body.p3')],
+    },
+    {
+      key: 'workouts',
+      icon: <Dumbbell {...ICON} />,
+      title: t('onb.workouts.title'),
+      lead: t('onb.workouts.lead'),
+      points: [t('onb.workouts.p1'), t('onb.workouts.p2'), t('onb.workouts.p3')],
+    },
+    {
+      key: 'routines',
+      icon: <Droplets {...ICON} />,
+      title: t('onb.routines.title'),
+      lead: t('onb.routines.lead'),
+      points: [t('onb.routines.p1'), t('onb.routines.p2'), t('onb.routines.p3')],
+    },
+    {
+      key: 'account',
+      icon: <ShieldCheck {...ICON} />,
+      title: t('onb.account.title'),
+      lead: t('onb.account.lead'),
+      points: [t('onb.account.p1'), t('onb.account.p2'), t('onb.account.p3')],
+    },
+  ]
+}
 
 export function OnboardingScreen({ onDone, onLogin }: { onDone: () => void; onLogin: () => void }) {
   const [index, setIndex] = useState(0)
@@ -99,48 +106,49 @@ export function OnboardingScreen({ onDone, onLogin }: { onDone: () => void; onLo
   const installSlide: Slide = {
     key: 'install',
     icon: <Smartphone {...ICON} />,
-    title: 'Add it to your home screen',
-    lead: 'Upkeep then opens like any other app — full screen, its own icon, and it still works with no signal.',
+    title: t('onb.install.title'),
+    lead: t('onb.install.lead'),
     body: added ? (
       <div className="onb-install-done">
         <CheckCircle2 size={18} />
-        <span>Added. Open Upkeep from your home screen next time.</span>
+        <span>{t('onb.install.done')}</span>
       </div>
     ) : promptable ? (
       <div className="onb-install">
         <Button block onClick={handleInstall}>
-          <Smartphone size={17} /> Add to home screen
+          <Smartphone size={17} /> {t('onb.install.button')}
         </Button>
         <p className="faint" style={{ margin: '0.5rem 0 0' }}>
-          Your browser will ask you to confirm.
+          {t('onb.install.hint')}
         </p>
       </div>
     ) : platform === 'ios' ? (
       <div className="onb-install">
         <div className="onb-install-head">
-          <Share size={16} /> On iPhone, in Safari
+          <Share size={16} /> {t('onb.install.iosHead')}
         </div>
         <ol className="install-steps">
-          <li>Tap the Share button at the bottom of the screen.</li>
-          <li>Scroll down and tap "Add to Home Screen".</li>
-          <li>Tap "Add" in the top right.</li>
+          <li>{t('onb.install.ios1')}</li>
+          <li>{t('onb.install.ios2')}</li>
+          <li>{t('onb.install.ios3')}</li>
         </ol>
       </div>
     ) : (
       <div className="onb-install">
         <div className="onb-install-head">
-          <MoreVertical size={16} /> In your browser menu
+          <MoreVertical size={16} /> {t('onb.install.androidHead')}
         </div>
         <ol className="install-steps">
-          <li>Tap the three dots in the top right.</li>
-          <li>Choose "Install app" or "Add to Home screen".</li>
-          <li>Confirm.</li>
+          <li>{t('onb.install.android1')}</li>
+          <li>{t('onb.install.android2')}</li>
+          <li>{t('onb.install.android3')}</li>
         </ol>
       </div>
     ),
   }
 
-  const slides = showInstall ? [...CONTENT, installSlide] : CONTENT
+  const content = contentSlides()
+  const slides = showInstall ? [...content, installSlide] : content
   const last = slides.length - 1
   const dragging = startX.current !== null
 
@@ -194,7 +202,7 @@ export function OnboardingScreen({ onDone, onLogin }: { onDone: () => void; onLo
           Up<span>keep</span>
         </span>
         <button className="btn-plain onb-skip" onClick={onDone}>
-          Skip
+          {t('onb.skip')}
         </button>
       </div>
 
@@ -250,18 +258,18 @@ export function OnboardingScreen({ onDone, onLogin }: { onDone: () => void; onLo
             <button
               key={slide.key}
               className={i === index ? 'onb-dot is-active' : 'onb-dot'}
-              aria-label={`Go to slide ${i + 1}`}
+              aria-label={t('onb.goToSlide', { n: i + 1 })}
               onClick={() => go(i)}
             />
           ))}
         </div>
 
         <Button variant="primary" block onClick={() => (index === last ? onDone() : go(index + 1))}>
-          {index === last ? 'Get started' : 'Continue'}
+          {index === last ? t('onb.getStarted') : t('common.continue')}
         </Button>
 
         <button className="btn-plain onb-login" onClick={onLogin}>
-          Already have an account? <span>Log in</span>
+          {t('onb.haveAccount')} <span>{t('onb.logIn')}</span>
         </button>
       </div>
     </div>

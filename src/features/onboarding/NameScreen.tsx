@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { saveName } from '../../data/profile'
 import { TextField } from '../../components/TextField'
 import { Button } from '../../components/ui'
+import { t } from '../../data/i18n'
 
 export function NameScreen({ onDone }: { onDone: () => void }) {
   const [name, setName] = useState('')
@@ -15,13 +16,18 @@ export function NameScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-      <h1>Welcome to Upkeep</h1>
-      <p className="muted">What should we call you?</p>
+      <h1>{t('name.title')}</h1>
+      <p className="muted">{t('name.lead')}</p>
 
-      <TextField label="Your name" value={name} onChange={setName} placeholder="John Doe" />
+      <TextField
+        label={t('name.label')}
+        value={name}
+        onChange={setName}
+        placeholder={t('name.placeholder')}
+      />
 
       <Button variant="primary" block onClick={handleContinue} disabled={!valid}>
-        Continue
+        {t('common.continue')}
       </Button>
     </div>
   )

@@ -15,7 +15,7 @@ import { findExercise } from '../../data/exercises'
 import { ExercisePicker } from './ExercisePicker'
 import { FolderPicker } from './FolderPicker'
 import { REST_OPTIONS, formatRestLabel } from './rest'
-import { RPE_OPTIONS, formatRpe } from './rpe'
+import { rpeOptions, formatRpe } from './rpe'
 import { TextField } from '../../components/TextField'
 import { OptionSheet } from '../../components/OptionSheet'
 import { EquipmentIcon } from '../../components/EquipmentIcon'
@@ -537,7 +537,7 @@ function ExerciseCard({
         <OptionSheet
           title="Target RPE"
           onClose={() => setMenu('none')}
-          options={RPE_OPTIONS.map((o) => ({
+          options={rpeOptions().map((o) => ({
             label: o.label,
             active: o.value === draft.rpe,
             onSelect: () => {

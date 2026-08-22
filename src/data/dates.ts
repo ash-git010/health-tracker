@@ -1,3 +1,5 @@
+import { locale, t } from './i18n'
+
 export function todayISO(): string {
   return toISODate(new Date())
 }
@@ -16,14 +18,17 @@ export function addDays(iso: string, delta: number): string {
 }
 
 export function formatDay(iso: string): string {
-  if (iso === todayISO()) return 'Today'
-  if (iso === addDays(todayISO(), -1)) return 'Yesterday'
-  return new Date(iso + 'T12:00:00').toLocaleDateString(undefined, {
+  if (iso === todayISO()) return t('dates.today')
+  if (iso === addDays(todayISO(), -1)) return t('dates.yesterday')
+  // locale(), not undefined: `undefined` means the browser's locale, which
+  // leaves weekday names in English when the app is set to German.
+  return new Date(iso + 'T12:00:00').toLocaleDateString(locale(), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
   })
 }
+
 
 export function lastNDays(n: number, endISO = todayISO()): string[] {
   const days: string[] = []
@@ -34,5 +39,5 @@ export function lastNDays(n: number, endISO = todayISO()): string[] {
 }
 
 export function shortDay(iso: string): string {
-  return new Date(iso + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short' })
+  return new Date(iso + 'T12:00:00').toLocaleDateString(locale(), { weekday: 'short' })
 }

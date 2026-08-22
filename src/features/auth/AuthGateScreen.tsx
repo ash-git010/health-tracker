@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button } from '../../components/ui'
+import { t } from '../../data/i18n'
 
 interface Props {
   name?: string
@@ -21,29 +22,22 @@ export function AuthGateScreen({ name, onRegister, onLogin, onSkip }: Props) {
   if (confirmingSkip) {
     return (
       <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-        <h1>Without an account</h1>
+        <h1>{t('gate.withoutTitle')}</h1>
 
-        <p className="warn">
-          Your data lives only on this phone. If you lose it, clear your browser,
-          or reinstall, everything is gone and cannot be recovered.
-        </p>
+        <p className="warn">{t('gate.withoutWarn')}</p>
 
-        <p className="muted">
-          You can create an account later and keep everything you have logged
-          up to that point. Nothing is lost by deciding now and changing your
-          mind afterwards.
-        </p>
+        <p className="muted">{t('gate.withoutNote')}</p>
 
         <Button variant="primary" block onClick={onRegister}>
-          Create an account instead
+          {t('gate.createInstead')}
         </Button>
 
         <Button block onClick={onSkip}>
-          Continue without one
+          {t('gate.continueWithout')}
         </Button>
 
         <Button variant="ghost" block onClick={() => setConfirmingSkip(false)}>
-          Back
+          {t('common.back')}
         </Button>
       </div>
     )
@@ -51,24 +45,20 @@ export function AuthGateScreen({ name, onRegister, onLogin, onSkip }: Props) {
 
   return (
     <div className="stack" style={{ padding: '1.5rem 1rem' }}>
-      <h1>{name ? `Welcome back, ${name}` : 'Welcome to Upkeep'}</h1>
+      <h1>{name ? t('gate.welcomeBack', { name }) : t('gate.welcome')}</h1>
 
-      <p className="muted">
-        {name
-          ? 'Create an account to keep your data safe and sync it between devices. Everything you have logged so far comes with you.'
-          : 'An account keeps your data safe if you lose your phone, and syncs it between devices.'}
-      </p>
+      <p className="muted">{name ? t('gate.leadReturning') : t('gate.lead')}</p>
 
       <Button variant="primary" block onClick={onRegister}>
-        Create an account
+        {t('gate.create')}
       </Button>
 
       <Button block onClick={onLogin}>
-        I already have one
+        {t('gate.haveOne')}
       </Button>
 
       <Button variant="ghost" block onClick={() => setConfirmingSkip(true)}>
-        Continue without an account
+        {t('gate.without')}
       </Button>
     </div>
   )
