@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation, NavLink } from 'react-router-dom'
 import { ChevronLeft, Settings, User } from 'lucide-react'
 import { getSection } from './sections'
 import { UpdatePrompt } from './components/UpdatePrompt'
+import { t } from './data/i18n'
 
 export function Layout() {
   const navigate = useNavigate()
@@ -16,8 +17,8 @@ export function Layout() {
 
   function headerTitle(): string {
     if (section) return section.title
-    if (isSettings) return 'Settings'
-    if (isAccount) return 'Account'
+    if (isSettings) return t('layout.settings')
+    if (isAccount) return t('layout.account')
     return ''
   }
 
@@ -34,7 +35,7 @@ export function Layout() {
               <button
                 onClick={() => navigate('/')}
                 className="icon-btn"
-                aria-label="Home"
+                aria-label={t('layout.home')}
                 style={{ marginLeft: '-0.5rem' }}
               >
                 <ChevronLeft size={22} />
@@ -47,7 +48,7 @@ export function Layout() {
           <button
             onClick={() => navigate(isAccount ? '/' : '/account')}
             className="icon-btn"
-            aria-label="Account"
+            aria-label={t('layout.account')}
           >
             <User size={20} />
           </button>
@@ -68,13 +69,13 @@ export function Layout() {
 
       {section && section.tabs.length > 1 && (
         <nav className="tabbar">
-          {section.tabs.map((t) => (
+          {section.tabs.map((tab) => (
             <NavLink
-              key={t.path}
-              to={`/${section.id}/${t.path}`}
+              key={tab.path}
+              to={`/${section.id}/${tab.path}`}
               className={({ isActive }) => (isActive ? 'active' : '')}
             >
-              {t.label}
+              {tab.label}
             </NavLink>
           ))}
         </nav>

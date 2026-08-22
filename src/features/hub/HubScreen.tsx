@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Utensils, Scale, Dumbbell, Sparkles, ChevronRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { SECTIONS } from '../../sections'
+import { sections } from '../../sections'
 import { hubSummary } from '../../data/overview'
 import { getProfile } from '../../data/profile'
 import { getCurrentUser, onAuthChange } from '../../data/auth'
+import { t } from '../../data/i18n'
 
 const ICONS: Record<string, LucideIcon> = {
   meals: Utensils,
@@ -48,13 +49,13 @@ export function HubScreen() {
         summary.daysLogged !== null && {
           key: 'meals',
           value: `${summary.daysLogged}/7`,
-          label: 'Days logged',
+          label: t('hub.daysLogged'),
           to: '/meals/today',
         },
         summary.workoutsThisWeek !== null && {
           key: 'workouts',
           value: String(summary.workoutsThisWeek),
-          label: summary.workoutsThisWeek === 1 ? 'Workout' : 'Workouts',
+          label: summary.workoutsThisWeek === 1 ? t('hub.workout') : t('hub.workouts'),
           to: '/workouts/progress',
         },
         summary.currentWeight !== null && {
@@ -66,7 +67,7 @@ export function HubScreen() {
         summary.routinesDone !== null && {
           key: 'routines',
           value: `${summary.routinesDone.done}/${summary.routinesDone.total}`,
-          label: 'Routines',
+          label: t('hub.routinesLabel'),
           to: '/routines/today',
         },
       ].filter(Boolean)
@@ -94,10 +95,10 @@ export function HubScreen() {
         </div>
       )}
 
-      <h3>Track</h3>
+      <h3>{t('hub.track')}</h3>
 
       <div className="hub-grid">
-        {SECTIONS.map((section, i) => {
+        {sections().map((section, i) => {
           const Icon = ICONS[section.id] ?? Sparkles
           return (
             <Link
@@ -111,7 +112,7 @@ export function HubScreen() {
               </span>
               <span className="hub-tile-title">{section.title}</span>
               <span className="hub-tile-blurb">{section.blurb}</span>
-              {!section.ready && <span className="hub-tile-soon">Soon</span>}
+              {!section.ready && <span className="hub-tile-soon">{t('hub.soon')}</span>}
             </Link>
           )
         })}
@@ -125,9 +126,7 @@ export function HubScreen() {
       */}
       {signedIn === false && (
         <Link to="/account" className="hub-nudge">
-          <span>
-            No account linked — your data is only on this device
-          </span>
+          <span>{t('hub.noAccount')}</span>
           <ChevronRight size={16} strokeWidth={2} />
         </Link>
       )}
@@ -137,7 +136,7 @@ export function HubScreen() {
 
 function greeting(): string {
   const h = new Date().getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 18) return 'Good afternoon'
-  return 'Good evening'
+  if (h < 12) return t('hub.morning')
+  if (h < 18) return t('hub.afternoon')
+  return t('hub.evening')
 }

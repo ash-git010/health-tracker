@@ -129,6 +129,49 @@ const de: Record<TKey, string> = {
 
   'goals.greeting': 'Schön, dich kennenzulernen, {name}',
   'goals.lead': 'Lege deine Tagesziele fest, um loszulegen.',
+
+    'sections.meals.title': 'Mahlzeiten',
+  'sections.meals.blurb': 'Kalorien, Makros und deine Lebensmittel',
+  'sections.meals.today': 'Heute',
+  // 'Essen', not 'Lebensmittel' — correct but far too long for a four-tab bar.
+  'sections.meals.foods': 'Essen',
+  'sections.meals.goals': 'Ziele',
+  'sections.meals.charts': 'Diagramme',
+
+  'sections.body.title': 'Körper',
+  'sections.body.blurb': 'Gewicht und Maße im Zeitverlauf',
+  'sections.body.weight': 'Gewicht',
+
+  'sections.workouts.title': 'Training',
+  'sections.workouts.blurb': 'Übungen, Pläne und Kraftfortschritt',
+  'sections.workouts.log': 'Trainieren',
+  // 'Pläne', not 'Routinen' — English collides with the Routines section and
+  // German would inherit the collision. Also what German lifters actually say.
+  'sections.workouts.routines': 'Pläne',
+  'sections.workouts.progress': 'Fortschritt',
+
+  'sections.routines.title': 'Routinen',
+  'sections.routines.blurb': 'Haut, Haare und tägliche Gewohnheiten',
+  'sections.routines.today': 'Heute',
+  'sections.routines.manage': 'Verwalten',
+
+  'hub.track': 'Tracken',
+  'hub.soon': 'Bald',
+  'hub.daysLogged': 'Tage erfasst',
+  // 'Einheit(en)', not 'Training(s)' — sessions is the natural German unit,
+  // and it stays distinct from the section name.
+  'hub.workout': 'Einheit',
+  'hub.workouts': 'Einheiten',
+  'hub.routinesLabel': 'Routinen',
+  'hub.noAccount': 'Kein Konto verknüpft — deine Daten liegen nur auf diesem Gerät',
+  'hub.morning': 'Guten Morgen',
+  // German has no common 'Guten Nachmittag'.
+  'hub.afternoon': 'Guten Tag',
+  'hub.evening': 'Guten Abend',
+
+  'layout.home': 'Startseite',
+  'layout.account': 'Konto',
+  'layout.settings': 'Einstellungen',
 }
 
 export default de

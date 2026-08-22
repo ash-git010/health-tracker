@@ -129,6 +129,43 @@ const en = {
 
   'goals.greeting': 'Nice to meet you, {name}',
   'goals.lead': 'Set your daily goals to get started.',
+
+    'sections.meals.title': 'Meals',
+  'sections.meals.blurb': 'Calories, macros and your food list',
+  'sections.meals.today': 'Today',
+  'sections.meals.foods': 'Foods',
+  'sections.meals.goals': 'Goals',
+  'sections.meals.charts': 'Charts',
+
+  'sections.body.title': 'Body',
+  'sections.body.blurb': 'Weight and measurements over time',
+  'sections.body.weight': 'Weight',
+
+  'sections.workouts.title': 'Workouts',
+  'sections.workouts.blurb': 'Exercises, routines and lifting progress',
+  'sections.workouts.log': 'Log',
+  'sections.workouts.routines': 'Routines',
+  'sections.workouts.progress': 'Progress',
+
+  'sections.routines.title': 'Routines',
+  'sections.routines.blurb': 'Skin, hair and daily habits',
+  'sections.routines.today': 'Today',
+  'sections.routines.manage': 'Manage',
+
+  'hub.track': 'Track',
+  'hub.soon': 'Soon',
+  'hub.daysLogged': 'Days logged',
+  'hub.workout': 'Workout',
+  'hub.workouts': 'Workouts',
+  'hub.routinesLabel': 'Routines',
+  'hub.noAccount': 'No account linked — your data is only on this device',
+  'hub.morning': 'Good morning',
+  'hub.afternoon': 'Good afternoon',
+  'hub.evening': 'Good evening',
+
+  'layout.home': 'Home',
+  'layout.account': 'Account',
+  'layout.settings': 'Settings',
 }
 
 
