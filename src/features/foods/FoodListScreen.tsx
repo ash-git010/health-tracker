@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { Search, ScanLine, Plus, Pencil, Trash2 } from 'lucide-react'
 import { listFoods, deleteFood, hasPieces } from '../../data/foods'
 import { fuzzySearch } from '../../data/search'
+import { t } from '../../data/i18n'
 import { Card, Empty, ScreenHeader } from '../../components/ui'
 import { useConfirm } from '../../components/DialogProvider'
 import type { Food } from '../../data/types'
@@ -19,9 +20,9 @@ export function FoodListScreen() {
   async function handleDelete(food: Food) {
     if (!food.id) return
     const ok = await confirm({
-      title: `Delete ${food.name}?`,
-      message: 'This removes it from your food list. Past log entries are unaffected.',
-      confirmLabel: 'Delete',
+      title: t('foods.deleteTitle', { name: food.name }),
+      message: t('foods.deleteMessage'),
+      confirmLabel: t('foods.deleteConfirm'),
       destructive: true,
     })
     if (ok) await deleteFood(food.id)
@@ -29,40 +30,36 @@ export function FoodListScreen() {
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
-      <ScreenHeader title="Foods" />
+      <ScreenHeader title={t('sections.meals.foods')} />
 
       <div className="row" style={{ marginBottom: '1rem' }}>
         <Link to="/meals/foods/search" className="btn grow" style={{ textDecoration: 'none' }}>
-          <Search size={16} /> Search
+          <Search size={16} /> {t('add.search')}
         </Link>
         <Link to="/meals/foods/scan" className="btn grow" style={{ textDecoration: 'none' }}>
-          <ScanLine size={16} /> Scan
+          <ScanLine size={16} /> {t('add.scan')}
         </Link>
         <Link
           to="/meals/foods/new"
           className="btn btn-primary grow"
           style={{ textDecoration: 'none' }}
         >
-          <Plus size={16} /> New
+          <Plus size={16} /> {t('add.new')}
         </Link>
       </div>
 
       <input
         type="text"
         value={search}
-        placeholder="Filter your foods…"
+        placeholder={t('foods.filter')}
         onChange={(e) => setSearch(e.target.value)}
         style={{ marginBottom: '1rem' }}
       />
 
-      {foods === undefined && <Empty>Loading…</Empty>}
+      {foods === undefined && <Empty>{t('app.loading')}</Empty>}
 
       {foods && filtered.length === 0 && (
-        <Empty>
-          {search
-            ? 'No matches.'
-            : 'No foods yet. Search the database, scan a barcode, or add one manually.'}
-        </Empty>
+        <Empty>{search ? t('foods.noMatches') : t('foods.empty')}</Empty>
       )}
 
       {filtered.map((food) => (
@@ -75,33 +72,42 @@ export function FoodListScreen() {
                 </strong>
                 <span className="muted num">
                   {food.kcal} kcal
-                  <span className="faint">/100{food.unit}</span>
+                  <span className="faint">{t('foods.per100', { unit: food.unit })}</span>
                 </span>
               </div>
 
               <div className="faint" style={{ marginTop: '0.2rem' }}>
-                P {food.protein} · C {food.carbs} · F {food.fat}
-                {food.brand && ` · ${food.brand}`}
+                {[
+                  t('macro.pShort', { n: food.protein }),
+                  t('macro.cShort', { n: food.carbs }),
+                  t('macro.fShort', { n: food.fat }),
+                  food.brand,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </div>
 
               {hasPieces(food) && (
                 <div className="faint">
-                  1 {food.pieceLabel || 'piece'} = {food.pieceGrams}
-                  {food.unit}
+                  {t('add.perPiece', {
+                    label: food.pieceLabel || t('add.piece'),
+                    grams: food.pieceGrams ?? 0,
+                    unit: food.unit,
+                  })}
                 </div>
               )}
             </div>
 
             <button
               className="icon-btn"
-              aria-label={`Edit ${food.name}`}
+              aria-label={t('foods.editAria', { name: food.name })}
               onClick={() => navigate(`/meals/foods/${food.id}/edit`)}
             >
               <Pencil size={15} />
             </button>
             <button
               className="icon-btn"
-              aria-label={`Delete ${food.name}`}
+              aria-label={t('foods.deleteAria', { name: food.name })}
               onClick={() => handleDelete(food)}
             >
               <Trash2 size={15} />

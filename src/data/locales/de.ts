@@ -348,6 +348,37 @@ const de: Record<TKey, string> = {
   // literal is three words for one action.
   'add.submit': 'Eintragen',
 
+  // K for Kohlenhydrate.
+  'macro.pShort': 'P {n}',
+  'macro.cShort': 'K {n}',
+  'macro.fShort': 'F {n}',
+
+  'foods.filter': 'Dein Essen filtern…',
+  'foods.noMatches': 'Keine Treffer.',
+  'foods.empty':
+    'Noch kein Essen. Durchsuche die Datenbank, scanne einen Barcode oder lege eins von Hand an.',
+  'foods.per100': '/100{unit}',
+  'foods.editAria': '{name} bearbeiten',
+  'foods.deleteAria': '{name} löschen',
+  'foods.deleteTitle': '{name} löschen?',
+  'foods.deleteMessage':
+    'Das entfernt es aus deiner Essensliste. Bisherige Einträge bleiben unverändert.',
+  'foods.deleteConfirm': 'Löschen',
+
+  'search.title': 'Essen suchen',
+  'search.placeholder': 'Apfel, Hähnchenbrust, Haferflocken…',
+  'search.startTyping': 'Tippe, um zu suchen.',
+  // 'Grundnahrungsmittel' / 'Markenprodukte' is the natural German pairing for
+  // the unbranded-vs-branded split. Long, but each sits alone on an h3.
+  'search.commonFoods': 'Grundnahrungsmittel',
+  'search.branded': 'Markenprodukte',
+  'search.keepTyping': 'Weiter tippen…',
+  'search.searching': 'Wird gesucht…',
+  'search.unavailable': 'Die Markensuche ist gerade nicht verfügbar.',
+  'search.nothingFound':
+    'Nichts gefunden. Restaurantgerichte fehlen oft in der Datenbank — lege es von Hand an.',
+  'search.loadingProduct': 'Produkt wird geladen…',
+
   'layout.home': 'Startseite',
   'layout.account': 'Konto',
   'layout.settings': 'Einstellungen',

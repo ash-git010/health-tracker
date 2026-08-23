@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { searchProducts, lookupBarcode, type SearchHit } from '../../data/openfoodfacts'
 import { searchCommonFoods, type CommonFood } from '../../data/commonFoods'
 import { useDebounced } from '../../components/useDebounced'
+import { t } from '../../data/i18n'
 import { Button, Empty, ScreenHeader } from '../../components/ui'
 import type { FoodInput } from '../../data/foods'
 
@@ -39,8 +40,10 @@ export function FoodSearch({ initialQuery = '', onPicked, onCancel }: Props) {
       })
       .catch((err) => {
         if (err.name === 'AbortError') return
+        // The thrown message carries an HTTP status and stays English in the
+        // console; the screen owns the user-facing wording.
         console.error('Search failed:', err)
-        setError('Branded search is unavailable right now.')
+        setError(t('search.unavailable'))
         setLoading(false)
       })
 
@@ -58,17 +61,17 @@ export function FoodSearch({ initialQuery = '', onPicked, onCancel }: Props) {
     }
   }
 
-  if (fetching) return <Empty>Loading product…</Empty>
+  if (fetching) return <Empty>{t('search.loadingProduct')}</Empty>
 
   const typing = query.trim().length > 0
 
   return (
     <div>
       <ScreenHeader
-        title="Search foods"
+        title={t('search.title')}
         action={
           <Button size="sm" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         }
       />
@@ -76,56 +79,86 @@ export function FoodSearch({ initialQuery = '', onPicked, onCancel }: Props) {
       <input
         type="text"
         value={query}
-        placeholder="Apple, chicken breast, oats…"
+        placeholder={t('search.placeholder')}
         onChange={(e) => setQuery(e.target.value)}
         autoFocus
         style={{ marginBottom: '0.75rem' }}
       />
 
-      {!typing && <Empty>Start typing to search.</Empty>}
+      {!typing && <Empty>{t('search.startTyping')}</Empty>}
 
       {common.length > 0 && (
         <>
-          <h3>Common foods</h3>
+          <h3>{t('search.commonFoods')}</h3>
           {common.map((food) => (
             <ResultButton
               key={food.name}
               title={food.name}
-              subtitle={`${food.kcal} kcal · P ${food.protein} · C ${food.carbs} · F ${food.fat} /100${food.unit}${
-                food.pieceGrams ? ` · 1 ${food.pieceLabel} = ${food.pieceGrams}g` : ''
-              }`}
+              subtitle={commonSubtitle(food)}
               onClick={() => onPicked(stripKeywords(food))}
             />
           ))}
         </>
       )}
 
-      {typing && <h3 style={{ marginTop: '1.25rem' }}>Branded products</h3>}
+      {typing && <h3 style={{ marginTop: '1.25rem' }}>{t('search.branded')}</h3>}
 
-      {typing && query.trim().length < 3 && <p className="muted">Keep typing…</p>}
-      {loading && <p className="muted">Searching…</p>}
+      {typing && query.trim().length < 3 && <p className="muted">{t('search.keepTyping')}</p>}
+      {loading && <p className="muted">{t('search.searching')}</p>}
       {error && <p className="warn">{error}</p>}
 
       {!loading && !error && debounced.trim().length >= 3 && hits.length === 0 && (
-        <p className="muted">
-          Nothing found. Restaurant meals often aren't in the database — add it manually.
-        </p>
+        <p className="muted">{t('search.nothingFound')}</p>
       )}
 
       {hits.map((hit) => (
         <ResultButton
           key={hit.code}
           title={hit.name}
-          subtitle={`${hit.brand ? `${hit.brand} · ` : ''}${hit.kcal} kcal${
-            hit.protein != null ? ` · P ${hit.protein}` : ''
-          }${hit.carbs != null ? ` · C ${hit.carbs}` : ''}${
-            hit.fat != null ? ` · F ${hit.fat}` : ''
-          } /100g`}
+          subtitle={brandedSubtitle(hit)}
           onClick={() => handlePickBranded(hit)}
         />
       ))}
     </div>
   )
+}
+
+/**
+ * Built by joining parts rather than from one template string, because the
+ * brand and each macro are independently optional. `/100{unit}` trails the
+ * lot in both languages.
+ */
+function commonSubtitle(food: CommonFood): string {
+  const head = [
+    `${food.kcal} kcal`,
+    t('macro.pShort', { n: food.protein }),
+    t('macro.cShort', { n: food.carbs }),
+    t('macro.fShort', { n: food.fat }),
+  ].join(' · ')
+
+  const piece = food.pieceGrams
+    ? ` · ${t('add.perPiece', {
+        label: food.pieceLabel || t('add.piece'),
+        grams: food.pieceGrams,
+        unit: food.unit,
+      })}`
+    : ''
+
+  return `${head} ${t('foods.per100', { unit: food.unit })}${piece}`
+}
+
+function brandedSubtitle(hit: SearchHit): string {
+  const parts = [
+    hit.brand,
+    `${hit.kcal} kcal`,
+    hit.protein != null ? t('macro.pShort', { n: hit.protein }) : null,
+    hit.carbs != null ? t('macro.cShort', { n: hit.carbs }) : null,
+    hit.fat != null ? t('macro.fShort', { n: hit.fat }) : null,
+  ].filter(Boolean)
+
+  // Branded hits are always read per 100g — searchProducts maps every one to
+  // `unit: 'g'` regardless of what the package says.
+  return `${parts.join(' · ')} ${t('foods.per100', { unit: 'g' })}`
 }
 
 function ResultButton({

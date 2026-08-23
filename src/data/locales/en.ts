@@ -333,6 +333,33 @@ const en = {
   'add.macros': 'P {p}g · C {c}g · F {f}g',
   'add.submit': 'Add to log',  
 
+  'macro.pShort': 'P {n}',
+  'macro.cShort': 'C {n}',
+  'macro.fShort': 'F {n}',
+
+  'foods.filter': 'Filter your foods…',
+  'foods.noMatches': 'No matches.',
+  'foods.empty': 'No foods yet. Search the database, scan a barcode, or add one manually.',
+  'foods.per100': '/100{unit}',
+  'foods.editAria': 'Edit {name}',
+  'foods.deleteAria': 'Delete {name}',
+  'foods.deleteTitle': 'Delete {name}?',
+  'foods.deleteMessage':
+    'This removes it from your food list. Past log entries are unaffected.',
+  'foods.deleteConfirm': 'Delete',
+
+  'search.title': 'Search foods',
+  'search.placeholder': 'Apple, chicken breast, oats…',
+  'search.startTyping': 'Start typing to search.',
+  'search.commonFoods': 'Common foods',
+  'search.branded': 'Branded products',
+  'search.keepTyping': 'Keep typing…',
+  'search.searching': 'Searching…',
+  'search.unavailable': 'Branded search is unavailable right now.',
+  'search.nothingFound':
+    'Nothing found. Restaurant meals often aren’t in the database — add it manually.',
+  'search.loadingProduct': 'Loading product…',
+
   'layout.home': 'Home',
   'layout.account': 'Account',
   'layout.settings': 'Settings',
