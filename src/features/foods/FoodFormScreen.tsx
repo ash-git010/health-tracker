@@ -4,6 +4,7 @@ import { FoodForm } from './FoodForm'
 import { getFood, type FoodInput } from '../../data/foods'
 import { Empty } from '../../components/ui'
 import type { Food } from '../../data/types'
+import { t } from '../../data/i18n'
 
 interface FormState {
   prefill?: Partial<FoodInput>
@@ -37,7 +38,7 @@ export function FoodFormScreen() {
     }
   }
 
-  if (loading) return <Empty>Loading…</Empty>
+  if (loading) return <Empty>{t('app.loading')}</Empty>
 
   return (
     <FoodForm

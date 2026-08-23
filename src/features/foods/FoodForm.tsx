@@ -3,6 +3,7 @@ import { TextField } from '../../components/TextField'
 import { NumberField } from '../../components/NumberField'
 import { Button, ScreenHeader } from '../../components/ui'
 import { addFood, updateFood, type FoodInput } from '../../data/foods'
+import { t } from '../../data/i18n'
 import type { Food, Unit } from '../../data/types'
 
 type NumOrEmpty = number | ''
@@ -33,6 +34,10 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
   const [saving, setSaving] = useState(false)
 
   const num = (v: NumOrEmpty) => (typeof v === 'number' ? v : 0)
+
+  // pieceLabel is user data and stays untranslated; only the fallback for an
+  // empty one comes from the catalogue.
+  const pieceName = pieceLabel || t('add.piece')
 
   const canSave =
     name.trim().length > 0 &&
@@ -87,62 +92,95 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
 
   return (
     <div className="stack">
-      <ScreenHeader title={existing ? 'Edit food' : 'New food'} />
+      <ScreenHeader title={existing ? t('form.editTitle') : t('form.newTitle')} />
 
-      <TextField label="Name" value={name} onChange={setName} placeholder="Oats" />
-      <TextField label="Brand (optional)" value={brand} onChange={setBrand} />
+      <TextField
+        label={t('form.name')}
+        value={name}
+        onChange={setName}
+        placeholder={t('form.namePlaceholder')}
+      />
+      <TextField label={t('form.brand')} value={brand} onChange={setBrand} />
 
       <label className="field">
-        <span className="field-label">Measured in</span>
+        <span className="field-label">{t('form.measuredIn')}</span>
         <select value={unit} onChange={(e) => setUnit(e.target.value as Unit)}>
-          <option value="g">Grams (solids)</option>
-          <option value="ml">Millilitres (liquids)</option>
+          <option value="g">{t('form.grams')}</option>
+          <option value="ml">{t('form.millilitres')}</option>
         </select>
       </label>
 
-      <h3 style={{ marginTop: '1.25rem' }}>Values per 100{unit}</h3>
+      <h3 style={{ marginTop: '1.25rem' }}>{t('form.valuesPer', { unit })}</h3>
 
-      <NumberField label="Calories" value={kcal} onChange={setKcal} suffix="kcal" min={0} />
-      <NumberField label="Protein" value={protein} onChange={setProtein} suffix="g" min={0} />
-      <NumberField label="Carbs" value={carbs} onChange={setCarbs} suffix="g" min={0} />
-      <NumberField label="Fat" value={fat} onChange={setFat} suffix="g" min={0} />
-      <NumberField label="Fibre (optional)" value={fiber} onChange={setFiber} suffix="g" min={0} />
-      <NumberField label="Sugar (optional)" value={sugar} onChange={setSugar} suffix="g" min={0} />
+      <NumberField
+        label={t('form.calories')}
+        value={kcal}
+        onChange={setKcal}
+        suffix="kcal"
+        min={0}
+      />
+      <NumberField
+        label={t('form.protein')}
+        value={protein}
+        onChange={setProtein}
+        suffix="g"
+        min={0}
+      />
+      <NumberField
+        label={t('form.carbs')}
+        value={carbs}
+        onChange={setCarbs}
+        suffix="g"
+        min={0}
+      />
+      <NumberField label={t('form.fat')} value={fat} onChange={setFat} suffix="g" min={0} />
+      <NumberField
+        label={t('form.fiber')}
+        value={fiber}
+        onChange={setFiber}
+        suffix="g"
+        min={0}
+      />
+      <NumberField
+        label={t('form.sugar')}
+        value={sugar}
+        onChange={setSugar}
+        suffix="g"
+        min={0}
+      />
 
-      <h3 style={{ marginTop: '1.5rem' }}>Pieces (optional)</h3>
-      <p className="muted">
-        For things you count rather than weigh — tortillas, slices, eggs.
-      </p>
+      <h3 style={{ marginTop: '1.5rem' }}>{t('form.piecesTitle')}</h3>
+      <p className="muted">{t('form.piecesNote')}</p>
 
       <TextField
-        label="What one piece is called"
+        label={t('form.pieceLabel')}
         value={pieceLabel}
         onChange={setPieceLabel}
-        placeholder="tortilla"
+        placeholder={t('form.pieceLabelPlaceholder')}
       />
 
       <div className="card" style={{ marginBottom: '0.875rem' }}>
-        <div className="field-label">Work it out from the package</div>
+        <div className="field-label">{t('form.fromPackage')}</div>
         <NumberField
-          label="Package weight"
+          label={t('form.packWeight')}
           value={packWeight}
           onChange={setPackWeight}
           suffix={unit}
           min={0}
         />
         <NumberField
-          label="Pieces inside"
+          label={t('form.packCount')}
           value={packCount}
           onChange={setPackCount}
           min={0}
         />
         <Button size="sm" disabled={!canCalculate} onClick={calculatePiece}>
-          Calculate
+          {t('form.calculate')}
         </Button>
       </div>
 
       <NumberField
-        label={`Weight of one ${pieceLabel || 'piece'}`}
+        label={t('form.pieceWeight', { label: pieceName })}
         value={pieceGrams}
         onChange={setPieceGrams}
         suffix={unit}
@@ -151,23 +189,27 @@ export function FoodForm({ existing, initial, onDone, onCancel }: Props) {
 
       {typeof pieceGrams === 'number' && pieceGrams > 0 && typeof kcal === 'number' && (
         <p className="muted">
-          One {pieceLabel || 'piece'} ≈ {Math.round((kcal * pieceGrams) / 100)} kcal
+          {t('form.pieceKcal', {
+            label: pieceName,
+            n: Math.round((kcal * pieceGrams) / 100),
+          })}
         </p>
       )}
 
       {showKcalWarning && (
         <p className="warn">
-          Heads up: the macros work out to about {Math.round(derivedKcal)} kcal, but you
-          entered {kcal}. Worth double-checking — though high-fibre foods do differ
-          legitimately.
+          {t('form.kcalWarning', {
+            derived: Math.round(derivedKcal),
+            entered: kcal,
+          })}
         </p>
       )}
 
       <div className="form-actions">
-        <Button onClick={onCancel}>Cancel</Button>
+        <Button onClick={onCancel}>{t('common.cancel')}</Button>
         <span className="grow">
           <Button variant="primary" block onClick={handleSave} disabled={!canSave || saving}>
-            {existing ? 'Save changes' : 'Add food'}
+            {existing ? t('form.saveChanges') : t('form.addFood')}
           </Button>
         </span>
       </div>

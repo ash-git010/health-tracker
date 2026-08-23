@@ -379,6 +379,41 @@ const de: Record<TKey, string> = {
     'Nichts gefunden. Restaurantgerichte fehlen oft in der Datenbank — lege es von Hand an.',
   'search.loadingProduct': 'Produkt wird geladen…',
 
+  'form.editTitle': 'Essen bearbeiten',
+  'form.newTitle': 'Neues Essen',
+  'form.name': 'Name',
+  'form.namePlaceholder': 'Haferflocken',
+  'form.brand': 'Marke (optional)',
+  'form.measuredIn': 'Gemessen in',
+  'form.grams': 'Gramm (fest)',
+  'form.millilitres': 'Milliliter (flüssig)',
+  'form.valuesPer': 'Werte pro 100{unit}',
+  'form.calories': 'Kalorien',
+  'form.protein': 'Protein',
+  'form.carbs': 'Kohlenhydrate',
+  'form.fat': 'Fett',
+  'form.fiber': 'Ballaststoffe (optional)',
+  'form.sugar': 'Zucker (optional)',
+
+  'form.piecesTitle': 'Stück (optional)',
+  'form.piecesNote': 'Für Dinge, die du zählst statt wiegst — Tortillas, Scheiben, Eier.',
+  'form.pieceLabel': 'Wie ein Stück heißt',
+  'form.pieceLabelPlaceholder': 'Tortilla',
+  'form.fromPackage': 'Aus der Packung ausrechnen',
+  'form.packWeight': 'Packungsgewicht',
+  'form.packCount': 'Stück darin',
+  'form.calculate': 'Berechnen',
+  // 'pro' rather than 'von einer/einem' — pieceLabel is free text, so no
+  // article can be correct for every noun the user types. 'pro' needs none.
+  'form.pieceWeight': 'Gewicht pro {label}',
+  'form.pieceKcal': '1 {label} ≈ {n} kcal',
+
+  'form.kcalWarning':
+    'Hinweis: Aus den Makros ergeben sich etwa {derived} kcal, du hast aber {entered} eingetragen. Prüfe das lieber nochmal — bei ballaststoffreichem Essen weicht es allerdings legitim ab.',
+
+  'form.saveChanges': 'Änderungen speichern',
+  'form.addFood': 'Essen hinzufügen',  
+
   'layout.home': 'Startseite',
   'layout.account': 'Konto',
   'layout.settings': 'Einstellungen',
