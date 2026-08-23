@@ -2,10 +2,30 @@ import { db } from './db'
 import { macrosForAmount } from './foods'
 import { newId, now, isLive } from './ids'
 import type { Food, LogEntry } from './types'
+import { t } from './i18n'
+import type { TKey } from './locales/en'
 
 export type Meal = LogEntry['meal']
 
 export const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
+
+/**
+ * Meal ids are stored data — the `[date+meal]` Dexie index and a Postgres
+ * column — so they stay English forever. Only the label translates.
+ *
+ * A Record of *keys* is safe at module level; a Record of t() results would
+ * freeze its language at import (§5). The lookup happens inside the function.
+ */
+const MEAL_KEYS: Record<Meal, TKey> = {
+  breakfast: 'meals.breakfast',
+  lunch: 'meals.lunch',
+  dinner: 'meals.dinner',
+  snack: 'meals.snack',
+}
+
+export function mealLabel(meal: Meal): string {
+  return t(MEAL_KEYS[meal])
+}
 
 export async function getEntriesForDate(date: string): Promise<LogEntry[]> {
   const entries = await db.logEntries.where('date').equals(date).sortBy('createdAt')

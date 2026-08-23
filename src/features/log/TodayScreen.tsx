@@ -2,9 +2,17 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
-import { getEntriesForDate, deleteEntry, sumEntries, MEALS, type Meal } from '../../data/log'
+import {
+  getEntriesForDate,
+  deleteEntry,
+  sumEntries,
+  mealLabel,
+  MEALS,
+  type Meal,
+} from '../../data/log'
 import { getGoals, macroGramsFromGoals } from '../../data/goals'
 import { todayISO, addDays, formatDay } from '../../data/dates'
+import { t } from '../../data/i18n'
 import { Card, Fab } from '../../components/ui'
 
 export function TodayScreen() {
@@ -31,7 +39,7 @@ export function TodayScreen() {
       <div className="row" style={{ marginBottom: '1rem' }}>
         <button
           className="icon-btn"
-          aria-label="Previous day"
+          aria-label={t('meals.prevDay')}
           onClick={() => setDate(addDays(date, -1))}
         >
           <ChevronLeft size={20} />
@@ -41,7 +49,7 @@ export function TodayScreen() {
         </h2>
         <button
           className="icon-btn"
-          aria-label="Next day"
+          aria-label={t('meals.nextDay')}
           disabled={date >= todayISO()}
           style={{ opacity: date >= todayISO() ? 0.3 : 1 }}
           onClick={() => setDate(addDays(date, 1))}
@@ -54,14 +62,16 @@ export function TodayScreen() {
         <Card style={{ marginBottom: '1.5rem' }}>
           <div className="row" style={{ alignItems: 'flex-end' }}>
             <div className="grow">
-              <div className="faint">Eaten</div>
+              <div className="faint">{t('meals.eaten')}</div>
               <div className="row" style={{ alignItems: 'baseline', gap: '0.35rem' }}>
                 <span className="stat">{eaten}</span>
-                <span className="stat-unit">/ {goals.dailyCalories} kcal</span>
+                <span className="stat-unit">
+                  {t('meals.ofKcal', { n: goals.dailyCalories })}
+                </span>
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div className="faint">{over ? 'Over' : 'Left'}</div>
+              <div className="faint">{over ? t('meals.over') : t('meals.left')}</div>
               <div className={over ? 'stat-sm warn' : 'stat-sm'} style={{ fontSize: '1.5rem' }}>
                 {Math.abs(remaining)}
               </div>
@@ -80,9 +90,13 @@ export function TodayScreen() {
 
           {targets && (
             <div>
-              <MacroRow label="Protein" value={totals.protein} target={targets.protein} />
-              <MacroRow label="Carbs" value={totals.carbs} target={targets.carbs} />
-              <MacroRow label="Fat" value={totals.fat} target={targets.fat} />
+              <MacroRow
+                label={t('macro.protein')}
+                value={totals.protein}
+                target={targets.protein}
+              />
+              <MacroRow label={t('macro.carbs')} value={totals.carbs} target={targets.carbs} />
+              <MacroRow label={t('macro.fat')} value={totals.fat} target={targets.fat} />
             </div>
           )}
 
@@ -92,8 +106,10 @@ export function TodayScreen() {
               style={{ margin: '0.75rem 0 0' }}
             >
               {proteinMet
-                ? `Protein minimum met · ${goals.minProteinGrams}g`
-                : `${Math.round(goals.minProteinGrams - totals.protein)}g below your protein minimum`}
+                ? t('meals.proteinMet', { n: goals.minProteinGrams })
+                : t('meals.proteinBelow', {
+                    n: Math.round(goals.minProteinGrams - totals.protein),
+                  })}
             </p>
           )}
         </Card>
@@ -102,19 +118,20 @@ export function TodayScreen() {
       {MEALS.map((meal) => {
         const mealEntries = (entries ?? []).filter((e) => e.meal === meal)
         const mealTotal = sumEntries(mealEntries)
+        const label = mealLabel(meal)
 
         return (
           <div key={meal} style={{ marginBottom: '1.125rem' }}>
             <div className="row" style={{ marginBottom: '0.25rem' }}>
               <h3 className="grow" style={{ margin: 0 }}>
-                {meal}
+                {label}
               </h3>
               {mealEntries.length > 0 && (
                 <span className="muted num">{Math.round(mealTotal.kcal)} kcal</span>
               )}
               <button
                 className="icon-btn"
-                aria-label={`Add to ${meal}`}
+                aria-label={t('meals.addTo', { meal: label })}
                 onClick={() => addTo(meal)}
                 style={{ marginRight: '-0.5rem' }}
               >
@@ -124,7 +141,7 @@ export function TodayScreen() {
 
             {mealEntries.length === 0 ? (
               <p className="faint" style={{ margin: 0 }}>
-                Nothing logged
+                {t('meals.nothingLogged')}
               </p>
             ) : (
               mealEntries.map((e) => (
@@ -149,7 +166,7 @@ export function TodayScreen() {
                   </span>
                   <button
                     className="icon-btn"
-                    aria-label={`Remove ${e.foodName}`}
+                    aria-label={t('meals.remove', { name: e.foodName })}
                     onClick={() => e.id && deleteEntry(e.id)}
                   >
                     <X size={16} />
@@ -161,7 +178,7 @@ export function TodayScreen() {
         )
       })}
 
-      <Fab label="Add food" onClick={() => addTo('snack')}>
+      <Fab label={t('meals.addFood')} onClick={() => addTo('snack')}>
         <Plus size={26} />
       </Fab>
     </div>

@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom'
 import { Search, ScanLine, Plus } from 'lucide-react'
 import { listFoods, macrosForAmount, amountInBaseUnit, hasPieces } from '../../data/foods'
 import { fuzzySearch } from '../../data/search'
-import { logFood, MEALS, type Meal } from '../../data/log'
+import { logFood, mealLabel, MEALS, type Meal } from '../../data/log'
+import { t } from '../../data/i18n'
 import { Button, Card, ScreenHeader } from '../../components/ui'
 import { NumberField } from '../../components/NumberField'
 import type { Food } from '../../data/types'
@@ -49,10 +50,10 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
     return (
       <div style={{ paddingBottom: '2rem' }}>
         <ScreenHeader
-          title="Pick a food"
+          title={t('add.title')}
           action={
             <Button size="sm" variant="ghost" onClick={onCancel}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           }
         />
@@ -60,7 +61,7 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
         <input
           type="text"
           value={search}
-          placeholder="Search your foods…"
+          placeholder={t('add.searchYours')}
           onChange={(e) => setSearch(e.target.value)}
           autoFocus
           style={{ marginBottom: '1rem' }}
@@ -73,7 +74,7 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
             className="btn grow"
             style={{ textDecoration: 'none' }}
           >
-            <Search size={16} /> Search
+            <Search size={16} /> {t('add.search')}
           </Link>
           <Link
             to="/meals/foods/scan"
@@ -81,7 +82,7 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
             className="btn grow"
             style={{ textDecoration: 'none' }}
           >
-            <ScanLine size={16} /> Scan
+            <ScanLine size={16} /> {t('add.scan')}
           </Link>
           <Link
             to="/meals/foods/new"
@@ -89,15 +90,15 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
             className="btn grow"
             style={{ textDecoration: 'none' }}
           >
-            <Plus size={16} /> New
+            <Plus size={16} /> {t('add.new')}
           </Link>
         </div>
 
-        {filtered.length > 0 && <h3>Your foods</h3>}
+        {filtered.length > 0 && <h3>{t('add.yourFoods')}</h3>}
 
         {filtered.length === 0 && (
           <p className="muted" style={{ textAlign: 'center', padding: '1.5rem 0' }}>
-            {search ? `No match for "${search}"` : 'No foods saved yet'}
+            {search ? t('add.noMatch', { query: search }) : t('add.noFoods')}
           </p>
         )}
 
@@ -110,9 +111,13 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
             >
               <span style={{ display: 'block', fontWeight: 600 }}>{food.name}</span>
               <span className="faint" style={{ display: 'block' }}>
-                {food.kcal} kcal per 100{food.unit}
+                {t('add.perHundred', { kcal: food.kcal, unit: food.unit })}
                 {hasPieces(food) &&
-                  ` · 1 ${food.pieceLabel || 'piece'} = ${food.pieceGrams}${food.unit}`}
+                  ` · ${t('add.perPiece', {
+                    label: food.pieceLabel || t('add.piece'),
+                    grams: food.pieceGrams ?? 0,
+                    unit: food.unit,
+                  })}`}
               </span>
             </button>
           ))}
@@ -137,7 +142,10 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
               setAmount('')
             }}
           >
-            {selected.pieceLabel ? `${selected.pieceLabel}s` : 'Pieces'}
+            {/* pieceLabel is stored data and stays untranslated, so English
+                pluralisation cannot be bolted onto it — 'Scheibe' would
+                become 'Scheibes'. Shown as-is. */}
+            {selected.pieceLabel || t('add.pieces')}
           </Button>
           <Button
             variant={mode === 'base' ? 'primary' : 'default'}
@@ -146,29 +154,25 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
               setAmount('')
             }}
           >
-            {selected.unit === 'ml' ? 'Millilitres' : 'Grams'}
+            {selected.unit === 'ml' ? t('add.millilitres') : t('add.grams')}
           </Button>
         </div>
       )}
 
       <NumberField
-        label="Amount"
+        label={t('add.amount')}
         value={amount}
         onChange={setAmount}
         autoFocus
-        suffix={mode === 'piece' ? selected.pieceLabel || 'pcs' : selected.unit}
+        suffix={mode === 'piece' ? selected.pieceLabel || t('add.pcs') : selected.unit}
       />
 
       <label className="field">
-        <span className="field-label">Meal</span>
-        <select
-          value={meal}
-          onChange={(e) => setMeal(e.target.value as Meal)}
-          style={{ textTransform: 'capitalize' }}
-        >
+        <span className="field-label">{t('add.meal')}</span>
+        <select value={meal} onChange={(e) => setMeal(e.target.value as Meal)}>
           {MEALS.map((m) => (
             <option key={m} value={m}>
-              {m}
+              {mealLabel(m)}
             </option>
           ))}
         </select>
@@ -181,7 +185,11 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
             <span className="stat-unit">kcal</span>
           </div>
           <div className="muted" style={{ marginTop: '0.35rem' }}>
-            P {preview.protein}g · C {preview.carbs}g · F {preview.fat}g
+            {t('add.macros', {
+              p: preview.protein,
+              c: preview.carbs,
+              f: preview.fat,
+            })}
           </div>
           {mode === 'piece' && (
             <div className="faint" style={{ marginTop: '0.25rem' }}>
@@ -194,7 +202,7 @@ export function AddEntry({ date, defaultMeal, onDone, onCancel }: Props) {
 
       <div style={{ marginTop: '1.5rem' }}>
         <Button variant="primary" block onClick={handleAdd} disabled={!preview}>
-          Add to log
+          {t('add.submit')}
         </Button>
       </div>
     </div>

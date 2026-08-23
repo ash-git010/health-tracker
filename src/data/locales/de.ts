@@ -299,6 +299,55 @@ const de: Record<TKey, string> = {
   'hub.afternoon': 'Guten Tag',
   'hub.evening': 'Guten Abend',
 
+  'macro.protein': 'Protein',
+  'macro.carbs': 'Kohlenhydrate',
+  'macro.fat': 'Fett',
+
+  'meals.breakfast': 'Frühstück',
+  'meals.lunch': 'Mittagessen',
+  'meals.dinner': 'Abendessen',
+  'meals.snack': 'Snack',
+
+  'meals.prevDay': 'Vorheriger Tag',
+  'meals.nextDay': 'Nächster Tag',
+  'meals.eaten': 'Gegessen',
+  'meals.over': 'Drüber',
+  'meals.left': 'Übrig',
+  'meals.ofKcal': '/ {n} kcal',
+  'meals.proteinMet': 'Proteinminimum erreicht · {n}g',
+  'meals.proteinBelow': '{n}g unter deinem Proteinminimum',
+  'meals.addTo': 'Zu {meal} hinzufügen',
+  'meals.nothingLogged': 'Nichts erfasst',
+  'meals.remove': '{name} entfernen',
+  'meals.addFood': 'Essen hinzufügen',
+
+  // 'Essen', matching sections.meals.foods — 'Lebensmittel' is correct and
+  // too long everywhere it appears.
+  'add.title': 'Essen auswählen',
+  'add.searchYours': 'Dein Essen durchsuchen…',
+  'add.search': 'Suchen',
+  // 'Scan', not 'Scannen' — a real German loanword, and these three buttons
+  // split one row three ways at 360px.
+  'add.scan': 'Scan',
+  'add.new': 'Neu',
+  'add.yourFoods': 'Dein Essen',
+  'add.noMatch': 'Kein Treffer für „{query}“',
+  'add.noFoods': 'Noch kein Essen gespeichert',
+  'add.perHundred': '{kcal} kcal pro 100{unit}',
+  'add.perPiece': '1 {label} = {grams}{unit}',
+  'add.piece': 'Stück',
+  'add.pieces': 'Stück',
+  'add.millilitres': 'Milliliter',
+  'add.grams': 'Gramm',
+  'add.amount': 'Menge',
+  'add.pcs': 'Stk.',
+  'add.meal': 'Mahlzeit',
+  // K for Kohlenhydrate; P and F carry over.
+  'add.macros': 'P {p}g · K {c}g · F {f}g',
+  // 'Eintragen', not 'Zum Tagebuch hinzufügen' — a block button, but the
+  // literal is three words for one action.
+  'add.submit': 'Eintragen',
+
   'layout.home': 'Startseite',
   'layout.account': 'Konto',
   'layout.settings': 'Einstellungen',
