@@ -1,7 +1,8 @@
 import Dexie, { type Table } from 'dexie'
 import type {
   Goals, Profile, Food, LogEntry, BodyMeasurement, Exercise, Workout, WorkoutSet,
-  Routine, RoutineExercise, CareRoutine, CareStep, CareDone, CareStepDone,
+  Routine, RoutineExercise, Program, ProgramDay,
+  CareRoutine, CareStep, CareDone, CareStepDone,
 } from './types'
 
 // Local-only. Tracks sync progress; never pushed to the server.
@@ -41,6 +42,8 @@ export class UpkeepDB extends Dexie {
   workoutSets!: Table<WorkoutSet, string>
   routines!: Table<Routine, string>
   routineExercises!: Table<RoutineExercise, string>
+  programs!: Table<Program, string>
+  programDays!: Table<ProgramDay, string>
   careRoutines!: Table<CareRoutine, string>
   careSteps!: Table<CareStep, string>
   careDoneLog!: Table<CareDone, string>
@@ -73,6 +76,21 @@ export class UpkeepDB extends Dexie {
       careStepDone: 'id, date, careRoutineId, stepId, [date+careRoutineId], updatedAt',
 
       syncState: 'key',
+    })
+
+    // v2 — Programs. Only the new stores are declared; everything from v1
+    // carries forward untouched, which is why v1 above must never be edited.
+    //
+    // isActive is deliberately absent from the index list. IndexedDB does not
+    // accept booleans as keys, so an index on it would silently hold nothing
+    // — the same trap as deletedAt. It is filtered in JS.
+    //
+    // Workout.programDayId and WorkoutSet.notes need no declaration here:
+    // Dexie stores whole objects, and a non-indexed field rides along inside
+    // one. Restating those stores would only add risk.
+    this.version(2).stores({
+      programs: 'id, name, createdAt, updatedAt',
+      programDays: 'id, programId, [programId+week+dayIndex], updatedAt',
     })
   }
 }

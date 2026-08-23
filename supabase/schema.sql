@@ -209,7 +209,7 @@ create table workouts (
   finished_at timestamptz,
   notes text,
   routine_id uuid,
-
+  program_day_id uuid,
   created_at timestamptz not null,
   updated_at timestamptz not null,
   deleted_at timestamptz,
@@ -219,6 +219,7 @@ create table workouts (
 
 create index on workouts (user_id, updated_at);
 create index on workouts (user_id, performed_on);
+create index on workouts (user_id, program_day_id);
 
 -- workout_id DOES get a real foreign key: a set without its workout is
 -- meaningless data. exercise_key stays plain text so bundled and custom
@@ -242,6 +243,7 @@ create table workout_sets (
   rest_seconds integer not null default 0,
   completed boolean not null default false,
   rpe numeric check (rpe is null or (rpe >= 1 and rpe <= 10)),
+  notes text,
   created_at timestamptz not null,
   updated_at timestamptz not null,
   deleted_at timestamptz,

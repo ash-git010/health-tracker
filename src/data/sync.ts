@@ -4,7 +4,8 @@ import { getCurrentUser } from './auth'
 import { getCursors, setCursors, clearCursor, clearCursors } from './syncState'
 import type {
   Goals, Profile, Food, LogEntry, BodyMeasurement, Exercise, Workout, WorkoutSet,
-  Routine, RoutineExercise, RoutineSet, CareRoutine, CareStep, CareDone, CareStepDone,
+  Routine, RoutineExercise, RoutineSet, Program, ProgramDay,
+  CareRoutine, CareStep, CareDone, CareStepDone,
 } from './types'
 import { asSyncWrite } from './syncWrites'
 
@@ -61,9 +62,27 @@ function routineSets(v: unknown): RoutineSet[] {
       type: (ROUTINE_SET_TYPES.has(type) ? type : 'normal') as RoutineSet['type'],
       weightKg: on(item.weightKg),
       reps: on(item.reps),
+      repsMin: on(item.repsMin),
+      repsMax: on(item.repsMax),
       rpe: on(item.rpe),
     }
   })
+}
+
+/**
+ * jsonb arrives untyped. Keys are week numbers as strings, because JSON object
+ * keys always are; values are free text. Anything that is not a plain object
+ * becomes an empty one rather than throwing — a malformed blob should cost a
+ * note, not a whole sync.
+ */
+function weekNotes(v: unknown): Record<string, string> {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return {}
+  const out: Record<string, string> = {}
+  for (const [week, note] of Object.entries(v as Record<string, unknown>)) {
+    if (note === null || note === undefined) continue
+    out[week] = String(note)
+  }
+  return out
 }
 
 // ---------------------------------------------------------------------------
@@ -247,6 +266,7 @@ const workouts: TableSync<Workout> = {
     finished_at: w.finishedAt ?? null,
     notes: w.notes ?? null,
     routine_id: w.routineId || null,
+    program_day_id: w.programDayId || null,
     created_at: w.createdAt,
     updated_at: w.updatedAt,
     deleted_at: w.deletedAt ?? null,
@@ -259,6 +279,7 @@ const workouts: TableSync<Workout> = {
     finishedAt: os(r.finished_at),
     notes: os(r.notes),
     routineId: os(r.routine_id),
+    programDayId: os(r.program_day_id),
     createdAt: s(r.created_at),
     updatedAt: s(r.updated_at),
     deletedAt: os(r.deleted_at),
@@ -365,6 +386,73 @@ const routineExercises: TableSync<RoutineExercise> = {
     restSeconds: n(r.rest_seconds),
     notes: os(r.notes),
     sets: routineSets(r.sets),
+    createdAt: s(r.created_at),
+    updatedAt: s(r.updated_at),
+    deletedAt: os(r.deleted_at),
+  }),
+}
+
+// program_id carries a real composite foreign key with cascade — a day without
+// its program is meaningless. routine_id does not, matching workouts.routine_id:
+// deleting a routine must not punch a hole in a schedule that referenced it.
+const programs: TableSync<Program> = {
+  name: 'programs',
+  all: () => db.programs.toArray(),
+  put: (rows) => db.programs.bulkPut(rows),
+  updatedAt: (p) => p.updatedAt,
+  toRow: (p, userId) => ({
+    id: p.id,
+    user_id: userId,
+    name: p.name,
+    notes: p.notes ?? null,
+    repeats: p.repeats ?? false,
+    is_active: p.isActive ?? false,
+    started_on: p.startedOn ?? null,
+    week_notes: p.weekNotes ?? {},
+    sort_order: p.sortOrder ?? null,
+    created_at: p.createdAt,
+    updated_at: p.updatedAt,
+    deleted_at: p.deletedAt ?? null,
+  }),
+  fromRow: (r) => ({
+    id: s(r.id),
+    name: s(r.name),
+    notes: os(r.notes),
+    repeats: Boolean(r.repeats),
+    isActive: Boolean(r.is_active),
+    startedOn: os(r.started_on),
+    weekNotes: weekNotes(r.week_notes),
+    sortOrder: on(r.sort_order),
+    createdAt: s(r.created_at),
+    updatedAt: s(r.updated_at),
+    deletedAt: os(r.deleted_at),
+  }),
+}
+
+const programDays: TableSync<ProgramDay> = {
+  name: 'program_days',
+  all: () => db.programDays.toArray(),
+  put: (rows) => db.programDays.bulkPut(rows),
+  updatedAt: (d) => d.updatedAt,
+  toRow: (d, userId) => ({
+    id: d.id,
+    user_id: userId,
+    program_id: d.programId,
+    week: d.week,
+    // day_index rather than sort_order: this is a semantic position 1–7 inside
+    // a week, not the generic ordering that rename rule was written for.
+    day_index: d.dayIndex,
+    routine_id: d.routineId || null,
+    created_at: d.createdAt,
+    updated_at: d.updatedAt,
+    deleted_at: d.deletedAt ?? null,
+  }),
+  fromRow: (r) => ({
+    id: s(r.id),
+    programId: s(r.program_id),
+    week: n(r.week),
+    dayIndex: n(r.day_index),
+    routineId: os(r.routine_id),
     createdAt: s(r.created_at),
     updatedAt: s(r.updated_at),
     deletedAt: os(r.deleted_at),
@@ -481,8 +569,8 @@ const careStepDone: TableSync<CareStepDone> = {
   }),
 }
 
-// Parents before children. workout_sets, routine_exercises, care_steps,
-// care_done_log and care_step_done all carry real foreign keys.
+// Parents before children. workout_sets, routine_exercises, program_days,
+// care_steps, care_done_log and care_step_done all carry real foreign keys.
 const TABLES: TableSync<never>[] = [
   foods,
   logEntries,
@@ -490,6 +578,8 @@ const TABLES: TableSync<never>[] = [
   customExercises,
   routines,
   routineExercises,
+  programs,
+  programDays,
   workouts,
   workoutSets,
   careRoutines,
