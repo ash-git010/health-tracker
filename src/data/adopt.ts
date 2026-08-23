@@ -31,6 +31,8 @@ const LOCAL_BY_SERVER: Record<string, Table<{ deletedAt?: string }, string>> = {
   custom_exercises: db.exercises,
   routines: db.routines,
   routine_exercises: db.routineExercises,
+  programs: db.programs,
+  program_days: db.programDays,
   workouts: db.workouts,
   workout_sets: db.workoutSets,
   care_routines: db.careRoutines,
@@ -52,7 +54,7 @@ if (import.meta.env.DEV) {
  * A function, not a const: a module-level object literal evaluates once at
  * import and would freeze whatever language happened to be active then, so
  * switching afterwards would leave this table in the old one. Called during
- * render instead, which costs nothing at twelve keys.
+ * render instead, which costs nothing at fourteen keys.
  *
  * The keys are server table names and stay English — they are identifiers, not
  * content, and they must keep matching SYNC_TABLE_NAMES.
@@ -65,6 +67,8 @@ export function tableLabels(): Record<string, string> {
     custom_exercises: t('adopt.table.customExercises'),
     routines: t('adopt.table.routines'),
     routine_exercises: t('adopt.table.routineExercises'),
+    programs: t('adopt.table.programs'),
+    program_days: t('adopt.table.programDays'),
     workouts: t('adopt.table.workouts'),
     workout_sets: t('adopt.table.workoutSets'),
     care_routines: t('adopt.table.careRoutines'),

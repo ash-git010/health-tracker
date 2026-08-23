@@ -6,12 +6,19 @@ const BACKUP_VERSION = 2
 /**
  * Version 1 covered only goals, foods, logEntries and measurements — workouts
  * and routines were never included. Version 2 covers everything.
+ *
+ * Programs and program days joined v2 on 2026-08-23 rather than forcing a v3.
+ * The format is additive and `?? []` covers a file that predates them; the
+ * only lossy direction is an older build reading a newer file, and that build
+ * has no programs table to put them in anyway. Bumping the version would make
+ * `importAll` refuse the whole file — foods, workouts and all — to protect
+ * data that client could not represent.
  */
 export async function exportAll(): Promise<string> {
   const [
     goals, profile, foods, logEntries, measurements,
     exercises, workouts, workoutSets,
-    routines, routineExercises,
+    routines, routineExercises, programs, programDays,
     careRoutines, careSteps, careDoneLog, careStepDone,
   ] = await Promise.all([
     db.goals.toArray(),
@@ -24,6 +31,8 @@ export async function exportAll(): Promise<string> {
     db.workoutSets.toArray(),
     db.routines.toArray(),
     db.routineExercises.toArray(),
+    db.programs.toArray(),
+    db.programDays.toArray(),
     db.careRoutines.toArray(),
     db.careSteps.toArray(),
     db.careDoneLog.toArray(),
@@ -36,7 +45,7 @@ export async function exportAll(): Promise<string> {
       exportedAt: now(),
       goals, profile, foods, logEntries, measurements,
       exercises, workouts, workoutSets,
-      routines, routineExercises,
+      routines, routineExercises, programs, programDays,
       careRoutines, careSteps, careDoneLog, careStepDone,
     },
     null,
@@ -120,7 +129,7 @@ async function importV2(data: Record<string, unknown[]>): Promise<void> {
   const tables = [
     db.goals, db.profile, db.foods, db.logEntries, db.measurements,
     db.exercises, db.workouts, db.workoutSets,
-    db.routines, db.routineExercises,
+    db.routines, db.routineExercises, db.programs, db.programDays,
     db.careRoutines, db.careSteps, db.careDoneLog, db.careStepDone,
   ]
 
@@ -147,6 +156,10 @@ async function importV2(data: Record<string, unknown[]>): Promise<void> {
       db.routines.bulkAdd((data.routines ?? []) as any),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       db.routineExercises.bulkAdd((data.routineExercises ?? []) as any),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      db.programs.bulkAdd((data.programs ?? []) as any),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      db.programDays.bulkAdd((data.programDays ?? []) as any),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       db.careRoutines.bulkAdd((data.careRoutines ?? []) as any),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

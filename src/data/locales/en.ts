@@ -251,6 +251,8 @@ const en = {
   'adopt.table.customExercises': 'Custom exercises',
   'adopt.table.routines': 'Workout routines',
   'adopt.table.routineExercises': 'Routine exercises',
+  'adopt.table.programs': 'Programs',
+  'adopt.table.programDays': 'Scheduled days',
   'adopt.table.workouts': 'Workouts',
   'adopt.table.workoutSets': 'Sets logged',
   'adopt.table.careRoutines': 'Care routines',

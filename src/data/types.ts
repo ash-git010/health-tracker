@@ -97,6 +97,10 @@ export interface Workout {
   finishedAt?: string
   notes?: string
   routineId?: string
+  /** The scheduled program day this satisfied. Stamped only when the workout
+   *  was started from the schedule — an empty workout that happens to look
+   *  like Pull day does not claim to be it. */
+  programDayId?: string
   createdAt: string
   updatedAt: string
   deletedAt?: string
@@ -112,6 +116,10 @@ export interface WorkoutSet {
   weightKg: number
   reps: number
   rpe?: number
+  /** Copied from RoutineExercise.notes. Written to every set of the exercise
+   *  and read from the first, exactly as restSeconds and rpe work — an
+   *  exercise inside a workout is only a group of sets, with no row of its own. */
+  notes?: string
   type: SetType
   restSeconds: number
   completed: boolean
@@ -122,10 +130,17 @@ export interface WorkoutSet {
 
 // A target, not a record. Every field except type is optional: a routine may
 // specify 3 sets with no numbers at all, or 60kg × 8 at RPE 8.
+//
+// repsMin/repsMax are a REFERENCE RANGE, not a second input. A logged set has
+// one rep count; the range only tells you what to aim for, and hitting the top
+// of it is the signal to add weight rather than reps. When both are present,
+// `reps` is ignored for display and repsMin is what prefills.
 export interface RoutineSet {
   type: SetType
   weightKg?: number
   reps?: number
+  repsMin?: number
+  repsMax?: number
   rpe?: number
 }
 
@@ -151,6 +166,44 @@ export interface RoutineExercise {
   sets?: RoutineSet[]
   notes?: string
   restSeconds: number
+  createdAt: string
+  updatedAt: string
+  deletedAt?: string
+}
+
+// An ordered schedule above routines. Weeks are a plain integer on ProgramDay
+// rather than a table of their own — see the 2026-08-23 migration for why.
+export interface Program {
+  id: string
+  name: string
+  notes?: string
+  /** Week numbers keep climbing; day rows are read modulo the weeks defined.
+   *  Week 5 of a 4-week repeating program reads week 1. */
+  repeats: boolean
+  /** Not indexed in Dexie: IndexedDB rejects booleans as keys, so an index here
+   *  would silently contain nothing. Filtered in JS, like deletedAt. */
+  isActive: boolean
+  /** Anchors day 1. Without it a repeating program cannot say which occurrence
+   *  a workout satisfied, because the same day row recurs every week. */
+  startedOn?: string
+  /** Keyed by week number as a string: { "1": "Intro week", "5": "Deload" }. */
+  weekNotes?: Record<string, string>
+  sortOrder?: number
+  createdAt: string
+  updatedAt: string
+  deletedAt?: string
+}
+
+export interface ProgramDay {
+  id: string
+  programId: string
+  week: number
+  /** 1–7 within the week. Not a weekday — day 1 is whatever calendar day the
+   *  program was started on. */
+  dayIndex: number
+  /** undefined means a rest day. No foreign key, so deleting a routine leaves
+   *  the day needing one rather than deleting it from the schedule. */
+  routineId?: string
   createdAt: string
   updatedAt: string
   deletedAt?: string

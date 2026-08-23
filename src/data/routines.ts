@@ -232,9 +232,24 @@ export async function diffWorkoutAgainstRoutine(
   // RPE is set in the routine editor, never inherited from a workout: the
   // in-session value may record what you managed rather than what you're
   // aiming for, and a bad day shouldn't rewrite your programming.
+  //
+  // Rep ranges are restored for a sharper reason. A logged set carries one rep
+  // count and no range at all, so without this a single write-back flattens
+  // "6-8" to whatever happened that day and the author's intent is gone with
+  // no way back. Matched by position; a set added beyond the routine's length
+  // has no counterpart and correctly gets no range.
   for (const ex of current) {
-    const targetRpe = before.get(ex.exerciseKey)?.sets?.[0]?.rpe
-    for (const set of ex.sets ?? []) set.rpe = targetRpe
+    const wasSets = before.get(ex.exerciseKey)?.sets
+    const targetRpe = wasSets?.[0]?.rpe
+
+    ;(ex.sets ?? []).forEach((set, i) => {
+      set.rpe = targetRpe
+      const wasSet = wasSets?.[i]
+      if (wasSet?.repsMin !== undefined || wasSet?.repsMax !== undefined) {
+        set.repsMin = wasSet.repsMin
+        set.repsMax = wasSet.repsMax
+      }
+    })
   }
 
   return changes.length > 0 ? { changes, exercises: current } : null
@@ -253,14 +268,17 @@ export async function saveWorkoutAsRoutine(
   return routineId
 }
 
-export async function startWorkoutFromRoutine(routineId: string): Promise<string> {
+export async function startWorkoutFromRoutine(
+  routineId: string,
+  programDayId?: string
+): Promise<string> {
   const routine = await getRoutine(routineId)
   const exercises = await getRoutineExercises(routineId)
 
-  const workoutId = await startWorkout(routineId)
+  const workoutId = await startWorkout(routineId, programDayId)
   if (routine?.name) await renameWorkout(workoutId, routine.name)
 
-      for (const ex of exercises) {
+  for (const ex of exercises) {
     const targets: RoutineSet[] =
       ex.sets && ex.sets.length > 0
         ? ex.sets
@@ -283,10 +301,17 @@ export async function startWorkoutFromRoutine(routineId: string): Promise<string
         order: ex.order,
         setNumber: i + 1,
         weightKg: useTargets ? (targets[i].weightKg ?? 0) : 0,
-        reps: useTargets ? (targets[i].reps ?? 0) : 0,
+        // repsMin before reps: a range prefills at its achievable end, because
+        // reaching the top of it is the signal to add weight rather than
+        // something to be handed at the start.
+        reps: useTargets ? (targets[i].repsMin ?? targets[i].reps ?? 0) : 0,
         type: targets[i].type ?? 'normal',
         restSeconds: ex.restSeconds,
         rpe: targets[i].rpe,
+        // Shipped in 2.1 and never reached a workout until now, because
+        // WorkoutSet had no field for it to land in. Written to every set and
+        // read from the first, as restSeconds and rpe already are.
+        notes: ex.notes,
       })
     }
   }

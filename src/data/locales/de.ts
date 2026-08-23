@@ -253,6 +253,8 @@ const de: Record<TKey, string> = {
   'adopt.table.customExercises': 'Eigene Übungen',
   'adopt.table.routines': 'Trainingspläne',
   'adopt.table.routineExercises': 'Plan-Übungen',
+  'adopt.table.programs': 'Programme',
+  'adopt.table.programDays': 'Geplante Tage',
   'adopt.table.workouts': 'Einheiten',
   'adopt.table.workoutSets': 'Erfasste Sätze',
   'adopt.table.careRoutines': 'Routinen',

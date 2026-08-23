@@ -3,7 +3,10 @@ import { todayISO } from './dates'
 import { newId, now, isLive } from './ids'
 import type { Workout, WorkoutSet, SetType } from './types'
 
-export async function startWorkout(routineId?: string): Promise<string> {
+export async function startWorkout(
+  routineId?: string,
+  programDayId?: string
+): Promise<string> {
   const timestamp = now()
   const id = newId()
   await db.workouts.add({
@@ -14,6 +17,10 @@ export async function startWorkout(routineId?: string): Promise<string> {
     createdAt: timestamp,
     updatedAt: timestamp,
     ...(routineId ? { routineId } : {}),
+    // Stamped only when the workout came from a program schedule. An empty
+    // workout that happens to resemble Pull day does not claim to be it, which
+    // is what keeps "was this day done" answerable rather than guessed.
+    ...(programDayId ? { programDayId } : {}),
   })
   return id
 }
@@ -118,6 +125,7 @@ export async function addSet(input: {
   type: SetType
   restSeconds?: number
   rpe?: number
+  notes?: string
   completed?: boolean
 }): Promise<string> {
   const timestamp = now()
@@ -135,7 +143,7 @@ export async function addSet(input: {
 
 export async function updateSet(
   id: string,
-  changes: Partial<Pick<WorkoutSet, 'weightKg' | 'reps' | 'type' | 'rpe' | 'completed'>>
+  changes: Partial<Pick<WorkoutSet, 'weightKg' | 'reps' | 'type' | 'rpe' | 'notes' | 'completed'>>
 ): Promise<void> {
   await db.workoutSets.update(id, { ...changes, updatedAt: now() })
 }
@@ -170,6 +178,21 @@ export async function setRpeForExercise(
     .equals(workoutId)
     .filter((s) => s.exerciseKey === exerciseKey && isLive(s))
     .modify({ rpe, updatedAt: now() })
+}
+
+// Same shape as setRpeForExercise, and for the same reason: a note belongs to
+// the exercise, not to one set, but there is no per-exercise row to put it on.
+// Write to every set, read from the first.
+export async function setNotesForExercise(
+  workoutId: string,
+  exerciseKey: string,
+  notes: string | undefined
+): Promise<void> {
+  await db.workoutSets
+    .where('workoutId')
+    .equals(workoutId)
+    .filter((s) => s.exerciseKey === exerciseKey && isLive(s))
+    .modify({ notes, updatedAt: now() })
 }
 
 // Sets logged before the completed field existed have no stored value for it;
