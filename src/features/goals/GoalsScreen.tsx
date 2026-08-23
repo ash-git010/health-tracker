@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { NumberField } from '../../components/NumberField'
 import { Button, Card, ScreenHeader } from '../../components/ui'
 import { getGoals, saveGoals, macroGramsFromGoals } from '../../data/goals'
+import { t } from '../../data/i18n'
 
 type NumOrEmpty = number | ''
 
@@ -58,33 +59,54 @@ export function GoalsScreen({ onSaved }: { onSaved?: () => void }) {
     onSaved?.()
   }
 
-  if (loading) return <p className="muted">Loading…</p>
+  if (loading) return <p className="muted">{t('app.loading')}</p>
 
   return (
     <div className="stack">
-      <ScreenHeader title="Daily goals" />
+      <ScreenHeader title={t('goals.title')} />
 
       <NumberField
-        label="Daily calories"
+        label={t('goals.dailyCalories')}
         value={calories}
         onChange={setCalories}
         suffix="kcal"
         min={0}
       />
 
-      <h3 style={{ marginTop: '1.25rem' }}>Macro split</h3>
+      <h3 style={{ marginTop: '1.25rem' }}>{t('goals.macroSplit')}</h3>
 
-      <NumberField label="Protein" value={protein} onChange={setProtein} suffix="%" min={0} max={100} />
-      <NumberField label="Carbs" value={carbs} onChange={setCarbs} suffix="%" min={0} max={100} />
-      <NumberField label="Fat" value={fat} onChange={setFat} suffix="%" min={0} max={100} />
+      <NumberField
+        label={t('macro.protein')}
+        value={protein}
+        onChange={setProtein}
+        suffix="%"
+        min={0}
+        max={100}
+      />
+      <NumberField
+        label={t('macro.carbs')}
+        value={carbs}
+        onChange={setCarbs}
+        suffix="%"
+        min={0}
+        max={100}
+      />
+      <NumberField
+        label={t('macro.fat')}
+        value={fat}
+        onChange={setFat}
+        suffix="%"
+        min={0}
+        max={100}
+      />
 
       <p className={percentsValid ? 'muted' : 'warn'}>
-        Total: {percentTotal}%
-        {!percentsValid && ' — must add up to 100'}
+        {t('goals.total', { n: percentTotal })}
+        {!percentsValid && t('goals.mustBe100')}
       </p>
 
       <NumberField
-        label="Minimum protein per day"
+        label={t('goals.minProtein')}
         value={minProtein}
         onChange={setMinProtein}
         suffix="g"
@@ -93,15 +115,19 @@ export function GoalsScreen({ onSaved }: { onSaved?: () => void }) {
 
       {preview && (
         <Card>
-          <div className="field-label">That works out to</div>
+          <div className="field-label">{t('goals.worksOutTo')}</div>
           <div>
-            {preview.protein}g protein · {preview.carbs}g carbs · {preview.fat}g fat
+            {t('goals.breakdown', {
+              p: preview.protein,
+              c: preview.carbs,
+              f: preview.fat,
+            })}
           </div>
         </Card>
       )}
 
       <Button variant="primary" block onClick={handleSave} disabled={!canSave}>
-        {saved ? 'Saved' : 'Save goals'}
+        {saved ? t('settings.saved') : t('goals.save')}
       </Button>
     </div>
   )

@@ -15,6 +15,7 @@ import {
 import { getDailyTotals, getEntriesForDate, sumEntries } from '../../data/log'
 import { getGoals, macroGramsFromGoals } from '../../data/goals'
 import { lastNDays, shortDay, todayISO } from '../../data/dates'
+import { t, plural } from '../../data/i18n'
 import { Card, Empty, ScreenHeader } from '../../components/ui'
 
 const MACRO_COLOURS = ['#7c5cff', '#5b9bd5', '#c9a227']
@@ -37,25 +38,28 @@ export function ChartsScreen() {
   const totals = useLiveQuery(() => getDailyTotals(days), [range])
   const todayEntries = useLiveQuery(() => getEntriesForDate(todayISO()), [])
 
-  if (!totals || !goals) return <Empty>Loading…</Empty>
+  if (!totals || !goals) return <Empty>{t('app.loading')}</Empty>
 
   const loggedDays = totals.filter((d) => d.logged)
   const targets = macroGramsFromGoals(goals)
 
   const todaySums = sumEntries(todayEntries ?? [])
+
+  // Built inside the component, not at module level: a top-level array would
+  // freeze these labels in whichever language was active at import (§5).
   const macroData = [
     {
-      name: 'Protein',
+      name: t('macro.protein'),
       value: Math.round(todaySums.protein * 4),
       grams: Math.round(todaySums.protein),
     },
     {
-      name: 'Carbs',
+      name: t('macro.carbs'),
       value: Math.round(todaySums.carbs * 4),
       grams: Math.round(todaySums.carbs),
     },
     {
-      name: 'Fat',
+      name: t('macro.fat'),
       value: Math.round(todaySums.fat * 9),
       grams: Math.round(todaySums.fat),
     },
@@ -75,7 +79,7 @@ export function ChartsScreen() {
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
-      <ScreenHeader title="Charts" />
+      <ScreenHeader title={t('charts.title')} />
 
       <div className="chip-row">
         {RANGES.map((n) => (
@@ -84,16 +88,16 @@ export function ChartsScreen() {
             onClick={() => setRange(n)}
             className={`chip${range === n ? ' active' : ''}`}
           >
-            {n} days
+            {plural(n, 'charts.rangeDays')}
           </button>
         ))}
       </div>
 
-      <h3>Today's macros</h3>
+      <h3>{t('charts.todaysMacros')}</h3>
       <Card style={{ marginBottom: '1.75rem' }}>
         {macroData.length === 0 ? (
           <p className="muted" style={{ margin: 0 }}>
-            Nothing logged today yet.
+            {t('charts.nothingToday')}
           </p>
         ) : (
           <>
@@ -113,8 +117,15 @@ export function ChartsScreen() {
                       <Cell key={i} fill={MACRO_COLOURS[i]} />
                     ))}
                   </Pie>
+                  {/* Formatters run at render time, so t() here is reactive —
+                      unlike a module-level constant. */}
                   <Tooltip
-                    formatter={(v, _name, item) => `${item.payload.grams}g · ${v} kcal`}
+                    formatter={(v, _name, item) =>
+                      t('charts.tooltipMacro', {
+                        grams: item.payload.grams,
+                        kcal: String(v),
+                      })
+                    }
                     contentStyle={TOOLTIP_STYLE}
                   />
                 </PieChart>
@@ -149,12 +160,12 @@ export function ChartsScreen() {
         )}
       </Card>
 
-      <h3>Calories</h3>
+      <h3>{t('charts.calories')}</h3>
       <Card style={{ marginBottom: '1.75rem' }}>
-        <div className="faint">Average</div>
+        <div className="faint">{t('charts.average')}</div>
         <div className="row" style={{ alignItems: 'baseline', gap: '0.3rem', marginBottom: '0.75rem' }}>
           <span className="stat-sm">{avgKcal}</span>
-          <span className="stat-unit">/ {goals.dailyCalories} kcal</span>
+          <span className="stat-unit">{t('charts.ofKcal', { n: goals.dailyCalories })}</span>
         </div>
 
         <div style={{ height: 190 }}>
@@ -175,7 +186,7 @@ export function ChartsScreen() {
                 strokeDasharray="4 4"
               />
               <Tooltip
-                formatter={(v) => `${v} kcal`}
+                formatter={(v) => t('charts.tooltipKcal', { n: String(v) })}
                 labelFormatter={(d) => `${d}`}
                 contentStyle={TOOLTIP_STYLE}
                 cursor={{ fill: 'var(--surface-2)' }}
@@ -185,16 +196,16 @@ export function ChartsScreen() {
           </ResponsiveContainer>
         </div>
         <p className="faint" style={{ margin: '0.5rem 0 0', textAlign: 'center' }}>
-          Dashed line: your {goals.dailyCalories} kcal target
+          {t('charts.kcalTarget', { n: goals.dailyCalories })}
         </p>
       </Card>
 
-      <h3>Protein</h3>
+      <h3>{t('charts.protein')}</h3>
       <Card style={{ marginBottom: '1.75rem' }}>
-        <div className="faint">Average</div>
+        <div className="faint">{t('charts.average')}</div>
         <div className="row" style={{ alignItems: 'baseline', gap: '0.3rem', marginBottom: '0.75rem' }}>
           <span className="stat-sm">{avgProtein}</span>
-          <span className="stat-unit">/ {targets.protein} g</span>
+          <span className="stat-unit">{t('charts.ofGrams', { n: targets.protein })}</span>
         </div>
 
         <div style={{ height: 170 }}>
@@ -215,7 +226,7 @@ export function ChartsScreen() {
                 strokeDasharray="4 4"
               />
               <Tooltip
-                formatter={(v) => `${v} g`}
+                formatter={(v) => t('charts.tooltipGrams', { n: String(v) })}
                 contentStyle={TOOLTIP_STYLE}
                 cursor={{ fill: 'var(--surface-2)' }}
               />
@@ -224,32 +235,38 @@ export function ChartsScreen() {
           </ResponsiveContainer>
         </div>
         <p className="faint" style={{ margin: '0.5rem 0 0', textAlign: 'center' }}>
-          Dashed line: your {goals.minProteinGrams}g minimum
+          {t('charts.proteinTarget', { n: goals.minProteinGrams })}
         </p>
       </Card>
 
-      <h3>Summary</h3>
+      <h3>{t('charts.summary')}</h3>
       <Card>
         {loggedDays.length === 0 ? (
           <p className="muted" style={{ margin: 0 }}>
-            Nothing logged in this period.
+            {t('charts.nothingInPeriod')}
           </p>
         ) : (
           <>
-            <SummaryRow label="Days logged" value={`${loggedDays.length} of ${range}`} />
             <SummaryRow
-              label="Average calories"
-              value={`${avgKcal} kcal`}
-              note={`target ${goals.dailyCalories}`}
+              label={t('charts.daysLogged')}
+              value={t('charts.ofDays', { done: loggedDays.length, total: range })}
             />
             <SummaryRow
-              label="Average protein"
-              value={`${avgProtein} g`}
-              note={`target ${targets.protein}`}
+              label={t('charts.avgCalories')}
+              value={t('charts.tooltipKcal', { n: avgKcal })}
+              note={t('charts.target', { n: goals.dailyCalories })}
             />
             <SummaryRow
-              label="Protein minimum hit"
-              value={`${proteinDaysMet} of ${loggedDays.length} days`}
+              label={t('charts.avgProtein')}
+              value={t('charts.tooltipGrams', { n: avgProtein })}
+              note={t('charts.target', { n: targets.protein })}
+            />
+            <SummaryRow
+              label={t('charts.proteinHit')}
+              value={plural(loggedDays.length, 'charts.ofNDays', {
+                done: proteinDaysMet,
+                total: loggedDays.length,
+              })}
             />
           </>
         )}
