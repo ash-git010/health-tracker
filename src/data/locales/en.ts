@@ -393,6 +393,21 @@ const en = {
   'form.saveChanges': 'Save changes',
   'form.addFood': 'Add food',  
 
+  'scan.title': 'Scan barcode',
+  'scan.starting': 'Starting the camera…',
+  'scan.hint': 'Hold the barcode inside the box, about 20cm away, level with the ground.',
+  'scan.camera': 'Camera: {resolution}',
+  'scan.manualLabel': 'Or enter the barcode number',
+  'scan.lookUp': 'Look up',
+  'scan.lookingUp': 'Looking up product…',
+  'scan.notFound': 'Barcode {code} isn’t in the database. Add it manually instead.',
+  'scan.lookupFailed': 'Lookup failed',
+
+  'scan.err.blocked':
+    'Camera access is blocked. Allow it in your browser settings, or type the number below.',
+  'scan.err.noCamera': 'No camera found on this device. Type the number below.',
+  'scan.err.other': 'Camera could not start{detail}. Type the number below.',
+
   'layout.home': 'Home',
   'layout.account': 'Account',
   'layout.settings': 'Settings',

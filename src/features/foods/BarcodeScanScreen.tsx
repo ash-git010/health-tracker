@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { BarcodeScanner } from './BarcodeScanner'
 import { lookupBarcode } from '../../data/openfoodfacts'
+import { t } from '../../data/i18n'
 import { Empty } from '../../components/ui'
 
 interface ScanState {
@@ -31,7 +32,7 @@ export function BarcodeScanScreen() {
     try {
       const result = await lookupBarcode(barcode)
       if (!result.found) {
-        setError(`Barcode ${barcode} isn't in the database. Add it manually instead.`)
+        setError(t('scan.notFound', { code: barcode }))
         setLooking(false)
         return
       }
@@ -44,12 +45,14 @@ export function BarcodeScanScreen() {
         },
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Lookup failed')
+      // err.message comes from openfoodfacts.ts carrying an HTTP status and
+      // stays English deliberately; only our own fallback is translated.
+      setError(err instanceof Error ? err.message : t('scan.lookupFailed'))
       setLooking(false)
     }
   }
 
-  if (looking) return <Empty>Looking up product…</Empty>
+  if (looking) return <Empty>{t('scan.lookingUp')}</Empty>
 
   return (
     <>

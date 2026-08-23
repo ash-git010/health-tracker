@@ -414,6 +414,24 @@ const de: Record<TKey, string> = {
   'form.saveChanges': 'Änderungen speichern',
   'form.addFood': 'Essen hinzufügen',  
 
+  'scan.title': 'Barcode scannen',
+  'scan.starting': 'Kamera wird gestartet…',
+  'scan.hint': 'Halte den Barcode in den Rahmen, etwa 20 cm entfernt und waagerecht.',
+  'scan.camera': 'Kamera: {resolution}',
+  'scan.manualLabel': 'Oder gib die Barcode-Nummer ein',
+  'scan.lookUp': 'Suchen',
+  'scan.lookingUp': 'Produkt wird gesucht…',
+  'scan.notFound':
+    'Barcode {code} ist nicht in der Datenbank. Lege ihn stattdessen von Hand an.',
+  'scan.lookupFailed': 'Suche fehlgeschlagen',
+
+  'scan.err.blocked':
+    'Der Kamerazugriff ist blockiert. Erlaube ihn in deinen Browser-Einstellungen oder gib die Nummer unten ein.',
+  'scan.err.noCamera': 'Auf diesem Gerät wurde keine Kamera gefunden. Gib die Nummer unten ein.',
+  // {detail} carries the browser's own error name in parentheses and stays
+  // English — see §5 on technical error text.
+  'scan.err.other': 'Die Kamera konnte nicht gestartet werden{detail}. Gib die Nummer unten ein.',
+
   'layout.home': 'Startseite',
   'layout.account': 'Konto',
   'layout.settings': 'Einstellungen',

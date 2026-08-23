@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BrowserMultiFormatReader } from '@zxing/browser'
 import type { IScannerControls } from '@zxing/browser'
 import { DecodeHintType, BarcodeFormat } from '@zxing/library'
+import { t } from '../../data/i18n'
 import { Button, ScreenHeader } from '../../components/ui'
 
 interface Props {
@@ -55,7 +56,9 @@ export function BarcodeScanner({ onDetected, onCancel }: Props) {
         video: VIDEO_CONSTRAINTS,
       })
       if (cancelled) {
-        stream.getTracks().forEach((t) => t.stop())
+        // `track`, not `t` — a single-letter loop variable here would shadow
+        // the imported t() for the whole block, silently.
+        stream.getTracks().forEach((track) => track.stop())
         return
       }
       if (videoRef.current) {
@@ -121,12 +124,15 @@ export function BarcodeScanner({ onDetected, onCancel }: Props) {
       } catch (err) {
         if (cancelled) return
         const name = err instanceof Error ? err.name : ''
+        // The browser's own error name stays English inside the parentheses:
+        // a half-German DOMException reads worse than an obviously technical
+        // one, and it is what makes a tester's screenshot useful.
         setError(
           name === 'NotAllowedError'
-            ? 'Camera access is blocked. Allow it in your browser settings, or type the number below.'
+            ? t('scan.err.blocked')
             : name === 'NotFoundError'
-              ? 'No camera found on this device. Type the number below.'
-              : `Camera could not start${name ? ` (${name})` : ''}. Type the number below.`
+              ? t('scan.err.noCamera')
+              : t('scan.err.other', { detail: name ? ` (${name})` : '' })
         )
       }
       if (!cancelled) setStarting(false)
@@ -138,7 +144,8 @@ export function BarcodeScanner({ onDetected, onCancel }: Props) {
       cancelled = true
       if (timer) clearInterval(timer)
       controls?.stop()
-      stream?.getTracks().forEach((t) => t.stop())
+      // `track`, not `t` — same shadowing hazard as above.
+      stream?.getTracks().forEach((track) => track.stop())
     }
   }, [engine])
 
@@ -150,10 +157,10 @@ export function BarcodeScanner({ onDetected, onCancel }: Props) {
   return (
     <div>
       <ScreenHeader
-        title="Scan barcode"
+        title={t('scan.title')}
         action={
           <Button size="sm" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         }
       />
@@ -196,21 +203,17 @@ export function BarcodeScanner({ onDetected, onCancel }: Props) {
       {error && <p className="warn">{error}</p>}
 
       {!error && (
-        <p className="muted">
-          {starting
-            ? 'Starting the camera…'
-            : 'Hold the barcode inside the box, about 20cm away, level with the ground.'}
-        </p>
+        <p className="muted">{starting ? t('scan.starting') : t('scan.hint')}</p>
       )}
 
       {!error && resolution && (
         <p className="muted" style={{ fontSize: '0.75rem', opacity: 0.6 }}>
-          Camera: {resolution}
+          {t('scan.camera', { resolution })}
         </p>
       )}
 
       <label className="field" style={{ marginTop: '1rem' }}>
-        <span className="field-label">Or enter the barcode number</span>
+        <span className="field-label">{t('scan.manualLabel')}</span>
         <span className="row">
           <input
             type="text"
@@ -223,7 +226,7 @@ export function BarcodeScanner({ onDetected, onCancel }: Props) {
             onClick={() => manual.length >= 8 && onDetected(manual)}
             disabled={manual.length < 8}
           >
-            Look up
+            {t('scan.lookUp')}
           </Button>
         </span>
       </label>
