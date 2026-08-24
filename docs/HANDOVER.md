@@ -3562,16 +3562,112 @@ session — it's shared infrastructure, not workout-rebuild scope.
 
 Precache **2,542.20 KiB**, up from 2,536.89 (Chunk 2).
 
-#### Chunk 4 — swap-exercise, substitutions editor, final sweep — NEXT
+#### Chunk 4 — swap-exercise, substitutions editor, final sweep — DONE, committed, not yet pushed
 
-Swap added to the exercise `OptionSheet` in `ActiveWorkoutScreen.tsx`
-(routine's stored `substitutes` first, then `suggestSubstitutes()`, then a
-full search fallback), calling `swapExerciseInWorkout`. A small substitutes
-picker added to `RoutineFormScreen.tsx` and `ProgramFormScreen.tsx`'s
-exercise cards. Full i18n sweep of anything chunks 2–4 missed inline, plus
-the `t`-shadow grep (§5/§17) over everything touched. Final handover update
-for the whole four-chunk arc, including whether second-account program sync
-(§12.16, still explicitly untested) has been tested yet.
+**Correction to this section's own plan, caught before writing code:**
+§12.19 and the saved plan both said the substitutes picker goes on
+"`RoutineFormScreen.tsx` and `ProgramFormScreen.tsx`'s exercise cards."
+`ProgramFormScreen.tsx` has no exercise cards — it only assigns a routine
+(or rest) to each day of a program; `RoutineExercise.substitutes` belongs to
+an exercise inside a routine, which only `RoutineFormScreen` edits. Flagged
+to the owner, who confirmed: substitutes picker on `RoutineFormScreen.tsx`
+only. **`ProgramFormScreen.tsx` was not touched this chunk.**
+
+Split into four sub-chunks, each built and hand-tested through the actual
+dev-server UI (via Claude in Chrome) before moving to the next, same
+discipline as chunks 2–3.
+
+**4a — `ActiveWorkoutScreen.tsx`** (`49b5c73`). "Swap exercise" added to the
+exercise `OptionSheet`: the routine's stored `substitutes` first (resolved
+via `workout.routineId` → `getRoutineExercises`, matched against the
+exercise's *current* key — after a swap this naturally stops matching,
+since the routine's own record still points at the original exercise, which
+is correct: the routine wasn't edited, only this one workout was), then
+`suggestSubstitutes()`, deduped and capped at 8, then a "Search all
+exercises…" option that lifts a new `swapTarget` state to the top-level
+component and renders `ExercisePicker` full-screen — the same pattern the
+existing add-exercise `picking` state already used. Calls
+`swapExerciseInWorkout`. Same pass, finished the i18n sweep chunk 3 left
+this file with: `SET_TYPES` converted to a `setTypeOptions()` function (the
+usual module-level-const trap), column headers, aria-labels, the
+remove-exercise confirm dialog, "Add set {n}", the set-type sheet. **A
+string chunk 3's sweep missed was caught by testing, not by inspection**:
+the "0/3 done" exercise-progress line was still a raw template literal;
+found by switching to German mid-session and seeing untranslated English,
+fixed and reverified in the same pass. New `activeWorkout.*` and shared
+`setType.*` keys.
+
+**4b — `RoutineFormScreen.tsx`** (`8c63532`). This file had zero `t()` calls
+before this touch — full translation pass, same treatment
+`RoutineListScreen` got in Chunk 2b. Added a substitutes picker to
+`ExerciseCard`: up to `MAX_SUBSTITUTES` (2) chips, each removable, plus an
+"Add substitute" chip that lifts a `substituteTarget: number | null` state
+to the top-level component (same lift-to-parent pattern as 4a's swap
+search) and opens `ExercisePicker`; picking excludes the exercise's own key
+and existing duplicates. Feeds `RoutineExercise.substitutes` through
+`setRoutineExercises` exactly as Chunk 1's `substitutes?: string[]` field
+was built to take. New `routines.form.*` keys; reused `activeWorkout.col*`,
+`activeWorkout.hintReps`, `activeWorkout.setRestTimer/setTargetRpe/
+removeExercise/restTimerTitle/targetRpeTitle/setTypeTitle/removeSet/
+removeExerciseTitle/removeConfirm/targetRpeRow/restTimer` and
+`routines.optionsFor` rather than minting near-duplicate synonyms, since
+this file's table/sheet shapes are identical to `ActiveWorkoutScreen`'s. A
+second `SET_TYPES.map((t) => …)` shadow was found and renamed (`st`) before
+adding the `t` import — same trap as 3a's `BarcodeScanner.tsx` one, caught
+this time by grepping first rather than by a silent wrong-render. Verified
+live: added an exercise, added 2 substitutes (chip cap respected, third
+slot hidden), saved, reloaded the edit screen and both resolved names came
+back correctly, removed one, deleted the routine — all round-tripped
+through Dexie with no console errors, in both languages.
+
+**4c — `ExercisePicker.tsx`** (`9bdb796`). Last untranslated shared
+component in the section — used by add-exercise, 4a's swap-search fallback,
+and 4b's substitute-search. `BODY_PART_CHIPS` converted from a module-level
+const to a `bodyPartChips()` function. **A near-miss caught before
+committing**: the first draft memoized the chip list with
+`useMemo(bodyPartChips, [])` — an empty dependency array means React
+computes it once and never again, so a language switch would leave the
+chips frozen in whichever language was active on first mount even though
+the rest of the app re-renders fine (App.tsx's single `useLanguage()` call
+cascades a re-render down, but a `useMemo([])` inside a child ignores that
+re-render for its own memoized value). Fixed by calling `bodyPartChips()`
+plain, un-memoized, same pattern as `rpeOptions()`/`restOptions()` — the
+established convention for exactly this reason. Verified live: chip filter
+("Brust" → pectorals-only results) still works after the fix, in German.
+
+**Full-sweep verification, run this session:**
+`grep -rn 'forEach((t)' src/features/workouts src/data/programs.ts
+src/data/programImport.ts` — clean. `grep -rn '<<<<<<<\|>>>>>>>' src/` —
+clean. `grep -rn 'type="number"' src/` — only the `NumberField.tsx`/
+`ActiveWorkoutScreen.tsx` comments and `WorkoutProgressScreen.tsx`'s
+Recharts `<XAxis type="number" hide />`, exactly as CLAUDE.md's rule
+expects. **A broader `t`-shadow grep turned up two dormant landmines,
+neither touched this chunk and neither live bugs yet**:
+`ExerciseDetailScreen.tsx:75` (`TABS.map((t) => …)`) and
+`WorkoutDetailScreen.tsx:207` (`SET_TYPES.map((t) => …)`) — both shadow a
+`t` that doesn't exist yet because neither file imports `i18n.ts`'s `t`
+today. Harmless until whoever translates those two files adds the import
+without renaming the loop variable first; worth a grep-first check at that
+point, same as this session did for `RoutineFormScreen.tsx`.
+
+Precache **2,551.48 KiB**, up from 2,542.20 (Chunk 3) — the four sub-chunks
+moved it in steps of roughly +4, +4, +1 KiB, all new locale keys and logic,
+nothing unexpected.
+
+**Not tested this chunk, same gap as before**: second-account program sync
+(§12.16, §13) — `programs`/`program_days` have still never been pushed by a
+second account. Unrelated to Chunk 4's own work (swap/substitutes touch
+`routine_exercises`, not the Programs tables) but flagged again here since
+§12.19 asked this section to say explicitly whether it had been covered
+yet. It has not.
+
+**The four-chunk workout-rebuild arc from §12.19 is now complete**: data
+layer, program creation/management UI, the Log tab rebuild, and
+swap-exercise/substitutes/final sweep. What's still outside this arc,
+deliberately (§12.18): target-muscle breakdown, time-based exercises,
+gamification, and — newly explicit from this chunk — `ProgramFormScreen.tsx`
+carries no substitutes UI, correctly, since it has no exercise-level
+editing surface at all.
 
 **Out of scope for all four chunks, deliberately (§12.18):** target-muscle
 breakdown, time-based exercises, gamification.
@@ -4189,6 +4285,7 @@ datacenter's country (it returned `en:netherlands`), not Germany. Use the
 
 | Date | Version | What shipped |
 |---|---|---|
+| 2026-08-24 (5th) | *(unreleased, no version bump)* | **Chunk 4 of the workout rebuild, closing out §12.19's four-chunk arc** — see "Chunk 4 — DONE" in §12.19 for full detail. **4a**: swap-exercise on `ActiveWorkoutScreen.tsx` (stored `substitutes` → `suggestSubstitutes()` → full search fallback), plus the i18n sweep chunk 3 left unfinished — including a "0/3 done" string chunk 3's own sweep missed, caught only by testing in German. **4b**: `RoutineFormScreen.tsx` (previously zero `t()` calls) fully translated, plus a 2-alternate substitutes picker on `ExerciseCard`, round-tripped through Dexie and verified live. **4c**: `ExercisePicker.tsx` translated — the shared component 4a and 4b both depend on. **A correction to §12.19's own plan**: it said the substitutes picker went on `RoutineFormScreen.tsx` *and* `ProgramFormScreen.tsx`'s exercise cards, but the latter has no exercise cards at all; flagged to the owner before writing code, confirmed `RoutineFormScreen` only. **A near-miss caught before committing**: memoizing `ExercisePicker`'s body-part chips with `useMemo(fn, [])` would have frozen them in whichever language was active on mount, despite the rest of the app re-rendering fine on a language switch — fixed to the same un-memoized pattern `rpeOptions()`/`restOptions()` already use. **Two dormant `t`-shadow landmines found and left alone** (not yet bugs — neither file imports `t()` yet): `ExerciseDetailScreen.tsx:75`, `WorkoutDetailScreen.tsx:207`. Precache **2,551.48 KiB**. Three commits (`49b5c73`, `8c63532`, `9bdb796`), pushed to `phase-1-i18n`. **Second-account program sync is still explicitly untested** (§12.16, §13) — unrelated to this chunk's own work but re-flagged since nothing has closed that gap yet. **Next: body, care routines, About/Feedback/Install, then the bilingual email templates and the `changelog.ts` decision** — the remainder of Phase 1. |
 | 2026-08-24 (4th) | *(unreleased, no version bump)* | **Chunk 3 of the workout rebuild** (§12.19): the Log tab rebuilt in two hand-tested sub-chunks — see "Chunk 3 — done" in §12.19 for full detail. **3a**: the no-workout screen forks on `activeProgram()` into an active-program view or a programs-then-routines-then-empty chooser. **3b**: Add-exercise moved into `.workout-sticky`, a routine-notes read-only block, the rest timer moved into a new floating `.rest-bar`, and the PR crown (a 2.5s gold flash on the check button via `isAllTimePR`). **A real bug found by testing**: discarding a workout with its rest timer running left stale timer state that the new floating bar (unlike the old per-card display) rendered into the *next* workout; fixed with an effect keyed on `workout?.id`. `rest.ts`'s `REST_OPTIONS` converted to a function (`restOptions()`), fixing the same untranslated-`'Off'` bug in `RoutineFormScreen.tsx` too. **The session opened by re-verifying Chunk 2 end to end** (the user's explicit request, after the AI's own memory of it felt unreliable) — re-read every diff, re-tested the import/edit/kebab-menu flows live, found nothing wrong with Chunk 2 itself, but surfaced one **pre-existing, app-wide gap**: no screen anywhere ever passes `cancelLabel` to `useConfirm()`, so every confirm dialog's Cancel button is hardcoded English regardless of language — left unfixed, out of scope, flagged for later. Precache **2,542.20 KiB**. Two commits (`1ac2320`, `ea1834a`), pushed to `phase-1-i18n`. **Chunk 4 (swap-exercise, substitutions editor, final i18n sweep) is next.** |
 | 2026-08-24 (3rd) | *(unreleased, Programs UI, no version bump)* | **Chunk 2 of the workout rebuild** (§12.19): program creation and management UI, in three hand-tested sub-chunks — see "Chunk 2 — done" in §12.19 for the full detail. `ProgramImportScreen.tsx` (preview before writing, built first), `ProgramFormScreen.tsx` (manual weeks/days editor with a copy-to-multiple-days picker and a repeat toggle), and a Programs section wired into `RoutineListScreen.tsx`, which also got its first-ever i18n pass end to end. Two new shared catalogue keys: `common.delete`, `common.loading`. Every screen verified through the actual dev-server UI via Claude in Chrome (not just `npm run build` or the console) — including a German-language pass through the real Settings switch, after a console-forced language change was found to silently hit a separate module instance and do nothing. Precache **2,536.89 KiB**. Three commits (`dbc29cf`, `0f134e0`, `4507142`), pushed to `phase-1-i18n`. **Chunk 3 (the Log tab rebuild) is next.** |
 | 2026-08-24 (2nd) | *(unreleased, no UI yet)* | **The workout section finally scoped, in Claude Code via `AskUserQuestion` one question at a time — §12.18 has all six answers.** A four-chunk build plan followed in plan mode (§12.19), approved, and **Chunk 1 built**: `src/data/programs.ts` (new), `src/data/programImport.ts` (new), `RoutineExercise.substitutes` end to end with its own migration, `swapExerciseInWorkout`, the crown's `isAllTimePR`, `suggestSubstitutes`. **Tested by hand against the dev server, not just the build** — program CRUD, single-active enforcement, cascade delete, the week/day math, and a full import of the real 12-week Min-Max JSON. **A real finding, not a guess**: exercise-name matching against the 1,324-exercise seed missed more than expected on PDF-derived names (Pec Deck, Kelso Shrug, Incline DB Y-Raise had zero match); the custom-exercise fallback handled it safely, and Chunk 2's import preview needs to surface it. Precache **2,511.95 KiB** (data-layer-only delta from 2,511.90). Committed and pushed. **The new migration has not yet been run against the live Supabase project.** |
@@ -4447,13 +4544,15 @@ Assume there is a new one anyway.
 
 **⚠ THE PRIORITY CHANGED ON 2026-08-23 (2nd). READ §12.17 BEFORE §18.**
 
-**⚠ SCOPING IS DONE — READ §12.19, NOT THE QUESTIONS BELOW.** The six
-questions this section used to open with are answered in §12.18, and a
-four-chunk build plan is written and approved in §12.19. **Chunks 1, 2 and 3
-(the data layer; program import/management/manual-editor UI; the Log tab
-rebuild) are built, hand-tested through the actual UI, and committed** — do
-not redo any of them, do not re-scope. **Start the next session at §12.19's
-"Chunk 4" heading.**
+**⚠ THE FOUR-CHUNK WORKOUT REBUILD FROM §12.19 IS NOW COMPLETE.** All four
+chunks (data layer; program import/management/manual-editor UI; the Log tab
+rebuild; swap-exercise/substitutes/final sweep) are built, hand-tested
+through the actual UI, and committed on `phase-1-i18n` — do not redo any of
+them, do not re-scope. Read §12.19 in full before touching the workout
+section again; do not re-derive its decisions. **Next up, per the "After
+workouts" note below: body, care routines, About/Feedback/Install, then the
+bilingual Supabase email templates and the `changelog.ts` decision** — the
+remainder of Phase 1. Confirm with the owner before starting, per usual.
 
 **The workout section is the next thing, completely — every screen and all the
 Programs UI — and it comes before the rest of the translation work.** That
