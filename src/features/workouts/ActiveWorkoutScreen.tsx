@@ -205,7 +205,11 @@ export function ActiveWorkoutScreen() {
   const setCount = completedSets(sets ?? []).length
   const elapsedSeconds = Math.max(0, Math.floor((now - new Date(workout.startedAt).getTime()) / 1000))
   const restRemaining = timer ? Math.max(0, Math.ceil((timer.endsAt - now) / 1000)) : 0
-  const routineNotes = (sets ?? [])[0]?.notes
+  // The routine's own notes, not an exercise's — WorkoutSet.notes is per
+  // exercise (see its own comment in types.ts) and belongs under that
+  // exercise's card instead, not hijacked for the workout-level block here.
+  const routine = routines?.find((r) => r.id === workout.routineId)
+  const routineNotes = routine?.notes
 
   async function handleDiscard() {
     const ok = await confirm({
@@ -502,11 +506,15 @@ function ExerciseBlock({
         }
       }
 
-      const suggested = suggestSubstitutes(current, all).filter(
-        (e) => !stored.some((s) => s.key === e.key)
-      )
+      // Routine-specified substitutes (at most 2, from the JSON import or
+      // picked by hand in the routine editor) are the only quick options —
+      // anything else goes through the search fallback below, not a
+      // same-muscle-group guess mixed in alongside the author's own picks.
+      // Computed suggestions only fill in when the exercise has none at all,
+      // e.g. one added ad hoc without a routine behind it.
+      const list = stored.length > 0 ? stored : suggestSubstitutes(current, all).slice(0, 8)
 
-      if (!cancelled) setSwapSuggestions([...stored, ...suggested].slice(0, 8))
+      if (!cancelled) setSwapSuggestions(list)
     }
 
     load()
@@ -516,8 +524,12 @@ function ExerciseBlock({
   }, [menu, exerciseKey, routineId])
 
   const restSeconds = sets[0]?.restSeconds ?? 90
-  const targetRpe = sets[0]?.rpe
   const nonWarmup = sets.filter((s) => s.type !== 'warmup')
+  // Warm-up sets never carry an rpe (programImport.ts only sets it on working
+  // sets), so sets[0] reads as "no target" whenever a warm-up sorts first —
+  // which is every imported routine. Read it off the first working set.
+  const targetRpe = nonWarmup[0]?.rpe ?? sets[0]?.rpe
+  const exerciseNotes = sets[0]?.notes
   const doneCount = nonWarmup.filter(isSetCompleted).length
 
   async function addAnother() {
@@ -592,6 +604,12 @@ function ExerciseBlock({
           ⋮
         </button>
       </div>
+
+      {exerciseNotes && (
+        <p className="muted" style={{ margin: '0.5rem 0 0', whiteSpace: 'pre-wrap' }}>
+          {exerciseNotes}
+        </p>
+      )}
 
       <div className="row rest-row">
         <button className="btn-plain muted grow" onClick={() => setMenu('rest')}>

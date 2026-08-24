@@ -12,10 +12,14 @@
 //   - one Routine per distinct workout CONTENT, not one per week — a program
 //     that repeats the same "Upper 1" for six weeks gets one Routine, reused
 //   - last_set_intensity_technique has no field of its own; folded into notes
-//   - substitution_option_1/2 resolve through the exercise library; a name
-//     that doesn't match anything with reasonable confidence is dropped
+//   - substitution_option_1/2 resolve through the exercise library, with the
+//     same common-abbreviation expansion as the primary exercise; a name that
+//     still doesn't match anything gets a custom exercise minted for it too,
+//     same as an unmatched primary — a suggestion the swap UI can't select
+//     isn't useful, so it's never silently dropped
 //   - warm-up rep counts come from the standard table, weight left empty
-//   - rest and rep ranges take the minimum of a written range
+//   - rest takes the maximum of a written range ("1-2 min" -> 2 min); rep
+//     ranges keep both ends as repsMin/repsMax
 
 import { createProgram, setProgramDays } from './programs'
 import { createRoutine, setRoutineExercises, type RoutineExerciseInput } from './routines'
@@ -130,17 +134,27 @@ function parseWorkingSets(raw: string | number | null | undefined): number {
   return nums.length === 0 ? 1 : Math.round(Math.max(...nums))
 }
 
-/** "3-5 min" -> 180 (the minimum of the range, in seconds). Defaults to 90s. */
+/** "1-2 min" -> 120 (the maximum of the range, in seconds). Defaults to 90s. */
 function parseRestSeconds(raw: string | null | undefined): number {
   if (!raw) return 90
   const nums = numberRange(raw)
   if (nums.length === 0) return 90
-  const value = Math.min(...nums)
+  const value = Math.max(...nums)
   return Math.round(raw.toLowerCase().includes('sec') ? value : value * 60)
 }
 
 function rirToRpe(rir: number): number {
   return Math.max(1, Math.min(10, 10 - rir))
+}
+
+/** The higher of whichever RIR fields the row has, converted to the
+ *  exercise's target RPE via rirToRpe(). Owner's explicit call: take the max
+ *  RIR across the row's sets, not the last one specifically. */
+function maxRir(row: ImportRow): number | undefined {
+  const values = [row.set_1_rir, row.set_2_rir].filter(
+    (v): v is number => typeof v === 'number'
+  )
+  return values.length > 0 ? Math.max(...values) : undefined
 }
 
 /** 1 set -> 6; 2 -> 6,4; 3 -> 6,4,3; 4 -> 6,4,3,2; above 4, pad with 2s. */
@@ -163,7 +177,7 @@ function rowToExerciseInput(
   }
 
   const { repsMin, repsMax } = parseRepRange(row.rep_range)
-  const rir = row.set_2_rir ?? row.set_1_rir
+  const rir = maxRir(row)
   const rpe = typeof rir === 'number' ? rirToRpe(rir) : undefined
   const workingCount = parseWorkingSets(row.working_sets)
 
@@ -288,11 +302,37 @@ export function buildProgram(
 
 const MATCH_THRESHOLD = 300
 
+// Common gym abbreviations and spelling variants that fuzzyScore's word-level
+// matching can't bridge on its own — "DB" shares no letters with "Dumbbell",
+// so no near-match heuristic gets it there. Expanded on both sides of the
+// comparison before scoring, so "DB Flye" resolves against "Dumbbell Fly".
+const NAME_EXPANSIONS: [RegExp, string][] = [
+  [/\bdb\b/gi, 'dumbbell'],
+  [/\bbb\b/gi, 'barbell'],
+  [/\bbar\b/gi, 'barbell'],
+  [/\bkb\b/gi, 'kettlebell'],
+  [/\bsm\b/gi, 'smith machine'],
+  [/\bohp\b/gi, 'overhead press'],
+  [/\brdl\b/gi, 'romanian deadlift'],
+  [/\bflyes?\b/gi, 'fly'],
+  [/\bext\b/gi, 'extension'],
+  [/\bbw\b/gi, 'bodyweight'],
+]
+
+function expandName(name: string): string {
+  let s = name
+  for (const [pattern, replacement] of NAME_EXPANSIONS) {
+    s = s.replace(pattern, replacement)
+  }
+  return s
+}
+
 function resolveExercise(name: string, exercises: ExerciseOption[]): ExerciseOption | undefined {
+  const query = expandName(name)
   let best: ExerciseOption | undefined
   let bestScore = 0
   for (const e of exercises) {
-    const score = fuzzyScore(e.name, name)
+    const score = fuzzyScore(expandName(e.name), query)
     if (score > bestScore) {
       bestScore = score
       best = e
@@ -390,9 +430,23 @@ export async function importProgram(raw: unknown): Promise<{ programId: string; 
   for (const name of substituteNames) {
     if (resolved.has(name)) continue
     const match = resolveExercise(name, exercises)
-    // Unmatched substitution names are dropped, not auto-created — a
-    // suggestion the swap UI can't select isn't useful (plan decision 3).
-    if (match) resolved.set(name, { key: match.key, name: match.name })
+    if (match) {
+      resolved.set(name, { key: match.key, name: match.name })
+      continue
+    }
+    // Reverses the earlier plan decision to drop an unmatched substitution
+    // name: a suggestion the swap UI can't select isn't useful, but neither
+    // is silently losing one of the two explicit substitutes the program
+    // author wrote down. Minted the same way as an unmatched primary.
+    const id = await addCustomExercise({
+      name,
+      bodyPart: 'other',
+      equipment: 'other',
+      target: 'other',
+      secondary: [],
+      steps: [],
+    })
+    resolved.set(name, { key: `custom:${id}`, name })
   }
 
   const built = buildProgram(parsed, (name) => resolved.get(name))
