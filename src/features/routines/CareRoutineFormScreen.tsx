@@ -10,13 +10,15 @@ import {
   deleteCareRoutine,
   setSteps,
   routineKinds,
+  kindLabel,
   DEFAULT_KINDS,
-  TIMES,
+  times,
   type CareStepInput,
 } from '../../data/careRoutines'
 import { TextField } from '../../components/TextField'
 import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 import { useConfirm } from '../../components/DialogProvider'
+import { t } from '../../data/i18n'
 import type { TimeOfDay } from '../../data/types'
 
 export function CareRoutineFormScreen() {
@@ -48,7 +50,7 @@ export function CareRoutineFormScreen() {
     })
   }, [routineId])
 
-  if (loading) return <Empty>Loading…</Empty>
+  if (loading) return <Empty>{t('common.loading')}</Empty>
 
   const canSave = name.trim().length > 0 && kind.trim().length > 0
 
@@ -93,9 +95,9 @@ export function CareRoutineFormScreen() {
   async function handleDelete() {
     if (!routineId) return
     const ok = await confirm({
-      title: 'Delete this routine?',
-      message: 'Its steps and completion history will be removed.',
-      confirmLabel: 'Delete',
+      title: t('care.deleteTitle'),
+      message: t('care.deleteMessage'),
+      confirmLabel: t('common.delete'),
       destructive: true,
     })
     if (!ok) return
@@ -106,21 +108,26 @@ export function CareRoutineFormScreen() {
   return (
     <div className="stack">
       <ScreenHeader
-        title={routineId ? 'Edit routine' : 'New routine'}
+        title={routineId ? t('care.editTitle') : t('care.newRoutine')}
         onBack={() => navigate('/routines/manage')}
       />
 
-      <TextField label="Name" value={name} onChange={setName} placeholder="Morning skincare" />
+      <TextField
+        label={t('care.nameLabel')}
+        value={name}
+        onChange={setName}
+        placeholder={t('care.namePlaceholder')}
+      />
 
       <label className="field">
-        <span className="field-label">Type</span>
+        <span className="field-label">{t('care.typeLabel')}</span>
         {customKind ? (
           <span className="row">
             <input
               type="text"
               value={kind}
               autoFocus
-              placeholder="Nails, teeth, supplements…"
+              placeholder={t('care.newTypePlaceholder')}
               onChange={(e) => setKind(e.target.value)}
             />
             <Button
@@ -131,7 +138,7 @@ export function CareRoutineFormScreen() {
                 setCustomKind(false)
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
           </span>
         ) : (
@@ -148,28 +155,28 @@ export function CareRoutineFormScreen() {
           >
             {kinds.map((k) => (
               <option key={k} value={k}>
-                {k}
+                {kindLabel(k)}
               </option>
             ))}
-            <option value="__new__">New type…</option>
+            <option value="__new__">{t('care.newTypeOption')}</option>
           </select>
         )}
       </label>
 
       <label className="field">
-        <span className="field-label">When</span>
+        <span className="field-label">{t('care.whenLabel')}</span>
         <select value={timeOfDay} onChange={(e) => setTimeOfDay(e.target.value as TimeOfDay)}>
-          {TIMES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
+          {times().map((time) => (
+            <option key={time.value} value={time.value}>
+              {time.label}
             </option>
           ))}
         </select>
       </label>
 
-      <h3 style={{ marginTop: '1.25rem' }}>Steps</h3>
+      <h3 style={{ marginTop: '1.25rem' }}>{t('care.stepsHeading')}</h3>
 
-      {steps.length === 0 && <Empty>No steps yet.</Empty>}
+      {steps.length === 0 && <Empty>{t('care.noStepsYet')}</Empty>}
 
       {steps.map((step, i) => (
         <Card key={i} style={{ marginBottom: '0.5rem' }}>
@@ -180,7 +187,7 @@ export function CareRoutineFormScreen() {
             <span className="grow" />
             <button
               className="icon-btn"
-              aria-label="Move step up"
+              aria-label={t('care.moveStepUp')}
               disabled={i === 0}
               style={{ opacity: i === 0 ? 0.25 : 1 }}
               onClick={() => move(i, -1)}
@@ -189,7 +196,7 @@ export function CareRoutineFormScreen() {
             </button>
             <button
               className="icon-btn"
-              aria-label="Move step down"
+              aria-label={t('care.moveStepDown')}
               disabled={i === steps.length - 1}
               style={{ opacity: i === steps.length - 1 ? 0.25 : 1 }}
               onClick={() => move(i, 1)}
@@ -198,7 +205,7 @@ export function CareRoutineFormScreen() {
             </button>
             <button
               className="icon-btn"
-              aria-label="Remove step"
+              aria-label={t('care.removeStep')}
               onClick={() => setStepList((prev) => prev.filter((_, j) => j !== i))}
             >
               <X size={16} />
@@ -208,32 +215,32 @@ export function CareRoutineFormScreen() {
           <input
             type="text"
             value={step.name}
-            placeholder="Cleanser"
+            placeholder={t('care.stepNamePlaceholder')}
             onChange={(e) => updateStep(i, { name: e.target.value })}
             style={{ marginBottom: '0.5rem' }}
           />
           <input
             type="text"
             value={step.product ?? ''}
-            placeholder="Product (optional)"
+            placeholder={t('care.stepProductPlaceholder')}
             onChange={(e) => updateStep(i, { product: e.target.value })}
           />
         </Card>
       ))}
 
       <Button block onClick={() => setStepList((prev) => [...prev, { name: '' }])}>
-        <Plus size={16} /> Add step
+        <Plus size={16} /> {t('care.addStep')}
       </Button>
 
       <div className="form-actions">
         {routineId && (
           <Button variant="ghost" className="btn-warn" onClick={handleDelete}>
-            Delete
+            {t('common.delete')}
           </Button>
         )}
         <span className="grow">
           <Button variant="primary" block onClick={handleSave} disabled={!canSave || saving}>
-            {saving ? 'Saving…' : 'Save routine'}
+            {saving ? t('care.saving') : t('care.saveRoutine')}
           </Button>
         </span>
       </div>

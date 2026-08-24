@@ -1,15 +1,36 @@
 import { db } from './db'
 import { todayISO, addDays } from './dates'
 import { newId, now, isLive } from './ids'
+import { t } from './i18n'
 import type { CareRoutine, CareStep, CareDone, CareStepDone, TimeOfDay } from './types'
 
+/**
+ * Stored verbatim in CareRoutine.kind, so kept in English — same reasoning as
+ * commonFoods.ts. kindLabel() below is the display-only translation.
+ */
 export const DEFAULT_KINDS = ['Skin', 'Hair', 'Other']
 
-export const TIMES: { value: TimeOfDay; label: string }[] = [
-  { value: 'morning', label: 'Morning' },
-  { value: 'evening', label: 'Evening' },
-  { value: 'anytime', label: 'Anytime' },
-]
+export function kindLabel(kind: string): string {
+  switch (kind) {
+    case 'Skin':
+      return t('care.kindSkin')
+    case 'Hair':
+      return t('care.kindHair')
+    case 'Other':
+      return t('care.kindOther')
+    default:
+      return kind
+  }
+}
+
+/** A function, not a const — see rpeOptions()/restOptions() for why. */
+export function times(): { value: TimeOfDay; label: string }[] {
+  return [
+    { value: 'morning', label: t('care.timeMorning') },
+    { value: 'evening', label: t('care.timeEvening') },
+    { value: 'anytime', label: t('care.timeAnytime') },
+  ]
+}
 
 export type CareRoutineInput = Omit<CareRoutine, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'sortOrder'>
 export type CareStepInput = Omit<CareStep, 'id' | 'careRoutineId' | 'order' | 'createdAt' | 'updatedAt' | 'deletedAt'>

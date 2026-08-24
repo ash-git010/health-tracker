@@ -6,8 +6,11 @@ import {
   getSteps,
   moveCareRoutine,
   routineKinds,
+  kindLabel,
+  times,
 } from '../../data/careRoutines'
 import { Card, Empty, Fab, ScreenHeader } from '../../components/ui'
+import { t, plural } from '../../data/i18n'
 import type { CareRoutine } from '../../data/types'
 
 export function RoutineManageScreen() {
@@ -15,7 +18,7 @@ export function RoutineManageScreen() {
   const routines = useLiveQuery(() => listCareRoutines(), [])
   const kinds = useLiveQuery(() => routineKinds(), [routines])
 
-  if (routines === undefined || kinds === undefined) return <Empty>Loading…</Empty>
+  if (routines === undefined || kinds === undefined) return <Empty>{t('common.loading')}</Empty>
 
   const groups = kinds
     .map((k) => ({
@@ -26,13 +29,13 @@ export function RoutineManageScreen() {
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
-      <ScreenHeader title="Manage routines" />
+      <ScreenHeader title={t('care.manageTitle')} />
 
-      {routines.length === 0 && <Empty>No routines yet. Tap + to create your first one.</Empty>}
+      {routines.length === 0 && <Empty>{t('care.manageEmpty')}</Empty>}
 
       {groups.map((group) => (
         <div key={group.kind} style={{ marginBottom: '1.5rem' }}>
-          <h3>{group.kind}</h3>
+          <h3>{kindLabel(group.kind)}</h3>
           {group.routines.map((r, i) => (
             <RoutineRow
               key={r.id}
@@ -45,7 +48,7 @@ export function RoutineManageScreen() {
         </div>
       ))}
 
-      <Fab label="New routine" onClick={() => navigate('/routines/manage/new')} />
+      <Fab label={t('care.newRoutine')} onClick={() => navigate('/routines/manage/new')} />
     </div>
   )
 }
@@ -62,6 +65,7 @@ function RoutineRow({
   onOpen: () => void
 }) {
   const steps = useLiveQuery(() => getSteps(routine.id!), [routine.id])
+  const timeLabel = times().find((time) => time.value === routine.timeOfDay)?.label
 
   return (
     <Card style={{ marginBottom: '0.5rem', padding: '0.875rem' }}>
@@ -69,8 +73,8 @@ function RoutineRow({
         <button className="btn-plain grow row" style={{ minWidth: 0 }} onClick={onOpen}>
           <span className="grow" style={{ minWidth: 0 }}>
             <span style={{ display: 'block', fontWeight: 600 }}>{routine.name}</span>
-            <span className="faint" style={{ textTransform: 'capitalize' }}>
-              {routine.timeOfDay} · {(steps ?? []).length} steps
+            <span className="faint">
+              {timeLabel} · {plural((steps ?? []).length, 'care.stepsCount')}
             </span>
           </span>
           <ChevronRight size={16} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
@@ -78,7 +82,7 @@ function RoutineRow({
 
         <button
           className="icon-btn"
-          aria-label={`Move ${routine.name} up`}
+          aria-label={t('care.moveUp', { name: routine.name })}
           disabled={isFirst}
           style={{ opacity: isFirst ? 0.25 : 1 }}
           onClick={() => moveCareRoutine(routine.id!, -1)}
@@ -87,7 +91,7 @@ function RoutineRow({
         </button>
         <button
           className="icon-btn"
-          aria-label={`Move ${routine.name} down`}
+          aria-label={t('care.moveDown', { name: routine.name })}
           disabled={isLast}
           style={{ opacity: isLast ? 0.25 : 1 }}
           onClick={() => moveCareRoutine(routine.id!, 1)}

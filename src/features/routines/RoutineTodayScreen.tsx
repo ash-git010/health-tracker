@@ -11,10 +11,11 @@ import {
   setSkipped,
   routineStreak,
   isComplete,
-  TIMES,
+  times,
 } from '../../data/careRoutines'
 import { todayISO, addDays, formatDay } from '../../data/dates'
 import { Button, Card, Empty } from '../../components/ui'
+import { t } from '../../data/i18n'
 import type { CareRoutine, CareDone } from '../../data/types'
 
 export function RoutineTodayScreen() {
@@ -28,38 +29,40 @@ export function RoutineTodayScreen() {
   const ticked = useLiveQuery(() => tickedStepIds(date), [date])
 
   if (routines === undefined || done === undefined || ticked === undefined) {
-    return <Empty>Loading…</Empty>
+    return <Empty>{t('common.loading')}</Empty>
   }
 
   if (routines.length === 0) {
     return (
       <div className="stack">
         <Card>
-          <p style={{ margin: 0 }}>No routines yet.</p>
+          <p style={{ margin: 0 }}>{t('care.emptyTitle')}</p>
           <p className="muted" style={{ margin: '0.5rem 0 0' }}>
-            Build a skin or hair routine and tick off each step as you go.
+            {t('care.emptyLead')}
           </p>
         </Card>
         <Button variant="primary" block onClick={() => navigate('/routines/manage/new')}>
-          <Plus size={16} /> Create a routine
+          <Plus size={16} /> {t('care.createFirst')}
         </Button>
       </div>
     )
   }
 
   const doneByRoutine = new Map(done.map((d) => [d.careRoutineId, d]))
-  const groups = TIMES.map((t) => ({
-    time: t.value,
-    label: t.label,
-    routines: routines.filter((r) => r.timeOfDay === t.value),
-  })).filter((g) => g.routines.length > 0)
+  const groups = times()
+    .map((time) => ({
+      time: time.value,
+      label: time.label,
+      routines: routines.filter((r) => r.timeOfDay === time.value),
+    }))
+    .filter((g) => g.routines.length > 0)
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
       <div className="row" style={{ marginBottom: '1.25rem' }}>
         <button
           className="icon-btn"
-          aria-label="Previous day"
+          aria-label={t('care.prevDay')}
           onClick={() => setDate(addDays(date, -1))}
         >
           <ChevronLeft size={20} />
@@ -69,7 +72,7 @@ export function RoutineTodayScreen() {
         </h2>
         <button
           className="icon-btn"
-          aria-label="Next day"
+          aria-label={t('care.nextDay')}
           disabled={date >= todayISO()}
           style={{ opacity: date >= todayISO() ? 0.3 : 1 }}
           onClick={() => setDate(addDays(date, 1))}
@@ -128,7 +131,9 @@ function RoutineCard({
         <div className="grow" style={{ minWidth: 0 }}>
           <strong style={{ display: 'block' }}>{routine.name}</strong>
           <span className="faint">
-            {done?.skipped ? 'Skipped' : `${doneCount}/${steps.length} done`}
+            {done?.skipped
+              ? t('care.skipped')
+              : t('care.stepsDone', { done: doneCount, total: steps.length })}
           </span>
         </div>
 
@@ -177,7 +182,7 @@ function RoutineCard({
           variant="ghost"
           onClick={() => setSkipped(routine.id, date, !done?.skipped)}
         >
-          {done?.skipped ? 'Undo skip' : 'Skip today'}
+          {done?.skipped ? t('care.undoSkip') : t('care.skipToday')}
         </Button>
       </div>
     </Card>
