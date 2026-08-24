@@ -145,6 +145,35 @@ export interface PRResult {
   oneRM: number
 }
 
+/**
+ * The crown: an all-time PR per exercise, ranked weight then reps then first
+ * set — deliberately different from recentPRs' Epley-1RM ranking (§12.16).
+ * 105kg×3 can earn a crown while recentPRs still prefers 100kg×12; both
+ * answer real but different questions and neither should be made to agree
+ * with the other. Bodyweight sets (weightKg 0) compare on reps alone.
+ */
+export function isAllTimePR(
+  allSets: WorkoutSet[],
+  exerciseKey: string,
+  weightKg: number,
+  reps: number,
+  excludeSetId?: string
+): boolean {
+  const candidates = completedSets(
+    allSets.filter((s) => s.exerciseKey === exerciseKey && s.id !== excludeSetId)
+  )
+
+  // >= on the tie branch, not >: an existing set with the same weight and
+  // reps came first, so "first one gets it" means the incumbent keeps the
+  // crown and the newly-ticked set does not.
+  for (const s of candidates) {
+    if (s.weightKg > weightKg) return false
+    if (s.weightKg === weightKg && s.reps >= reps) return false
+  }
+
+  return true
+}
+
 export function recentPRs(sets: WorkoutSet[], workouts: Workout[], limit: number): PRResult[] {
   const workoutById = new Map(workouts.map((w) => [w.id, w]))
   const relevant = completedSets(sets).filter((s) => workoutById.has(s.workoutId))

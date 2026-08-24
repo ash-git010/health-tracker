@@ -6,7 +6,7 @@ import type { Routine, RoutineExercise, RoutineSet, SetType, WorkoutSet } from '
 
 export type RoutineExerciseInput = Pick <
   RoutineExercise,
-  'exerciseKey' | 'exerciseName' | 'targetSets' | 'restSeconds' | 'sets' | 'notes'
+  'exerciseKey' | 'exerciseName' | 'targetSets' | 'restSeconds' | 'sets' | 'notes' | 'substitutes'
 >
 
 export const UNGROUPED = 'Routines'

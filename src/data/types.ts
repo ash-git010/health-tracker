@@ -165,6 +165,10 @@ export interface RoutineExercise {
   targetSets: number
   sets?: RoutineSet[]
   notes?: string
+  /** Exercise keys offered as swap suggestions, ahead of the computed
+   *  same-muscle-group matches. Author-supplied from a JSON import, or
+   *  picked by hand in the routine editor. */
+  substitutes?: string[]
   restSeconds: number
   createdAt: string
   updatedAt: string

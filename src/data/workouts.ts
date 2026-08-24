@@ -195,6 +195,32 @@ export async function setNotesForExercise(
     .modify({ notes, updatedAt: now() })
 }
 
+/**
+ * Renames every set of `oldKey` to the new exercise and zeroes weight/reps —
+ * a different movement has no valid "previous", so carrying the old numbers
+ * forward would read as a real lift on the wrong exercise. Needs no special
+ * case in diffWorkoutAgainstRoutine: it already reads an exerciseKey change
+ * as "removed X, added Y" by comparing the two exercise maps.
+ */
+export async function swapExerciseInWorkout(
+  workoutId: string,
+  oldExerciseKey: string,
+  newExercise: { key: string; name: string }
+): Promise<void> {
+  await db.workoutSets
+    .where('workoutId')
+    .equals(workoutId)
+    .filter((s) => s.exerciseKey === oldExerciseKey && isLive(s))
+    .modify({
+      exerciseKey: newExercise.key,
+      exerciseName: newExercise.name,
+      weightKg: 0,
+      reps: 0,
+      completed: false,
+      updatedAt: now(),
+    })
+}
+
 // Sets logged before the completed field existed have no stored value for it;
 // treat that legacy `undefined` as complete so historical stats don't zero out.
 export function isSetCompleted(set: WorkoutSet): boolean {

@@ -3,6 +3,7 @@ import { newId, now, isLive } from './ids'
 import type { Exercise } from './types'
 import { fuzzySearch } from './search'
 import { POPULAR_EXERCISES } from './exercisePopularity'
+import { groupFor } from './muscleGroups'
 
 interface SeedExercise {
   id: string
@@ -115,6 +116,25 @@ export function searchExercises(
     undefined,
     (e) => e.popularity
   )
+}
+
+/**
+ * Computed swap suggestions: same equipment and the same primary muscle
+ * group, per §12.15's already-verified matching approach. Ranked by
+ * popularity so the obvious substitute (Smith Machine Incline Press for
+ * Barbell Incline Press) surfaces before an obscure one.
+ */
+export function suggestSubstitutes(
+  exercise: ExerciseOption,
+  allOptions: ExerciseOption[],
+  limit = 8
+): ExerciseOption[] {
+  const targetGroup = groupFor(exercise.target)
+  return allOptions
+    .filter((e) => e.key !== exercise.key)
+    .filter((e) => e.equipment === exercise.equipment && groupFor(e.target) === targetGroup)
+    .sort((a, b) => b.popularity - a.popularity || a.name.localeCompare(b.name))
+    .slice(0, limit)
 }
 
 export function bodyParts(list: ExerciseOption[]): string[] {

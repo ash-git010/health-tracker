@@ -293,6 +293,10 @@ create table routine_exercises (
   notes text,
   sets jsonb not null default '[]'::jsonb
     check (jsonb_typeof(sets) = 'array'),
+  -- Exercise keys the swap feature and JSON import can offer as alternatives.
+  -- Added 2026-08-24; jsonb for the same reason `sets` is, not a child table.
+  substitutes jsonb not null default '[]'::jsonb
+    check (jsonb_typeof(substitutes) = 'array'),
 
   created_at timestamptz not null,
   updated_at timestamptz not null,
@@ -306,6 +310,59 @@ create table routine_exercises (
 
 create index on routine_exercises (user_id, updated_at);
 create index on routine_exercises (routine_id);
+
+
+-- ---------------------------------------------------------------------------
+-- Programs — an ordered schedule of weeks and days above routines.
+-- Weeks are a column on program_days, not a table — see the 2026-08-23
+-- migration for the full reasoning. routine_id on program_days carries no
+-- foreign key, matching workouts.routine_id: deleting a routine must not
+-- punch a hole in a schedule that referenced it.
+-- ---------------------------------------------------------------------------
+
+create table programs (
+  id uuid not null,
+  user_id uuid not null references auth.users(id) on delete cascade,
+
+  name text not null,
+  notes text,
+  repeats boolean not null default false,
+  is_active boolean not null default false,
+  started_on date,
+  week_notes jsonb not null default '{}'::jsonb
+    check (jsonb_typeof(week_notes) = 'object'),
+  sort_order integer,
+
+  created_at timestamptz not null,
+  updated_at timestamptz not null,
+  deleted_at timestamptz,
+
+  primary key (user_id, id)
+);
+
+create index on programs (user_id, updated_at);
+
+create table program_days (
+  id uuid not null,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  program_id uuid not null,
+
+  week integer not null check (week >= 1),
+  day_index integer not null check (day_index between 1 and 7),
+  routine_id uuid,
+
+  created_at timestamptz not null,
+  updated_at timestamptz not null,
+  deleted_at timestamptz,
+
+  primary key (user_id, id),
+  constraint program_days_program_id_fkey
+    foreign key (user_id, program_id) references programs (user_id, id)
+    on delete cascade
+);
+
+create index on program_days (user_id, updated_at);
+create index on program_days (user_id, program_id);
 
 
 -- ---------------------------------------------------------------------------
@@ -425,6 +482,8 @@ alter table workouts          enable row level security;
 alter table workout_sets      enable row level security;
 alter table routines          enable row level security;
 alter table routine_exercises enable row level security;
+alter table programs          enable row level security;
+alter table program_days      enable row level security;
 alter table care_routines     enable row level security;
 alter table care_steps        enable row level security;
 alter table care_done_log     enable row level security;
@@ -440,6 +499,8 @@ create policy "own rows" on workouts          for all using (auth.uid() = user_i
 create policy "own rows" on workout_sets      for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows" on routines          for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows" on routine_exercises for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own rows" on programs          for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own rows" on program_days      for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows" on care_routines     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows" on care_steps        for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own rows" on care_done_log     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
