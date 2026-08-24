@@ -48,6 +48,7 @@ const de: Record<TKey, string> = {
   'dates.yesterday': 'Gestern',
 
   'rpe.off': 'Aus',
+  'rest.off': 'Aus',
 
   'onb.skip': 'Überspringen',
   'onb.getStarted': 'Los geht\u2019s',
@@ -483,6 +484,17 @@ const de: Record<TKey, string> = {
   'activeWorkout.startToday': '{name} starten',
   'activeWorkout.noWorkoutToday': 'Heute nichts geplant.',
   'activeWorkout.complete': 'Programm abgeschlossen.',
+  'activeWorkout.addExercise': 'Übung hinzufügen',
+  'activeWorkout.discard': 'Verwerfen',
+  'activeWorkout.discardTitle': 'Dieses Workout verwerfen?',
+  'activeWorkout.discardMessage': 'Alles, was in dieser Einheit protokolliert wurde, wird gelöscht.',
+  'activeWorkout.finish': 'Fertig',
+  'activeWorkout.duration': 'Dauer',
+  'activeWorkout.volume': 'Volumen',
+  'activeWorkout.sets': 'Sätze',
+  'activeWorkout.notes': 'Notizen',
+  'activeWorkout.restTimer': 'Pausentimer: {label}',
+  'activeWorkout.skip': 'Überspringen',
 
   'programs.import.title': 'Programm importieren',
   'programs.import.chooseFile': 'Programmdatei auswählen',

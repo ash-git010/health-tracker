@@ -50,6 +50,7 @@ const en = {
   'dates.yesterday': 'Yesterday',
 
   'rpe.off': 'Off',
+  'rest.off': 'Off',
 
   'onb.skip': 'Skip',
   'onb.getStarted': 'Get started',
@@ -459,6 +460,17 @@ const en = {
   'activeWorkout.startToday': 'Start {name}',
   'activeWorkout.noWorkoutToday': 'Nothing scheduled for today.',
   'activeWorkout.complete': 'Program complete.',
+  'activeWorkout.addExercise': 'Add exercise',
+  'activeWorkout.discard': 'Discard',
+  'activeWorkout.discardTitle': 'Discard this workout?',
+  'activeWorkout.discardMessage': 'Everything logged in this session will be deleted.',
+  'activeWorkout.finish': 'Finish',
+  'activeWorkout.duration': 'Duration',
+  'activeWorkout.volume': 'Volume',
+  'activeWorkout.sets': 'Sets',
+  'activeWorkout.notes': 'Notes',
+  'activeWorkout.restTimer': 'Rest timer: {label}',
+  'activeWorkout.skip': 'Skip',
 
   'programs.import.title': 'Import program',
   'programs.import.chooseFile': 'Choose a program file',

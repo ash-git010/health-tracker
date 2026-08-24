@@ -14,7 +14,7 @@ import { lastSetsFor } from '../../data/workouts'
 import { findExercise } from '../../data/exercises'
 import { ExercisePicker } from './ExercisePicker'
 import { FolderPicker } from './FolderPicker'
-import { REST_OPTIONS, formatRestLabel } from './rest'
+import { restOptions, formatRestLabel } from './rest'
 import { rpeOptions, formatRpe } from './rpe'
 import { TextField } from '../../components/TextField'
 import { OptionSheet } from '../../components/OptionSheet'
@@ -503,7 +503,7 @@ function ExerciseCard({
         <OptionSheet
           title="Rest timer"
           onClose={() => setMenu('none')}
-          options={REST_OPTIONS.map((o) => ({
+          options={restOptions().map((o) => ({
             label: o.label,
             active: o.seconds === draft.restSeconds,
             onSelect: () => {

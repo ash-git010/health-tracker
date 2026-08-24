@@ -570,6 +570,13 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
   box-shadow: 0 0 16px var(--accent-glow);
 }
 
+.check-btn.crown {
+  background: linear-gradient(135deg, #f5c451, #f59e0b);
+  border-color: #f59e0b;
+  color: #1a1206;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.55);
+}
+
 .workout-sticky {
   position: sticky;
   top: calc(var(--header-height) - 1px);
@@ -590,6 +597,30 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .rest-live {
   color: var(--accent);
   font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Floating rest-timer bar — sits where the Fab used to, now that
+   Add-exercise has moved into .workout-sticky. */
+.rest-bar {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.rest-bar-time {
+  color: var(--accent);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 

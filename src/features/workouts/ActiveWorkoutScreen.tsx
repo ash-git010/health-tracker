@@ -7,6 +7,7 @@ import {
   deleteWorkout,
   removeExerciseFromWorkout,
   getSets,
+  getAllSets,
   addSet,
   updateSet,
   deleteSet,
@@ -17,6 +18,7 @@ import {
   completedSets,
   isSetCompleted,
 } from '../../data/workouts'
+import { isAllTimePR } from '../../data/workoutStats'
 import { listRoutines, startWorkoutFromRoutine } from '../../data/routines'
 import {
   activeProgram,
@@ -31,15 +33,16 @@ import {
 import { findExercise } from '../../data/exercises'
 import { playBeep } from '../../data/audio'
 import { ExercisePicker } from './ExercisePicker'
-import { REST_OPTIONS, formatTime, formatRestLabel } from './rest'
+import { restOptions, formatTime, formatRestLabel } from './rest'
 import { EquipmentIcon } from '../../components/EquipmentIcon'
-import { Button, Card, Empty, Fab } from '../../components/ui'
+import { Button, Card, Empty } from '../../components/ui'
 import type { SetType, WorkoutSet, Program, ProgramDay, Routine } from '../../data/types'
 import { parseDecimal } from '../../data/numbers'
 import { useConfirm } from '../../components/DialogProvider'
 import { OptionSheet } from '../../components/OptionSheet'
 import { rpeOptions, formatRpe } from './rpe'
 import { t } from '../../data/i18n'
+import { Plus, Crown } from 'lucide-react'
 
 const SET_TYPES: { value: SetType; label: string }[] = [
   { value: 'normal', label: 'Normal' },
@@ -123,6 +126,15 @@ export function ActiveWorkoutScreen() {
     return () => clearInterval(handle)
   }, [workout?.id, workout?.finishedAt])
 
+  // A rest timer belongs to the workout that started it. Without this, a
+  // timer left running when a workout is discarded or finished used to be
+  // harmless — nothing rendered it once its exercise card was gone. Now that
+  // the countdown lives in a workout-independent floating bar, an uncleared
+  // timer would keep counting down over whatever workout (or none) starts next.
+  useEffect(() => {
+    setTimer(null)
+  }, [workout?.id])
+
   function startTimer(exerciseKey: string, seconds: number) {
     if (seconds <= 0) return
     setTimer({ exerciseKey, endsAt: Date.now() + seconds * 1000 })
@@ -177,46 +189,73 @@ export function ActiveWorkoutScreen() {
   const setCount = completedSets(sets ?? []).length
   const elapsedSeconds = Math.max(0, Math.floor((now - new Date(workout.startedAt).getTime()) / 1000))
   const restRemaining = timer ? Math.max(0, Math.ceil((timer.endsAt - now) / 1000)) : 0
+  const routineNotes = (sets ?? [])[0]?.notes
 
   async function handleDiscard() {
     const ok = await confirm({
-      title: 'Discard this workout?',
-      message: 'Everything logged in this session will be deleted.',
-      confirmLabel: 'Discard',
+      title: t('activeWorkout.discardTitle'),
+      message: t('activeWorkout.discardMessage'),
+      confirmLabel: t('activeWorkout.discard'),
       destructive: true,
     })
     if (ok) await deleteWorkout(workout!.id!)
   }
 
+  // Read after the set that earned it is already saved, and excludes that
+  // set from the comparison — see isAllTimePR's own comment on why the
+  // incumbent keeps a tie rather than the newly-ticked set.
+  async function checkAllTimePR(
+    exerciseKey: string,
+    weightKg: number,
+    reps: number,
+    excludeSetId: string
+  ): Promise<boolean> {
+    const all = await getAllSets()
+    return isAllTimePR(all, exerciseKey, weightKg, reps, excludeSetId)
+  }
+
   return (
     <div>
       <div className="workout-sticky">
-        <div className="row" style={{ marginBottom: '0.75rem', justifyContent: 'flex-end' }}>
+        <div className="row" style={{ marginBottom: '0.75rem' }}>
+          <Button size="sm" variant="ghost" onClick={() => setPicking(true)}>
+            <Plus size={14} /> {t('activeWorkout.addExercise')}
+          </Button>
+          <span className="grow" />
           <Button size="sm" variant="ghost" onClick={handleDiscard}>
-            Discard
+            {t('activeWorkout.discard')}
           </Button>
           <Button size="sm" variant="primary" onClick={() => navigate('/workouts/finish')}>
-            Finish
+            {t('activeWorkout.finish')}
           </Button>
         </div>
 
         <Card>
           <div className="row" style={{ textAlign: 'center' }}>
             <div className="grow">
-              <div className="faint">Duration</div>
+              <div className="faint">{t('activeWorkout.duration')}</div>
               <div className="stat-sm">{formatDuration(elapsedSeconds)}</div>
             </div>
             <div className="grow">
-              <div className="faint">Volume</div>
+              <div className="faint">{t('activeWorkout.volume')}</div>
               <div className="stat-sm">{Math.round(volume)}</div>
             </div>
             <div className="grow">
-              <div className="faint">Sets</div>
+              <div className="faint">{t('activeWorkout.sets')}</div>
               <div className="stat-sm">{setCount}</div>
             </div>
           </div>
         </Card>
       </div>
+
+      {routineNotes && (
+        <Card style={{ marginTop: '1rem' }}>
+          <div className="faint" style={{ marginBottom: '0.25rem' }}>
+            {t('activeWorkout.notes')}
+          </div>
+          <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{routineNotes}</p>
+        </Card>
+      )}
 
       <div style={{ marginTop: '1rem' }}>
         {grouped.map((group) => (
@@ -227,16 +266,23 @@ export function ActiveWorkoutScreen() {
             exerciseName={group.name}
             order={group.order}
             sets={group.sets}
-            activeRestKey={timer?.exerciseKey ?? null}
-            restRemaining={restRemaining}
             onStartTimer={startTimer}
-            onExtendTimer={extendTimer}
-            onSkipTimer={skipTimer}
+            onCheckPR={checkAllTimePR}
           />
         ))}
       </div>
 
-      <Fab label="Add exercise" onClick={() => setPicking(true)} />
+      {timer && (
+        <div className="rest-bar">
+          <span className="grow rest-bar-time">⏱ {formatTime(restRemaining)}</span>
+          <Button size="sm" onClick={() => extendTimer(15)}>
+            +15s
+          </Button>
+          <Button size="sm" variant="ghost" onClick={skipTimer}>
+            {t('activeWorkout.skip')}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -385,22 +431,21 @@ function ExerciseBlock({
   exerciseName,
   order,
   sets,
-  activeRestKey,
-  restRemaining,
   onStartTimer,
-  onExtendTimer,
-  onSkipTimer,
+  onCheckPR,
 }: {
   workoutId: string
   exerciseKey: string
   exerciseName: string
   order: number
   sets: WorkoutSet[]
-  activeRestKey: string | null
-  restRemaining: number
   onStartTimer: (exerciseKey: string, seconds: number) => void
-  onExtendTimer: (delta: number) => void
-  onSkipTimer: () => void
+  onCheckPR: (
+    exerciseKey: string,
+    weightKg: number,
+    reps: number,
+    excludeSetId: string
+  ) => Promise<boolean>
 }) {
   const navigate = useNavigate()
   const confirm = useConfirm()
@@ -438,6 +483,10 @@ function ExerciseBlock({
 
   async function setRest(seconds: number) {
     await setRestSecondsForExercise(workoutId, exerciseKey, seconds)
+  }
+
+  function checkPR(weightKg: number, reps: number, excludeSetId: string) {
+    return onCheckPR(exerciseKey, weightKg, reps, excludeSetId)
   }
 
   async function handleRemove() {
@@ -486,21 +535,9 @@ function ExerciseBlock({
       </div>
 
       <div className="row rest-row">
-        {activeRestKey === exerciseKey ? (
-          <>
-            <span className="grow rest-live">⏱ Rest {formatTime(restRemaining)}</span>
-            <Button size="sm" onClick={() => onExtendTimer(15)}>
-              +15s
-            </Button>
-            <Button size="sm" variant="ghost" onClick={onSkipTimer}>
-              Skip
-            </Button>
-          </>
-        ) : (
-          <button className="btn-plain muted grow" onClick={() => setMenu('rest')}>
-            ⏱ Rest timer: {formatRestLabel(restSeconds)}
-          </button>
-        )}
+        <button className="btn-plain muted grow" onClick={() => setMenu('rest')}>
+          ⏱ {t('activeWorkout.restTimer', { label: formatRestLabel(restSeconds) })}
+        </button>
       </div>
 
       <div className="row rest-row">
@@ -528,6 +565,7 @@ function ExerciseBlock({
               label={label}
               hint={previous[i]}
               onCompleted={(seconds) => onStartTimer(exerciseKey, seconds)}
+              checkPR={checkPR}
             />
           )
         })}
@@ -566,7 +604,7 @@ function ExerciseBlock({
         <OptionSheet
           title="Rest timer"
           onClose={() => setMenu('none')}
-          options={REST_OPTIONS.map((o) => ({
+          options={restOptions().map((o) => ({
             label: o.label,
             active: o.seconds === restSeconds,
             onSelect: () => {
@@ -599,16 +637,19 @@ function SetRow({
   label,
   hint,
   onCompleted,
+  checkPR,
 }: {
   set: WorkoutSet
   label: string
   hint?: WorkoutSet
   onCompleted: (restSeconds: number) => void
+  checkPR: (weightKg: number, reps: number, excludeSetId: string) => Promise<boolean>
 }) {
   const [weight, setWeight] = useState(String(set.weightKg || ''))
   const [reps, setReps] = useState(String(set.reps || ''))
   const [typeMenuOpen, setTypeMenuOpen] = useState(false)
   const [needsReps, setNeedsReps] = useState(false)
+  const [showCrown, setShowCrown] = useState(false)
   const repsRef = useRef<HTMLInputElement>(null)
 
   const completed = isSetCompleted(set)
@@ -676,6 +717,11 @@ function SetRow({
     setReps(String(repsVal))
     await updateSet(set.id!, { weightKg: weightVal, reps: repsVal, completed: true })
     onCompleted(set.restSeconds ?? 90)
+
+    if (await checkPR(weightVal, repsVal, set.id!)) {
+      setShowCrown(true)
+      window.setTimeout(() => setShowCrown(false), 2500)
+    }
   }
 
   return (
@@ -722,12 +768,12 @@ function SetRow({
       />
 
       <button
-        className={`check-btn${completed ? ' active' : ''}`}
+        className={`check-btn${completed ? ' active' : ''}${showCrown ? ' crown' : ''}`}
         style={{ width: CHECK_COL }}
         aria-label={completed ? `Mark set ${label} incomplete` : `Mark set ${label} complete`}
         onClick={toggleComplete}
       >
-        ✓
+        {showCrown ? <Crown size={16} /> : '✓'}
       </button>
 
       {typeMenuOpen && (
