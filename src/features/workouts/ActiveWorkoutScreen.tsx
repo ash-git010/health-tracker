@@ -18,6 +18,7 @@ import {
   workoutVolume,
   completedSets,
   isSetCompleted,
+  completedProgramDaysSince,
 } from '../../data/workouts'
 import { isAllTimePR } from '../../data/workoutStats'
 import { listRoutines, startWorkoutFromRoutine, getRoutineExercises } from '../../data/routines'
@@ -28,7 +29,9 @@ import {
   deactivateProgram,
   getProgramDays,
   currentWeekNumber,
-  todaysProgramDay,
+  scheduleWeekFor,
+  definedWeekCount,
+  weekStartISO,
   isProgramComplete,
 } from '../../data/programs'
 import { findExercise, allExercises, suggestSubstitutes, type ExerciseOption } from '../../data/exercises'
@@ -383,6 +386,9 @@ function ActiveProgramView({
   programDays: ProgramDay[]
   routines: Routine[]
 }) {
+  const since = weekStartISO(program)
+  const doneIds = useLiveQuery(() => completedProgramDaysSince(since), [since]) ?? new Set<string>()
+
   if (isProgramComplete(program, programDays)) {
     return (
       <div className="stack">
@@ -401,8 +407,15 @@ function ActiveProgramView({
   }
 
   const week = currentWeekNumber(program)
-  const day = todaysProgramDay(program, programDays)
-  const routine = day?.routineId ? routines.find((r) => r.id === day.routineId) : undefined
+  const weekCount = definedWeekCount(programDays)
+  const scheduleWeek = scheduleWeekFor(program, weekCount, week)
+  const days = programDays
+    .filter((d) => d.week === scheduleWeek)
+    .sort((a, b) => a.dayIndex - b.dayIndex)
+
+  // Order-based, not calendar-based: any day of the week can be done in any
+  // order, so "next" is the first not-yet-done workout day, not "today".
+  const nextDay = days.find((d) => d.routineId && !doneIds.has(d.id))
 
   return (
     <div className="stack">
@@ -419,21 +432,53 @@ function ActiveProgramView({
         </p>
       </Card>
 
-      {routine ? (
-        <Button
-          variant="primary"
-          block
-          onClick={async () => {
-            await startWorkoutFromRoutine(routine.id!, day!.id)
-          }}
-        >
-          {t('activeWorkout.startToday', { name: routine.name })}
-        </Button>
-      ) : (
-        <Card>
-          <p className="muted" style={{ margin: 0 }}>{t('activeWorkout.noWorkoutToday')}</p>
-        </Card>
-      )}
+      {days.map((day) => {
+        const routine = day.routineId ? routines.find((r) => r.id === day.routineId) : undefined
+        const isDone = doneIds.has(day.id)
+        const isNext = day.id === nextDay?.id
+        const dayLabel = t('programs.form.dayLabel', { n: day.dayIndex })
+
+        return (
+          <Card
+            key={day.id}
+            style={{
+              opacity: isDone ? 0.55 : 1,
+              borderColor: isNext ? 'var(--accent)' : undefined,
+            }}
+          >
+            <div className="row">
+              <span className="faint" style={{ flexShrink: 0, minWidth: '3.5rem' }}>
+                {dayLabel}
+              </span>
+              <div className="grow">
+                {routine ? (
+                  <>
+                    <strong style={{ display: 'block' }}>{routine.name}</strong>
+                    {isDone && <span className="faint">{t('activeWorkout.doneThisWeek')}</span>}
+                    {!isDone && isNext && (
+                      <span className="success">{t('activeWorkout.nextUp')}</span>
+                    )}
+                  </>
+                ) : (
+                  <span className="muted">{t('programs.form.restDay')}</span>
+                )}
+              </div>
+              {routine && (
+                <Button
+                  size="sm"
+                  variant={isNext ? 'primary' : 'default'}
+                  aria-label={t('activeWorkout.startDayAria', { name: routine.name, day: dayLabel })}
+                  onClick={async () => {
+                    await startWorkoutFromRoutine(routine.id!, day.id)
+                  }}
+                >
+                  {t('routines.startWorkout')}
+                </Button>
+              )}
+            </div>
+          </Card>
+        )
+      })}
 
       <Button
         block

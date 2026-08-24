@@ -1,6 +1,6 @@
 import { db } from './db'
 import { newId, now, isLive } from './ids'
-import { todayISO } from './dates'
+import { todayISO, addDays } from './dates'
 import type { Program, ProgramDay } from './types'
 
 export async function listPrograms(): Promise<Program[]> {
@@ -177,6 +177,16 @@ export function currentDayIndex(program: Program, today = todayISO()): number {
 export function scheduleWeekFor(program: Program, weekCount: number, climbingWeek: number): number {
   if (!program.repeats || weekCount <= 0) return climbingWeek
   return ((climbingWeek - 1) % weekCount) + 1
+}
+
+/** The calendar date the current climbing week began — day 1 of THIS cycle,
+ *  not the program's original start. A repeating program reuses the same
+ *  ProgramDay rows every cycle, so "was this day done" needs a cutoff that
+ *  moves with the current week rather than the program's whole history. */
+export function weekStartISO(program: Program, today = todayISO()): string {
+  if (!program.startedOn) return today
+  const week = currentWeekNumber(program, today)
+  return addDays(program.startedOn, (week - 1) * 7)
 }
 
 export function todaysProgramDay(
