@@ -21,6 +21,7 @@ import { createProgram, setProgramDays } from './programs'
 import { createRoutine, setRoutineExercises, type RoutineExerciseInput } from './routines'
 import { allExercises, addCustomExercise, type ExerciseOption } from './exercises'
 import { fuzzyScore } from './search'
+import { t } from './i18n'
 import type { RoutineSet } from './types'
 
 export interface ImportRow {
@@ -59,38 +60,40 @@ export function parseImportJson(raw: unknown): ParsedProgramJson {
 
   const program = obj.program
   if (typeof program !== 'string' || !program.trim()) {
-    throw new Error('Missing "program" name.')
+    throw new Error(t('programs.import.errMissingName'))
   }
 
   const rawWeeks = obj.weeks
   if (!Array.isArray(rawWeeks) || rawWeeks.length === 0) {
-    throw new Error('No weeks found.')
+    throw new Error(t('programs.import.errNoWeeks'))
   }
 
   const weeks: ImportWeek[] = rawWeeks.map((w, wi) => {
     const week = w as Record<string, unknown>
     const weekNumber = Number(week.week)
     if (!Number.isFinite(weekNumber) || weekNumber < 1) {
-      throw new Error(`Week ${wi + 1}: missing a valid "week" number.`)
+      throw new Error(t('programs.import.errWeekNumber', { index: wi + 1 }))
     }
 
     const rawWorkouts = week.workouts
-    if (!Array.isArray(rawWorkouts)) throw new Error(`Week ${weekNumber}: no workouts.`)
+    if (!Array.isArray(rawWorkouts)) throw new Error(t('programs.import.errNoWorkouts', { week: weekNumber }))
 
     const workouts: ImportWorkout[] = rawWorkouts.map((w2) => {
       const workout = w2 as Record<string, unknown>
       const name = workout.name
       if (typeof name !== 'string' || !name.trim()) {
-        throw new Error(`Week ${weekNumber}: a workout has no name.`)
+        throw new Error(t('programs.import.errWorkoutName', { week: weekNumber }))
       }
 
       const rawRows = workout.rows
-      if (!Array.isArray(rawRows)) throw new Error(`"${name}" (week ${weekNumber}): no rows.`)
+      if (!Array.isArray(rawRows)) {
+        throw new Error(t('programs.import.errNoRows', { name, week: weekNumber }))
+      }
 
       const rows: ImportRow[] = rawRows.map((r) => {
         const row = r as Record<string, unknown>
         if (typeof row.exercise !== 'string' || !row.exercise.trim()) {
-          throw new Error(`"${name}" (week ${weekNumber}): a row has no exercise name.`)
+          throw new Error(t('programs.import.errRowExercise', { name, week: weekNumber }))
         }
         return row as unknown as ImportRow
       })
@@ -234,7 +237,9 @@ export function buildProgram(
 
   for (const week of parsed.weeks) {
     if (week.workouts.length > 7) {
-      warnings.push(`Week ${week.week}: ${week.workouts.length} workouts, only the first 7 fit a week.`)
+      warnings.push(
+        t('programs.import.warnWeekOverflow', { week: week.week, count: week.workouts.length })
+      )
     }
 
     week.workouts.slice(0, 7).forEach((workout, dayIndex0) => {
@@ -249,7 +254,15 @@ export function buildProgram(
         routineKey = `${workout.name}#${variant}`
         const exercises = workout.rows.map((row) => rowToExerciseInput(row, resolve))
         for (const ex of exercises) {
-          if (!ex.exerciseKey) warnings.push(`Week ${week.week}, "${workout.name}": no match for "${ex.exerciseName}".`)
+          if (!ex.exerciseKey) {
+            warnings.push(
+              t('programs.import.warnNoMatch', {
+                week: week.week,
+                workout: workout.name,
+                exercise: ex.exerciseName,
+              })
+            )
+          }
         }
         routines.push({
           key: routineKey,
@@ -288,22 +301,69 @@ function resolveExercise(name: string, exercises: ExerciseOption[]): ExerciseOpt
   return bestScore >= MATCH_THRESHOLD ? best : undefined
 }
 
+function collectExerciseNames(parsed: ParsedProgramJson): { primary: Set<string>; substitutes: Set<string> } {
+  const primary = new Set<string>()
+  const substitutes = new Set<string>()
+  for (const week of parsed.weeks) {
+    for (const workout of week.workouts) {
+      for (const row of workout.rows) {
+        primary.add(row.exercise)
+        if (row.substitution_option_1) substitutes.add(row.substitution_option_1)
+        if (row.substitution_option_2) substitutes.add(row.substitution_option_2)
+      }
+    }
+  }
+  return { primary, substitutes }
+}
+
+export interface ExerciseMatch {
+  name: string
+  isSubstitute: boolean
+  matched: boolean
+  matchedName?: string
+}
+
+export interface ImportPreview {
+  built: BuiltProgram
+  matches: ExerciseMatch[]
+}
+
+/**
+ * Read-only: matches every exercise name against the library without writing
+ * anything, so a screen can show which primary exercises will fall back to a
+ * custom placeholder and which substitution names will be dropped — the exact
+ * gap Chunk 1's real-file test found — before committing to importProgram().
+ */
+export async function previewImport(raw: unknown): Promise<ImportPreview> {
+  const parsed = parseImportJson(raw)
+  const exercises = await allExercises()
+  const { primary, substitutes } = collectExerciseNames(parsed)
+
+  const resolved = new Map<string, { key: string; name: string }>()
+  const matches: ExerciseMatch[] = []
+
+  for (const name of primary) {
+    const match = resolveExercise(name, exercises)
+    if (match) resolved.set(name, { key: match.key, name: match.name })
+    matches.push({ name, isSubstitute: false, matched: !!match, matchedName: match?.name })
+  }
+
+  for (const name of substitutes) {
+    if (primary.has(name)) continue
+    const match = resolveExercise(name, exercises)
+    if (match) resolved.set(name, { key: match.key, name: match.name })
+    matches.push({ name, isSubstitute: true, matched: !!match, matchedName: match?.name })
+  }
+
+  const built = buildProgram(parsed, (name) => resolved.get(name))
+  return { built, matches }
+}
+
 /** The only part of this file that touches the database. */
 export async function importProgram(raw: unknown): Promise<{ programId: string; warnings: string[] }> {
   const parsed = parseImportJson(raw)
   const exercises = await allExercises()
-
-  const primaryNames = new Set<string>()
-  const substituteNames = new Set<string>()
-  for (const week of parsed.weeks) {
-    for (const workout of week.workouts) {
-      for (const row of workout.rows) {
-        primaryNames.add(row.exercise)
-        if (row.substitution_option_1) substituteNames.add(row.substitution_option_1)
-        if (row.substitution_option_2) substituteNames.add(row.substitution_option_2)
-      }
-    }
-  }
+  const { primary: primaryNames, substitutes: substituteNames } = collectExerciseNames(parsed)
 
   const resolved = new Map<string, { key: string; name: string }>()
 

@@ -44,6 +44,7 @@ import { ExerciseDetailScreen } from './features/workouts/ExerciseDetailScreen'
 import { ExerciseFormScreen } from './features/workouts/ExerciseFormScreen'
 import { RoutineListScreen } from './features/workouts/RoutineListScreen'
 import { RoutineFormScreen } from './features/workouts/RoutineFormScreen'
+import { ProgramImportScreen } from './features/workouts/ProgramImportScreen'
 import { DialogProvider } from './components/DialogProvider'
 import { SaveAsRoutineScreen } from './features/workouts/SaveAsRoutineScreen'
 import { ensureSortOrders } from './data/routines'
@@ -312,6 +313,7 @@ function AppStages() {
             <Route path="workouts/routines" element={<RoutineListScreen />} />
             <Route path="workouts/routines/new" element={<RoutineFormScreen />} />
             <Route path="workouts/routines/:id/edit" element={<RoutineFormScreen />} />
+            <Route path="workouts/programs/import" element={<ProgramImportScreen />} />
             <Route path="workouts/history" element={<WorkoutHistoryScreen />} />
             <Route path="workouts/history/:id" element={<WorkoutDetailScreen />} />
             <Route path="workouts/history/:id/save-as-routine" element={<SaveAsRoutineScreen />} />
