@@ -631,6 +631,17 @@ const de: Record<TKey, string> = {
   'routines.form.removeExerciseMessage': 'Seine Sätze in diesem Plan werden verworfen.',
   'routines.form.substitutesHeading': 'Alternativen',
   'routines.form.addSubstitute': 'Alternative hinzufügen',
+
+  'exercisePicker.title': 'Übung hinzufügen',
+  'exercisePicker.search': 'Übungen durchsuchen…',
+  'exercisePicker.all': 'Alle',
+  'exercisePicker.chest': 'Brust',
+  'exercisePicker.back': 'Rücken',
+  'exercisePicker.legs': 'Beine',
+  'exercisePicker.shoulders': 'Schultern',
+  'exercisePicker.arms': 'Arme',
+  'exercisePicker.core': 'Rumpf',
+  'exercisePicker.cardio': 'Cardio',
 }
 
 export default de

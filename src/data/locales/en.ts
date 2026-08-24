@@ -607,6 +607,17 @@ const en = {
   'routines.form.removeExerciseMessage': 'Its sets in this routine will be discarded.',
   'routines.form.substitutesHeading': 'Substitutes',
   'routines.form.addSubstitute': 'Add substitute',
+
+  'exercisePicker.title': 'Add exercise',
+  'exercisePicker.search': 'Search exercises…',
+  'exercisePicker.all': 'All',
+  'exercisePicker.chest': 'Chest',
+  'exercisePicker.back': 'Back',
+  'exercisePicker.legs': 'Legs',
+  'exercisePicker.shoulders': 'Shoulders',
+  'exercisePicker.arms': 'Arms',
+  'exercisePicker.core': 'Core',
+  'exercisePicker.cardio': 'Cardio',
 }
 
 
