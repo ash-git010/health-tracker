@@ -74,6 +74,21 @@ export async function activeWorkout(): Promise<Workout | null> {
   )
 }
 
+/** Which scheduled days already have a finished workout on or after `sinceISO`
+ *  — the current schedule week's start. A repeating program reuses the same
+ *  ProgramDay id every cycle, so this must be scoped to the current week
+ *  rather than "was this day ever done". */
+export async function completedProgramDaysSince(sinceISO: string): Promise<Set<string>> {
+  const all = await db.workouts.toArray()
+  const ids = new Set<string>()
+  for (const w of all) {
+    if (isLive(w) && w.finishedAt && w.programDayId && w.date >= sinceISO) {
+      ids.add(w.programDayId)
+    }
+  }
+  return ids
+}
+
 export async function deleteWorkout(id: string): Promise<void> {
   const timestamp = now()
   await db.transaction('rw', [db.workouts, db.workoutSets], async () => {
@@ -196,11 +211,14 @@ export async function setNotesForExercise(
 }
 
 /**
- * Renames every set of `oldKey` to the new exercise and zeroes weight/reps —
- * a different movement has no valid "previous", so carrying the old numbers
- * forward would read as a real lift on the wrong exercise. Needs no special
- * case in diffWorkoutAgainstRoutine: it already reads an exerciseKey change
- * as "removed X, added Y" by comparing the two exercise maps.
+ * Renames every set of `oldKey` to the new exercise and zeroes weight —
+ * a different movement has no valid "previous" load, so carrying the old
+ * number forward would read as a real lift on the wrong exercise. `reps`
+ * is left alone: it's the exercise-agnostic set/rep target from the routine
+ * (e.g. "3x10"), not a performance number, so it stays useful after a swap.
+ * Needs no special case in diffWorkoutAgainstRoutine: it already reads an
+ * exerciseKey change as "removed X, added Y" by comparing the two exercise
+ * maps.
  */
 export async function swapExerciseInWorkout(
   workoutId: string,
@@ -215,7 +233,6 @@ export async function swapExerciseInWorkout(
       exerciseKey: newExercise.key,
       exerciseName: newExercise.name,
       weightKg: 0,
-      reps: 0,
       completed: false,
       updatedAt: now(),
     })
