@@ -516,6 +516,83 @@ const en = {
   'care.deleteTitle': 'Delete this routine?',
   'care.deleteMessage': 'Its steps and completion history will be removed.',
 
+  'about.versionLine': 'Version {version}',
+  'about.intro':
+    'Upkeep is a personal health tracker — food and macros, body weight, strength training, and daily care routines.',
+  'about.introDetail':
+    'Everything is stored on this device, so the app works with no signal. If you create an account, your data is also synced to a server so your devices stay in step.',
+  'about.installingHeading': 'Installing',
+  'about.installNote':
+    'Step-by-step for Android and iPhone. Installed, Upkeep gets its own icon, opens full screen, and keeps you signed in for longer.',
+  'about.barcodeHeading': 'Barcode scanning',
+  'about.barcodeNote':
+    'Camera scanning works on Android and iPhone. On iPhone, add Upkeep to your home screen first — Safari handles camera access better that way, and scanning can still take a few seconds because Safari has no built-in barcode support.',
+  'about.barcodeNote2':
+    'You can also type the barcode number by hand. Product data comes from Open Food Facts, a free community database.',
+  'about.backupHeading': 'Backing up',
+  'about.backupNote':
+    'Losing this phone, clearing your browser, or reinstalling erases everything stored on this device. Export a backup from Settings now and then, even if you have an account — it is the only copy that does not depend on anything else working.',
+  'about.changesHeading': 'What’s changed',
+  'about.showRecentOnly': 'Show recent only',
+  'about.showAllVersions': 'Show all {n} versions',
+
+  'feedback.thanksTitle': 'Thanks',
+  'feedback.sentIntro': 'Sent. You can follow it here:',
+  'feedback.bugOption': 'Something’s broken',
+  'feedback.ideaOption': 'An idea',
+  'feedback.summaryLabel': 'Short summary',
+  'feedback.bugPlaceholder': 'Scan button does nothing',
+  'feedback.ideaPlaceholder': 'Add a water tracker',
+  'feedback.detailsLabel': 'Details (optional)',
+  'feedback.detailsPlaceholder': 'What happened, and what did you expect?',
+  'feedback.publicWarning':
+    'This creates a public post on GitHub that anyone can read. Don’t include personal details.',
+  'feedback.genericError': 'Could not send that. Try again in a moment.',
+  'feedback.sending': 'Sending…',
+  'feedback.send': 'Send',
+
+  'install.title': 'Install Upkeep',
+  'install.installedTitle': 'Upkeep is installed',
+  'install.installedNote': 'You are running it from your home screen. Nothing else to do.',
+  'install.webAppNote':
+    'Upkeep is a web app, so there is no app store. Adding it to your home screen gives you an icon, a full screen without browser chrome, and offline access.',
+  'install.whyOffline': 'Works with no signal',
+  'install.whyFast': 'Opens instantly, no browser bar',
+  'install.whySignedIn': 'Keeps you signed in for longer',
+  'install.installButton': 'Install Upkeep',
+  'install.confirmNote': 'Your browser will ask you to confirm.',
+  'install.cancelledNote':
+    'Install cancelled. Use the steps below, or reload the page to try the button again.',
+
+  'install.platformIos': 'iPhone & iPad',
+  'install.platformAndroid': 'Android',
+  'install.platformDesktop': 'Computer',
+
+  'install.iosIntro': 'Open this page in Safari, then:',
+  'install.iosStep1':
+    'Tap the Share button at the bottom of the screen — the square with an arrow pointing up.',
+  'install.iosStep2': 'Scroll down the list and tap “Add to Home Screen”.',
+  'install.iosStep3': 'Tap “Add” in the top right.',
+  'install.iosStep4': 'Close Safari and open Upkeep from your home screen.',
+  'install.iosNote':
+    'Safari is the reliable route. Chrome and Firefox on iPhone can do this too on iOS 16.4 and later, but the option sits in a different place in their menus. Installing matters more on iPhone than Android: Safari clears storage for websites you have not visited in a while, and a home screen app is not treated as one.',
+
+  'install.androidIntro': 'If the button above did not appear, do it by hand in Chrome:',
+  'install.androidStep1': 'Tap the three dots in the top right of Chrome.',
+  'install.androidStep2':
+    'Tap “Install app”, or “Add to Home screen” if that is what it says.',
+  'install.androidStep3': 'Confirm with “Install” or “Add”.',
+  'install.androidStep4': 'Open Upkeep from your home screen or app drawer.',
+  'install.androidNote':
+    'Firefox on Android does not support the one-tap button, so the menu route is the only one there.',
+
+  'install.desktopIntro': 'If the button above did not appear:',
+  'install.desktopStep1': 'Look for a small install icon at the right-hand end of the address bar.',
+  'install.desktopStep2': 'Or open the browser menu and look for “Install Upkeep”.',
+  'install.desktopStep3': 'Confirm to install.',
+  'install.desktopNote':
+    'Chrome and Edge support this. Firefox and Safari on desktop do not install web apps.',
+
   'layout.home': 'Home',
   'layout.account': 'Account',
   'layout.settings': 'Settings',

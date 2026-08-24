@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { sendFeedback } from '../../data/feedback'
 import { TextField } from '../../components/TextField'
 import { Button, Card, ScreenHeader } from '../../components/ui'
+import { t } from '../../data/i18n'
 
 export function FeedbackScreen() {
   const navigate = useNavigate()
@@ -24,9 +25,7 @@ export function FeedbackScreen() {
       setSentUrl(url)
     } catch (err) {
       console.error('Feedback failed:', err)
-      setError(
-        err instanceof Error ? err.message : 'Could not send that. Try again in a moment.'
-      )
+      setError(err instanceof Error ? err.message : t('feedback.genericError'))
     }
     setSending(false)
   }
@@ -35,15 +34,15 @@ export function FeedbackScreen() {
     return (
       <div className="stack">
         <ScreenHeader
-          title="Thanks"
+          title={t('feedback.thanksTitle')}
           action={
             <Button size="sm" onClick={() => navigate('/settings')}>
-              Back
+              {t('common.back')}
             </Button>
           }
         />
         <Card>
-          <p style={{ margin: 0 }}>Sent. You can follow it here:</p>
+          <p style={{ margin: 0 }}>{t('feedback.sentIntro')}</p>
           <p className="muted" style={{ margin: '0.5rem 0 0', wordBreak: 'break-all' }}>
             <a href={sentUrl} target="_blank" rel="noreferrer">
               {sentUrl}
@@ -57,52 +56,49 @@ export function FeedbackScreen() {
   return (
     <div className="stack">
       <ScreenHeader
-        title="Report a problem"
+        title={t('settings.feedback')}
         action={
           <Button size="sm" onClick={() => navigate('/settings')}>
-            Back
+            {t('common.back')}
           </Button>
         }
       />
 
       <div className="row">
         <Button variant={kind === 'bug' ? 'primary' : 'default'} onClick={() => setKind('bug')}>
-          Something's broken
+          {t('feedback.bugOption')}
         </Button>
         <Button
           variant={kind === 'suggestion' ? 'primary' : 'default'}
           onClick={() => setKind('suggestion')}
         >
-          An idea
+          {t('feedback.ideaOption')}
         </Button>
       </div>
 
       <TextField
-        label="Short summary"
+        label={t('feedback.summaryLabel')}
         value={title}
         onChange={setTitle}
-        placeholder={kind === 'bug' ? 'Scan button does nothing' : 'Add a water tracker'}
+        placeholder={kind === 'bug' ? t('feedback.bugPlaceholder') : t('feedback.ideaPlaceholder')}
       />
 
       <label className="field">
-        <span className="field-label">Details (optional)</span>
+        <span className="field-label">{t('feedback.detailsLabel')}</span>
         <textarea
           value={details}
           onChange={(e) => setDetails(e.target.value)}
           rows={5}
-          placeholder="What happened, and what did you expect?"
+          placeholder={t('feedback.detailsPlaceholder')}
         />
       </label>
 
-      <p className="warn">
-        This creates a public post on GitHub that anyone can read. Don't include
-        personal details.
-      </p>
+      <p className="warn">{t('feedback.publicWarning')}</p>
 
       {error && <p className="warn">{error}</p>}
 
       <Button variant="primary" block onClick={handleSend} disabled={!canSend}>
-        {sending ? 'Sending…' : 'Send'}
+        {sending ? t('feedback.sending') : t('feedback.send')}
       </Button>
     </div>
   )

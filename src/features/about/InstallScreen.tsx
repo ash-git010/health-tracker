@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Share, MoreVertical, CheckCircle2, Download, WifiOff, Zap, Bell } from 'lucide-react'
 import { ScreenHeader, Button, Card } from '../../components/ui'
+import { t } from '../../data/i18n'
 import {
   canPromptInstall,
   onInstallChange,
@@ -11,42 +12,43 @@ import {
   type InstallPlatform,
 } from '../../data/install'
 
-const STEPS: Record<InstallPlatform, { intro: string; steps: string[]; note?: string }> = {
-  ios: {
-    intro: 'Open this page in Safari, then:',
-    steps: [
-      'Tap the Share button at the bottom of the screen — the square with an arrow pointing up.',
-      'Scroll down the list and tap "Add to Home Screen".',
-      'Tap "Add" in the top right.',
-      'Close Safari and open Upkeep from your home screen.',
-    ],
-    note: 'Safari is the reliable route. Chrome and Firefox on iPhone can do this too on iOS 16.4 and later, but the option sits in a different place in their menus. Installing matters more on iPhone than Android: Safari clears storage for websites you have not visited in a while, and a home screen app is not treated as one.',
-  },
-  android: {
-    intro: 'If the button above did not appear, do it by hand in Chrome:',
-    steps: [
-      'Tap the three dots in the top right of Chrome.',
-      'Tap "Install app", or "Add to Home screen" if that is what it says.',
-      'Confirm with "Install" or "Add".',
-      'Open Upkeep from your home screen or app drawer.',
-    ],
-    note: 'Firefox on Android does not support the one-tap button, so the menu route is the only one there.',
-  },
-  desktop: {
-    intro: 'If the button above did not appear:',
-    steps: [
-      'Look for a small install icon at the right-hand end of the address bar.',
-      'Or open the browser menu and look for "Install Upkeep".',
-      'Confirm to install.',
-    ],
-    note: 'Chrome and Edge support this. Firefox and Safari on desktop do not install web apps.',
-  },
+/** A function, not a const — same reasoning as rpeOptions()/restOptions(). */
+function installSteps(): Record<InstallPlatform, { intro: string; steps: string[]; note?: string }> {
+  return {
+    ios: {
+      intro: t('install.iosIntro'),
+      steps: [
+        t('install.iosStep1'),
+        t('install.iosStep2'),
+        t('install.iosStep3'),
+        t('install.iosStep4'),
+      ],
+      note: t('install.iosNote'),
+    },
+    android: {
+      intro: t('install.androidIntro'),
+      steps: [
+        t('install.androidStep1'),
+        t('install.androidStep2'),
+        t('install.androidStep3'),
+        t('install.androidStep4'),
+      ],
+      note: t('install.androidNote'),
+    },
+    desktop: {
+      intro: t('install.desktopIntro'),
+      steps: [t('install.desktopStep1'), t('install.desktopStep2'), t('install.desktopStep3')],
+      note: t('install.desktopNote'),
+    },
+  }
 }
 
-const LABELS: Record<InstallPlatform, string> = {
-  ios: 'iPhone & iPad',
-  android: 'Android',
-  desktop: 'Computer',
+function installLabels(): Record<InstallPlatform, string> {
+  return {
+    ios: t('install.platformIos'),
+    android: t('install.platformAndroid'),
+    desktop: t('install.platformDesktop'),
+  }
 }
 
 export function InstallScreen() {
@@ -69,70 +71,64 @@ export function InstallScreen() {
     if (outcome === 'dismissed') setDismissed(true)
   }
 
-  const guide = STEPS[platform]
+  const labels = installLabels()
+  const guide = installSteps()[platform]
 
   return (
     <div className="stack">
-      <ScreenHeader title="Install Upkeep" onBack={() => navigate(-1)} />
+      <ScreenHeader title={t('install.title')} onBack={() => navigate(-1)} />
 
       {installed ? (
         <Card>
           <div className="row" style={{ alignItems: 'flex-start', gap: '0.75rem' }}>
             <CheckCircle2 size={20} className="install-tick" />
             <div>
-              <strong>Upkeep is installed</strong>
+              <strong>{t('install.installedTitle')}</strong>
               <p className="muted" style={{ margin: '0.25rem 0 0' }}>
-                You are running it from your home screen. Nothing else to do.
+                {t('install.installedNote')}
               </p>
             </div>
           </div>
         </Card>
       ) : (
         <>
-          <p className="muted">
-            Upkeep is a web app, so there is no app store. Adding it to your home screen gives
-            you an icon, a full screen without browser chrome, and offline access.
-          </p>
+          <p className="muted">{t('install.webAppNote')}</p>
 
           <ul className="install-why">
             <li>
-              <WifiOff size={16} /> Works with no signal
+              <WifiOff size={16} /> {t('install.whyOffline')}
             </li>
             <li>
-              <Zap size={16} /> Opens instantly, no browser bar
+              <Zap size={16} /> {t('install.whyFast')}
             </li>
             <li>
-              <Bell size={16} /> Keeps you signed in for longer
+              <Bell size={16} /> {t('install.whySignedIn')}
             </li>
           </ul>
 
           {promptable && (
             <>
               <Button variant="primary" block onClick={handleInstall}>
-                <Download size={18} /> Install Upkeep
+                <Download size={18} /> {t('install.installButton')}
               </Button>
               <p className="faint" style={{ textAlign: 'center' }}>
-                Your browser will ask you to confirm.
+                {t('install.confirmNote')}
               </p>
             </>
           )}
 
-          {dismissed && (
-            <p className="warn">
-              Install cancelled. Use the steps below, or reload the page to try the button again.
-            </p>
-          )}
+          {dismissed && <p className="warn">{t('install.cancelledNote')}</p>}
         </>
       )}
 
       <div className="chip-row">
-        {(Object.keys(LABELS) as InstallPlatform[]).map((key) => (
+        {(Object.keys(labels) as InstallPlatform[]).map((key) => (
           <button
             key={key}
             className={key === platform ? 'chip active' : 'chip'}
             onClick={() => setPlatform(key)}
           >
-            {LABELS[key]}
+            {labels[key]}
           </button>
         ))}
       </div>
@@ -140,7 +136,7 @@ export function InstallScreen() {
       <Card>
         <div className="row" style={{ marginBottom: '0.75rem' }}>
           {platform === 'ios' ? <Share size={18} /> : <MoreVertical size={18} />}
-          <strong>{LABELS[platform]}</strong>
+          <strong>{labels[platform]}</strong>
         </div>
 
         <p className="muted">{guide.intro}</p>

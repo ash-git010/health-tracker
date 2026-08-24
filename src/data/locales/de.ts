@@ -540,6 +540,84 @@ const de: Record<TKey, string> = {
   'care.deleteTitle': 'Diese Routine löschen?',
   'care.deleteMessage': 'Ihre Schritte und der Verlauf werden entfernt.',
 
+  'about.versionLine': 'Version {version}',
+  'about.intro':
+    'Upkeep ist ein persönlicher Gesundheits-Tracker – Essen und Makros, Körpergewicht, Krafttraining und tägliche Pflege-Routinen.',
+  'about.introDetail':
+    'Alles wird auf diesem Gerät gespeichert, damit die App auch ohne Verbindung funktioniert. Wenn du ein Konto erstellst, werden deine Daten zusätzlich mit einem Server synchronisiert, damit deine Geräte auf demselben Stand bleiben.',
+  'about.installingHeading': 'Installation',
+  'about.installNote':
+    'Schritt für Schritt für Android und iPhone. Installiert bekommt Upkeep ein eigenes Symbol, öffnet sich im Vollbild und hält dich länger angemeldet.',
+  'about.barcodeHeading': 'Barcode-Scan',
+  'about.barcodeNote':
+    'Das Scannen mit der Kamera funktioniert auf Android und iPhone. Füge Upkeep auf dem iPhone zuerst zum Home-Bildschirm hinzu — Safari erlaubt den Kamerazugriff so zuverlässiger, und das Scannen kann trotzdem ein paar Sekunden dauern, weil Safari keine eingebaute Barcode-Unterstützung hat.',
+  'about.barcodeNote2':
+    'Du kannst die Barcode-Nummer auch von Hand eingeben. Die Produktdaten stammen von Open Food Facts, einer freien Community-Datenbank.',
+  'about.backupHeading': 'Sicherung',
+  'about.backupNote':
+    'Der Verlust dieses Telefons, das Löschen deines Browsers oder eine Neuinstallation löscht alles, was auf diesem Gerät gespeichert ist. Exportiere jetzt ein Backup in den Einstellungen — auch mit einem Konto ist es die einzige Kopie, die von nichts anderem abhängt, das funktionieren muss.',
+  'about.changesHeading': 'Was sich geändert hat',
+  'about.showRecentOnly': 'Nur aktuelle anzeigen',
+  'about.showAllVersions': 'Alle {n} Versionen anzeigen',
+
+  'feedback.thanksTitle': 'Danke',
+  'feedback.sentIntro': 'Gesendet. Du kannst es hier verfolgen:',
+  'feedback.bugOption': 'Etwas ist kaputt',
+  'feedback.ideaOption': 'Eine Idee',
+  'feedback.summaryLabel': 'Kurze Zusammenfassung',
+  'feedback.bugPlaceholder': 'Scan-Button macht nichts',
+  'feedback.ideaPlaceholder': 'Wasser-Tracker hinzufügen',
+  'feedback.detailsLabel': 'Details (optional)',
+  'feedback.detailsPlaceholder': 'Was ist passiert, und was hast du erwartet?',
+  'feedback.publicWarning':
+    'Das erstellt einen öffentlichen Beitrag auf GitHub, den jeder lesen kann. Gib keine persönlichen Daten an.',
+  'feedback.genericError': 'Konnte das nicht senden. Versuch es gleich noch einmal.',
+  'feedback.sending': 'Wird gesendet…',
+  'feedback.send': 'Senden',
+
+  'install.title': 'Upkeep installieren',
+  'install.installedTitle': 'Upkeep ist installiert',
+  'install.installedNote': 'Du nutzt es bereits vom Home-Bildschirm aus. Nichts weiter zu tun.',
+  'install.webAppNote':
+    'Upkeep ist eine Web-App, es gibt also keinen App Store. Wenn du sie zum Home-Bildschirm hinzufügst, bekommst du ein Symbol, Vollbild ohne Browserleiste und Offline-Zugriff.',
+  'install.whyOffline': 'Funktioniert ohne Verbindung',
+  'install.whyFast': 'Öffnet sich sofort, ohne Browserleiste',
+  'install.whySignedIn': 'Hält dich länger angemeldet',
+  'install.installButton': 'Upkeep installieren',
+  'install.confirmNote': 'Dein Browser fragt dich um Bestätigung.',
+  'install.cancelledNote':
+    'Installation abgebrochen. Nutze die Schritte unten oder lade die Seite neu, um den Button erneut zu versuchen.',
+
+  'install.platformIos': 'iPhone & iPad',
+  'install.platformAndroid': 'Android',
+  'install.platformDesktop': 'Computer',
+
+  'install.iosIntro': 'Öffne diese Seite in Safari, dann:',
+  'install.iosStep1':
+    'Tippe unten auf den Teilen-Button — das Quadrat mit dem Pfeil nach oben.',
+  'install.iosStep2': 'Scrolle in der Liste nach unten und tippe auf „Zum Home-Bildschirm“.',
+  'install.iosStep3': 'Tippe oben rechts auf „Hinzufügen“.',
+  'install.iosStep4': 'Schließe Safari und öffne Upkeep vom Home-Bildschirm aus.',
+  'install.iosNote':
+    'Safari ist der zuverlässigste Weg. Chrome und Firefox auf dem iPhone können das ab iOS 16.4 ebenfalls, aber die Option sitzt in ihren Menüs an anderer Stelle. Die Installation ist auf dem iPhone wichtiger als auf Android: Safari löscht den Speicher von Websites, die du länger nicht besucht hast, eine App vom Home-Bildschirm aber nicht.',
+
+  'install.androidIntro': 'Falls der Button oben nicht erschienen ist, mach es in Chrome von Hand:',
+  'install.androidStep1': 'Tippe oben rechts in Chrome auf die drei Punkte.',
+  'install.androidStep2':
+    'Tippe auf „App installieren“ oder „Zum Startbildschirm hinzufügen“, je nachdem, was angezeigt wird.',
+  'install.androidStep3': 'Bestätige mit „Installieren“ oder „Hinzufügen“.',
+  'install.androidStep4': 'Öffne Upkeep vom Startbildschirm oder aus der App-Übersicht.',
+  'install.androidNote':
+    'Firefox auf Android unterstützt den Ein-Tipp-Button nicht, daher ist der Menüweg dort der einzige.',
+
+  'install.desktopIntro': 'Falls der Button oben nicht erschienen ist:',
+  'install.desktopStep1':
+    'Suche nach einem kleinen Installationssymbol am rechten Ende der Adressleiste.',
+  'install.desktopStep2': 'Oder öffne das Browser-Menü und suche nach „Upkeep installieren“.',
+  'install.desktopStep3': 'Bestätige die Installation.',
+  'install.desktopNote':
+    'Chrome und Edge unterstützen das. Firefox und Safari am Computer installieren keine Web-Apps.',
+
   'layout.home': 'Startseite',
   'layout.account': 'Konto',
   'layout.settings': 'Einstellungen',
