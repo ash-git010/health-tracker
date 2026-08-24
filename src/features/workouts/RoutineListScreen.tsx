@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronUp, ChevronDown, MoreVertical, Play } from 'lucide-react'
+import { ChevronUp, ChevronDown, MoreVertical, Play, Plus } from 'lucide-react'
 import {
   listRoutines,
   getRoutineExercises,
@@ -12,28 +12,60 @@ import {
   moveRoutineToFolder,
   UNGROUPED,
 } from '../../data/routines'
+import {
+  listPrograms,
+  activateProgram,
+  deactivateProgram,
+  deleteProgram,
+  currentWeekNumber,
+} from '../../data/programs'
 import { activeWorkout } from '../../data/workouts'
 import { Card, Empty, Fab, ScreenHeader } from '../../components/ui'
-import { usePrompt } from '../../components/DialogProvider'
-import type { Routine } from '../../data/types'
+import { OptionSheet } from '../../components/OptionSheet'
+import { usePrompt, useConfirm } from '../../components/DialogProvider'
+import { t, plural } from '../../data/i18n'
+import type { Routine, Program } from '../../data/types'
 
 export function RoutineListScreen() {
   const navigate = useNavigate()
   const routines = useLiveQuery(() => listRoutines(), [])
   const folders = useLiveQuery(() => routineFolders(), [routines])
+  const programs = useLiveQuery(() => listPrograms(), [])
   const runningWorkout = useLiveQuery(() => activeWorkout(), [])
+  const [newProgramMenu, setNewProgramMenu] = useState(false)
 
-  if (routines === undefined || folders === undefined) return <Empty>Loading…</Empty>
+  if (routines === undefined || folders === undefined || programs === undefined) {
+    return <Empty>{t('common.loading')}</Empty>
+  }
 
   const groups = groupByFolder(routines, folders)
 
   return (
     <div style={{ paddingBottom: '2rem' }}>
-      <ScreenHeader title="Routines" />
+      <ScreenHeader title={t('routines.title')} />
 
-      {routines.length === 0 && (
-        <Empty>No routines yet. Build one, or save a finished workout as one.</Empty>
-      )}
+      <div style={{ marginBottom: '2rem' }}>
+        <div className="row" style={{ marginBottom: '0.5rem' }}>
+          <h3 className="grow" style={{ margin: 0 }}>
+            {t('programs.list.heading')}
+          </h3>
+          <button
+            className="icon-btn"
+            aria-label={t('programs.list.new')}
+            onClick={() => setNewProgramMenu(true)}
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+
+        {programs.length === 0 && <Empty>{t('programs.list.empty')}</Empty>}
+
+        {programs.map((p) => (
+          <ProgramRow key={p.id} program={p} onNavigate={navigate} />
+        ))}
+      </div>
+
+      {routines.length === 0 && <Empty>{t('routines.empty')}</Empty>}
 
       {groups.map((group, gi) => {
         const isUngrouped = group.folder === UNGROUPED
@@ -52,13 +84,13 @@ export function RoutineListScreen() {
           >
             <div className="row" style={{ marginBottom: '0.5rem' }}>
               <h3 className="grow" style={{ margin: 0 }}>
-                {isUngrouped ? 'Not in a folder' : group.folder}
+                {isUngrouped ? t('routines.ungrouped') : group.folder}
               </h3>
               {!isUngrouped && (
                 <>
                   <button
                     className="icon-btn"
-                    aria-label={`Move ${group.folder} up`}
+                    aria-label={t('routines.moveFolderUp', { folder: group.folder })}
                     disabled={gi === 0}
                     style={{ opacity: gi === 0 ? 0.25 : 1 }}
                     onClick={() => moveFolder(group.folder, -1)}
@@ -67,7 +99,7 @@ export function RoutineListScreen() {
                   </button>
                   <button
                     className="icon-btn"
-                    aria-label={`Move ${group.folder} down`}
+                    aria-label={t('routines.moveFolderDown', { folder: group.folder })}
                     disabled={isLastFolder}
                     style={{ opacity: isLastFolder ? 0.25 : 1 }}
                     onClick={() => moveFolder(group.folder, 1)}
@@ -93,8 +125,107 @@ export function RoutineListScreen() {
         )
       })}
 
-      <Fab label="New routine" onClick={() => navigate('/workouts/routines/new')} />
+      <Fab label={t('routines.newRoutine')} onClick={() => navigate('/workouts/routines/new')} />
+
+      {newProgramMenu && (
+        <OptionSheet
+          title={t('programs.list.new')}
+          onClose={() => setNewProgramMenu(false)}
+          options={[
+            {
+              label: t('programs.list.importOption'),
+              onSelect: () => {
+                setNewProgramMenu(false)
+                navigate('/workouts/programs/import')
+              },
+            },
+            {
+              label: t('programs.list.manualOption'),
+              onSelect: () => {
+                setNewProgramMenu(false)
+                navigate('/workouts/programs/new')
+              },
+            },
+          ]}
+        />
+      )}
     </div>
+  )
+}
+
+function ProgramRow({
+  program,
+  onNavigate,
+}: {
+  program: Program
+  onNavigate: (path: string) => void
+}) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const confirm = useConfirm()
+
+  async function handleToggleActive() {
+    setMenuOpen(false)
+    if (program.isActive) await deactivateProgram(program.id)
+    else await activateProgram(program.id)
+  }
+
+  async function handleDelete() {
+    setMenuOpen(false)
+    const ok = await confirm({
+      title: t('programs.list.deleteTitle', { name: program.name }),
+      message: t('programs.list.deleteMessage'),
+      confirmLabel: t('common.delete'),
+      destructive: true,
+    })
+    if (ok) await deleteProgram(program.id)
+  }
+
+  return (
+    <Card style={{ marginBottom: '0.5rem', padding: '0.875rem' }}>
+      <div className="row">
+        <button
+          className="btn-plain grow"
+          style={{ minWidth: 0 }}
+          onClick={() => onNavigate(`/workouts/programs/${program.id}/edit`)}
+        >
+          <span style={{ display: 'block', fontWeight: 600 }}>{program.name}</span>
+          <span className={program.isActive ? 'success' : 'faint'}>
+            {program.isActive
+              ? t('programs.list.active', { n: currentWeekNumber(program) })
+              : t('programs.list.inactive')}
+          </span>
+        </button>
+
+        <button
+          className="icon-btn"
+          aria-label={t('programs.list.optionsFor', { name: program.name })}
+          onClick={() => setMenuOpen(true)}
+        >
+          <MoreVertical size={16} />
+        </button>
+      </div>
+
+      {menuOpen && (
+        <OptionSheet
+          title={program.name}
+          onClose={() => setMenuOpen(false)}
+          options={[
+            {
+              label: program.isActive ? t('programs.list.deactivate') : t('programs.list.activate'),
+              onSelect: handleToggleActive,
+            },
+            {
+              label: t('programs.list.edit'),
+              onSelect: () => {
+                setMenuOpen(false)
+                onNavigate(`/workouts/programs/${program.id}/edit`)
+              },
+            },
+            { label: t('common.delete'), onSelect: handleDelete },
+          ]}
+        />
+      )}
+    </Card>
   )
 }
 
@@ -125,9 +256,9 @@ function RoutineRow({
   async function handleNewFolder() {
     setMenuOpen(false)
     const name = await prompt({
-      title: 'New folder',
-      placeholder: 'Push Pull Legs',
-      confirmLabel: 'Move',
+      title: t('routines.newFolderTitle'),
+      placeholder: t('routines.newFolderPlaceholder'),
+      confirmLabel: t('routines.newFolderConfirm'),
     })
     if (name) await moveRoutineToFolder(routine.id!, name)
   }
@@ -141,12 +272,12 @@ function RoutineRow({
           onClick={() => onNavigate(`/workouts/routines/${routine.id}/edit`)}
         >
           <span style={{ display: 'block', fontWeight: 600 }}>{routine.name}</span>
-          <span className="faint">{(exercises ?? []).length} exercises</span>
+          <span className="faint">{plural((exercises ?? []).length, 'routines.exerciseCount')}</span>
         </button>
 
         <button
           className="icon-btn"
-          aria-label={`Move ${routine.name} up`}
+          aria-label={t('routines.moveRoutineUp', { name: routine.name })}
           disabled={isFirst}
           style={{ opacity: isFirst ? 0.25 : 1 }}
           onClick={() => moveRoutine(routine.id!, -1)}
@@ -155,7 +286,7 @@ function RoutineRow({
         </button>
         <button
           className="icon-btn"
-          aria-label={`Move ${routine.name} down`}
+          aria-label={t('routines.moveRoutineDown', { name: routine.name })}
           disabled={isLast}
           style={{ opacity: isLast ? 0.25 : 1 }}
           onClick={() => moveRoutine(routine.id!, 1)}
@@ -164,7 +295,7 @@ function RoutineRow({
         </button>
         <button
           className="icon-btn"
-          aria-label={`Options for ${routine.name}`}
+          aria-label={t('routines.optionsFor', { name: routine.name })}
           onClick={() => setMenuOpen(true)}
         >
           <MoreVertical size={16} />
@@ -181,10 +312,10 @@ function RoutineRow({
         }}
       >
         {blocked ? (
-          'Finish current workout first'
+          t('routines.finishCurrentFirst')
         ) : (
           <>
-            <Play size={14} /> Start workout
+            <Play size={14} /> {t('routines.startWorkout')}
           </>
         )}
       </button>
@@ -192,13 +323,13 @@ function RoutineRow({
       {menuOpen && (
         <div className="sheet-backdrop" onClick={() => setMenuOpen(false)}>
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet-title">Move to folder</div>
+            <div className="sheet-title">{t('routines.moveToFolder')}</div>
 
             <button
               className={`sheet-item${!routine.folder ? ' active' : ''}`}
               onClick={() => handleMoveToFolder(undefined)}
             >
-              No folder
+              {t('routines.noFolder')}
             </button>
 
             {folders.map((f) => (
@@ -212,7 +343,7 @@ function RoutineRow({
             ))}
 
             <button className="sheet-item" onClick={handleNewFolder}>
-              New folder…
+              {t('routines.newFolderOption')}
             </button>
           </div>
         </div>
