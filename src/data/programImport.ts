@@ -455,7 +455,7 @@ export async function importProgram(raw: unknown): Promise<{ programId: string; 
 
   const routineIdByKey = new Map<string, string>()
   for (const routine of built.routines) {
-    const routineId = await createRoutine(routine.name)
+    const routineId = await createRoutine(routine.name, built.programName)
     await setRoutineExercises(routineId, routine.exercises)
     routineIdByKey.set(routine.key, routineId)
   }

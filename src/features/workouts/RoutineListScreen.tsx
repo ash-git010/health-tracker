@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronUp, ChevronDown, MoreVertical, Play, Plus } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronRight, MoreVertical, Play, Plus } from 'lucide-react'
 import {
   listRoutines,
   getRoutineExercises,
@@ -33,6 +33,18 @@ export function RoutineListScreen() {
   const programs = useLiveQuery(() => listPrograms(), [])
   const runningWorkout = useLiveQuery(() => activeWorkout(), [])
   const [newProgramMenu, setNewProgramMenu] = useState(false)
+  // Collapsed by default — a program's import can mint a dozen-plus routines
+  // into one folder, and showing them all at once is the "mess" this fixes.
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  function toggleExpanded(folder: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(folder)) next.delete(folder)
+      else next.add(folder)
+      return next
+    })
+  }
 
   if (routines === undefined || folders === undefined || programs === undefined) {
     return <Empty>{t('common.loading')}</Empty>
@@ -71,6 +83,8 @@ export function RoutineListScreen() {
         const isUngrouped = group.folder === UNGROUPED
         const realFolders = groups.filter((g) => g.folder !== UNGROUPED)
         const isLastFolder = gi >= realFolders.length - 1
+        const isOpen = expanded.has(group.folder)
+        const label = isUngrouped ? t('routines.ungrouped') : group.folder
 
         return (
           <div
@@ -83,9 +97,20 @@ export function RoutineListScreen() {
             }}
           >
             <div className="row" style={{ marginBottom: '0.5rem' }}>
-              <h3 className="grow" style={{ margin: 0 }}>
-                {isUngrouped ? t('routines.ungrouped') : group.folder}
-              </h3>
+              <button
+                className="btn-plain row grow"
+                style={{ justifyContent: 'flex-start', gap: '0.375rem' }}
+                aria-label={
+                  isOpen
+                    ? t('routines.collapseFolder', { folder: label })
+                    : t('routines.expandFolder', { folder: label })
+                }
+                onClick={() => toggleExpanded(group.folder)}
+              >
+                {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <h3 style={{ margin: 0 }}>{label}</h3>
+                <span className="faint">{plural(group.routines.length, 'routines.routineCount')}</span>
+              </button>
               {!isUngrouped && (
                 <>
                   <button
@@ -110,17 +135,18 @@ export function RoutineListScreen() {
               )}
             </div>
 
-            {group.routines.map((r, i) => (
-              <RoutineRow
-                key={r.id}
-                routine={r}
-                blocked={!!runningWorkout}
-                isFirst={i === 0}
-                isLast={i === group.routines.length - 1}
-                folders={folders}
-                onNavigate={navigate}
-              />
-            ))}
+            {isOpen &&
+              group.routines.map((r, i) => (
+                <RoutineRow
+                  key={r.id}
+                  routine={r}
+                  blocked={!!runningWorkout}
+                  isFirst={i === 0}
+                  isLast={i === group.routines.length - 1}
+                  folders={folders}
+                  onNavigate={navigate}
+                />
+              ))}
           </div>
         )
       })}
