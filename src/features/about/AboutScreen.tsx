@@ -2,12 +2,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Smartphone, ChevronRight } from 'lucide-react'
 import { CHANGELOG } from '../../data/changelog'
 import { Card, ScreenHeader } from '../../components/ui'
-import { t } from '../../data/i18n'
+import { t, useLanguage } from '../../data/i18n'
 import { useState } from 'react'
 
 export function AboutScreen() {
   const navigate = useNavigate()
   const [showAll, setShowAll] = useState(false)
+  const language = useLanguage()
 
   return (
     <div className="stack">
@@ -68,9 +69,13 @@ export function AboutScreen() {
             <span className="muted">{release.date}</span>
           </div>
           <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.1rem' }}>
-            {release.changes.map((c, i) => (
-              <li key={i} className="muted">{c}</li>
-            ))}
+            {(language === 'de' && release.changesDe ? release.changesDe : release.changes).map(
+              (c, i) => (
+                <li key={i} className="muted">
+                  {c}
+                </li>
+              )
+            )}
           </ul>
         </Card>
       ))}
