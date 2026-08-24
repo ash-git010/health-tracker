@@ -28,7 +28,7 @@ home screen, works offline.
 
 - **Live:** `upkeepdaily.com` (deployed from `main` automatically)
 - **Repo:** `github.com/ash-git010/health-tracker` (public, all-rights-reserved)
-- **Released version:** 2.1.1
+- **Released version:** 2.2
 
 ## 2. Who you are working with
 
@@ -394,69 +394,32 @@ unless the user explicitly overrides one.
 
 ## 8. Current state and what is next
 
-**Read `docs/HANDOVER.md` §12.16, §12.17 and §17 before proposing any plan.**
+**Read `docs/HANDOVER.md` §12.20 and §17 before proposing any plan.** This
+section is a snapshot; the handover's session log is what's actually current.
 
-- Released version **2.1.1**, on `main`, deployed.
-- **`main`** additionally carries the whole Programs *data layer* — two new
-  tables (`programs`, `program_days`), four new columns, the Dexie `version(2)`
-  block, sync mappers, `adopt.ts` and `backup.ts` entries. The migration
-  `supabase/migrations/2026-08-23-programs.sql` **is applied to the live
-  database**. None of it is visible to a user yet: nothing renders a program,
-  creates one, sets a rep range, or shows workout notes.
-- **`phase-1-i18n`** carries the i18n layer and roughly half the app translated
-  — first-run journey, all six auth screens, navigation, hub, sections,
-  Settings, and the entire meals section. It has merged `main`, so the two are
-  level on data. It carries no version bump; nothing is shippable until the app
-  translates end to end.
+- **Released version 2.2, on `main`, deployed and live** — `phase-1-i18n`
+  merged and pushed 2026-08-24. This shipped **Phase 1 in full**: the app
+  translates end to end (English/German, switchable in Settings, including a
+  full German changelog backfill and bilingual Supabase auth emails), plus
+  the entire workout-section rebuild — Programs (import from file or build by
+  hand, weeks, scheduled days, rep ranges), the Log tab's active-program view,
+  swap-exercise, substitutes, the all-time PR crown, the floating rest timer,
+  and routine notes on the active workout. None of this is data-layer-only
+  anymore; all of it is live UI a real user can reach today.
+- **Consciously shipped with one gap still open, not fixed**: `programs` and
+  `program_days` have never been round-tripped through a real second-account
+  sync (§13 in the handover). Owner's call was to ship and address it if a
+  tester with Programs on two devices actually hits it, not before.
+- **`phase-1-i18n` is still the working branch.** It's level with `main` as of
+  the merge (fast-forward, zero conflicts). Keep working there unless told
+  otherwise.
 
-### The next piece of work
+### What's next
 
-**The workout section is to be finished completely — every screen plus all the
-Programs UI — before the remaining translation work.** This deliberately
-overrides the earlier "i18n before features" ordering. The reason: the app is
-meant to be used daily, and the workout section is the part that is not yet the
-way its owner wants it.
-
-**The mitigation matters as much as the decision: do this work on
-`phase-1-i18n`, and write every new and rebuilt screen with `t()` from the first
-line.** Born translated, arriving in a different order. **Do not start this on
-`main`.**
-
-**⚠ The scoping conversation has not happened yet.** Do not open a file or
-propose a plan until it has. Ask these six questions first and expect the answer
-to be longer than the list:
-
-1. **What is wrong with the workout section today?** The thing noticed on every
-   single use. This question has produced three separate backlogs already and is
-   the highest-value question in this project.
-2. **What does Workouts → Log become when a program is active**, and what when
-   there is none?
-3. **How does a program get created** — day-by-day editor, JSON import, or
-   started from a predone seed? Which one is built *first* decides the shape of
-   the first screen.
-4. **Which workout-polish items belong in this pass:** floating rest-timer bar,
-   the all-time PR crown, swap-exercise, target-muscle breakdown, moving
-   Add-exercise left of discard/finish, time-based exercises.
-5. **What "making working out like a game" means** — recorded with no detail and
-   explicitly flagged as needing detail before anything is built against it.
-6. **Anything not written down at all.**
-
-Two decisions are known to be waiting inside this work and need taking, not
-re-deriving: what volume means for a time-based exercise like a plank
-(`workoutVolume`, `lastSetsFor` and the progress charts all assume weight ×
-reps), and where `Routine.notes` is displayed on the active workout screen.
-
-One open decision belongs at the front: whether to finish translating body, care
-routines and About — five or six small screens, probably one short session —
-before merging to `main`, or to merge partially translated. **Recommendation:
-finish them first.** It is the owner's call; the stated priority is speed to a
-usable app.
-
-**Files to read before scoping anything:** `ActiveWorkoutScreen.tsx`,
-`RoutineListScreen.tsx`, `RoutineFormScreen.tsx`, `WorkoutHistoryScreen.tsx`,
-`WorkoutDetailScreen.tsx`, `WorkoutProgressScreen.tsx`,
-`FinishWorkoutScreen.tsx`, `routines.ts`, `workouts.ts`, `workoutStats.ts`,
-`types.ts`.
+**Not scoped.** The six-question workout scoping conversation this section
+used to point at already happened (`docs/HANDOVER.md` §12.18) and everything
+it produced is built and shipped, per above. There is no standing next task —
+ask what the owner wants to work on, same as every session start.
 
 ### Decided already — do not re-derive
 
