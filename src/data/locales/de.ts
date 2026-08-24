@@ -618,6 +618,11 @@ const de: Record<TKey, string> = {
   'install.desktopNote':
     'Chrome und Edge unterstützen das. Firefox und Safari am Computer installieren keine Web-Apps.',
 
+  'folder.label': 'Ordner',
+  'folder.placeholder': 'z. B. Push/Pull/Legs',
+  'folder.none': 'Kein Ordner',
+  'folder.new': 'Neuer Ordner…',
+
   'layout.home': 'Startseite',
   'layout.account': 'Konto',
   'layout.settings': 'Einstellungen',

@@ -593,6 +593,11 @@ const en = {
   'install.desktopNote':
     'Chrome and Edge support this. Firefox and Safari on desktop do not install web apps.',
 
+  'folder.label': 'Folder',
+  'folder.placeholder': 'e.g. Push/Pull/Legs',
+  'folder.none': 'No folder',
+  'folder.new': 'New folder…',
+
   'layout.home': 'Home',
   'layout.account': 'Account',
   'layout.settings': 'Settings',

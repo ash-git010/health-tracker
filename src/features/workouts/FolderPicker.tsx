@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { routineFolders } from '../../data/routines'
 import { Button } from '../../components/ui'
+import { t } from '../../data/i18n'
 
 const NEW_FOLDER = '__new_folder__'
 
@@ -17,14 +18,14 @@ export function FolderPicker({
 
   return (
     <label className="field">
-      <span className="field-label">Folder</span>
+      <span className="field-label">{t('folder.label')}</span>
       {addingFolder ? (
         <div className="row">
           <input
             type="text"
             autoFocus
             value={value}
-            placeholder="e.g. Push/Pull/Legs"
+            placeholder={t('folder.placeholder')}
             onChange={(e) => onChange(e.target.value)}
             style={{ flex: 1 }}
           />
@@ -35,7 +36,7 @@ export function FolderPicker({
               onChange('')
             }}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
         </div>
       ) : (
@@ -50,13 +51,13 @@ export function FolderPicker({
             }
           }}
         >
-          <option value="">No folder</option>
+          <option value="">{t('folder.none')}</option>
           {(folders ?? []).map((f) => (
             <option key={f} value={f}>
               {f}
             </option>
           ))}
-          <option value={NEW_FOLDER}>New folder…</option>
+          <option value={NEW_FOLDER}>{t('folder.new')}</option>
         </select>
       )}
     </label>
