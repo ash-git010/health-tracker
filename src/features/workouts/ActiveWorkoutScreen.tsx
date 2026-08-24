@@ -6,6 +6,7 @@ import {
   startWorkout,
   deleteWorkout,
   removeExerciseFromWorkout,
+  swapExerciseInWorkout,
   getSets,
   getAllSets,
   addSet,
@@ -19,7 +20,7 @@ import {
   isSetCompleted,
 } from '../../data/workouts'
 import { isAllTimePR } from '../../data/workoutStats'
-import { listRoutines, startWorkoutFromRoutine } from '../../data/routines'
+import { listRoutines, startWorkoutFromRoutine, getRoutineExercises } from '../../data/routines'
 import {
   activeProgram,
   listPrograms,
@@ -30,7 +31,7 @@ import {
   todaysProgramDay,
   isProgramComplete,
 } from '../../data/programs'
-import { findExercise } from '../../data/exercises'
+import { findExercise, allExercises, suggestSubstitutes, type ExerciseOption } from '../../data/exercises'
 import { playBeep } from '../../data/audio'
 import { ExercisePicker } from './ExercisePicker'
 import { restOptions, formatTime, formatRestLabel } from './rest'
@@ -41,15 +42,17 @@ import { parseDecimal } from '../../data/numbers'
 import { useConfirm } from '../../components/DialogProvider'
 import { OptionSheet } from '../../components/OptionSheet'
 import { rpeOptions, formatRpe } from './rpe'
-import { t } from '../../data/i18n'
+import { t, plural } from '../../data/i18n'
 import { Plus, Crown } from 'lucide-react'
 
-const SET_TYPES: { value: SetType; label: string }[] = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'warmup', label: 'Warm-up' },
-  { value: 'drop', label: 'Drop' },
-  { value: 'failure', label: 'Failure' },
-]
+function setTypeOptions(): { value: SetType; label: string }[] {
+  return [
+    { value: 'normal', label: t('setType.normal') },
+    { value: 'warmup', label: t('setType.warmup') },
+    { value: 'drop', label: t('setType.drop') },
+    { value: 'failure', label: t('setType.failure') },
+  ]
+}
 
 const SET_COL = '1.75rem'
 const NUM_COL = '3.5rem'
@@ -73,6 +76,7 @@ export function ActiveWorkoutScreen() {
     [program?.id]
   )
   const [picking, setPicking] = useState(false)
+  const [swapTarget, setSwapTarget] = useState<string | null>(null)
   const [timer, setTimer] = useState<RestTimer | null>(null)
   const [now, setNow] = useState(() => Date.now())
   const confirm = useConfirm()
@@ -184,6 +188,18 @@ export function ActiveWorkoutScreen() {
     )
   }
 
+  if (swapTarget) {
+    return (
+      <ExercisePicker
+        onCancel={() => setSwapTarget(null)}
+        onPick={async (ex) => {
+          await swapExerciseInWorkout(workout.id!, swapTarget, { key: ex.key, name: ex.name })
+          setSwapTarget(null)
+        }}
+      />
+    )
+  }
+
   const grouped = groupByExercise(sets ?? [])
   const volume = workoutVolume(sets ?? [])
   const setCount = completedSets(sets ?? []).length
@@ -262,12 +278,14 @@ export function ActiveWorkoutScreen() {
           <ExerciseBlock
             key={group.key}
             workoutId={workout.id}
+            routineId={workout.routineId}
             exerciseKey={group.key}
             exerciseName={group.name}
             order={group.order}
             sets={group.sets}
             onStartTimer={startTimer}
             onCheckPR={checkAllTimePR}
+            onSwapSearch={setSwapTarget}
           />
         ))}
       </div>
@@ -427,14 +445,17 @@ function ActiveProgramView({
 
 function ExerciseBlock({
   workoutId,
+  routineId,
   exerciseKey,
   exerciseName,
   order,
   sets,
   onStartTimer,
   onCheckPR,
+  onSwapSearch,
 }: {
   workoutId: string
+  routineId?: string
   exerciseKey: string
   exerciseName: string
   order: number
@@ -446,12 +467,14 @@ function ExerciseBlock({
     reps: number,
     excludeSetId: string
   ) => Promise<boolean>
+  onSwapSearch: (exerciseKey: string) => void
 }) {
   const navigate = useNavigate()
   const confirm = useConfirm()
   const [previous, setPrevious] = useState<WorkoutSet[]>([])
   const [equipment, setEquipment] = useState<string | undefined>()
-  const [menu, setMenu] = useState<'none' | 'actions' | 'rest' | 'rpe'>('none')
+  const [menu, setMenu] = useState<'none' | 'actions' | 'rest' | 'rpe' | 'swap'>('none')
+  const [swapSuggestions, setSwapSuggestions] = useState<ExerciseOption[]>([])
 
   useEffect(() => {
     lastSetsFor(exerciseKey, workoutId).then(setPrevious)
@@ -460,6 +483,37 @@ function ExerciseBlock({
   useEffect(() => {
     findExercise(exerciseKey).then((e) => setEquipment(e?.equipment))
   }, [exerciseKey])
+
+  useEffect(() => {
+    if (menu !== 'swap') return
+    let cancelled = false
+
+    async function load() {
+      const [current, all] = await Promise.all([findExercise(exerciseKey), allExercises()])
+      if (!current) return
+
+      const stored: ExerciseOption[] = []
+      if (routineId) {
+        const routineExercises = await getRoutineExercises(routineId)
+        const match = routineExercises.find((re) => re.exerciseKey === exerciseKey)
+        for (const key of match?.substitutes ?? []) {
+          const ex = all.find((e) => e.key === key)
+          if (ex) stored.push(ex)
+        }
+      }
+
+      const suggested = suggestSubstitutes(current, all).filter(
+        (e) => !stored.some((s) => s.key === e.key)
+      )
+
+      if (!cancelled) setSwapSuggestions([...stored, ...suggested].slice(0, 8))
+    }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [menu, exerciseKey, routineId])
 
   const restSeconds = sets[0]?.restSeconds ?? 90
   const targetRpe = sets[0]?.rpe
@@ -491,12 +545,17 @@ function ExerciseBlock({
 
   async function handleRemove() {
     const ok = await confirm({
-      title: `Remove ${exerciseName}?`,
-      message: 'All its sets in this workout will be deleted.',
-      confirmLabel: 'Remove',
+      title: t('activeWorkout.removeExerciseTitle', { name: exerciseName }),
+      message: t('activeWorkout.removeExerciseMessage'),
+      confirmLabel: t('activeWorkout.removeConfirm'),
       destructive: true,
     })
     if (ok) await removeExerciseFromWorkout(workoutId, exerciseKey)
+  }
+
+  async function handleSwap(ex: ExerciseOption) {
+    setMenu('none')
+    await swapExerciseInWorkout(workoutId, exerciseKey, { key: ex.key, name: ex.name })
   }
 
   let setNumber = 0
@@ -522,12 +581,12 @@ function ExerciseBlock({
         <div className="grow">
           <strong style={{ display: 'block' }}>{exerciseName}</strong>
           <span className="muted">
-            {doneCount}/{nonWarmup.length} done
+            {t('activeWorkout.doneCount', { done: doneCount, total: nonWarmup.length })}
           </span>
         </div>
         <button
           className="icon-btn"
-          aria-label={`Options for ${exerciseName}`}
+          aria-label={t('activeWorkout.optionsFor', { name: exerciseName })}
           onClick={() => setMenu('actions')}
         >
           ⋮
@@ -542,15 +601,15 @@ function ExerciseBlock({
 
       <div className="row rest-row">
         <button className="btn-plain muted grow" onClick={() => setMenu('rpe')}>
-          ◎ Target RPE: {formatRpe(targetRpe)}
+          ◎ {t('activeWorkout.targetRpeRow', { value: formatRpe(targetRpe) })}
         </button>
       </div>
 
       <div className="row set-header">
-        <span style={{ width: SET_COL, textAlign: 'center' }}>SET</span>
-        <span className="grow">PREVIOUS</span>
-        <span style={{ width: NUM_COL, textAlign: 'center' }}>KG</span>
-        <span style={{ width: NUM_COL, textAlign: 'center' }}>REPS</span>
+        <span style={{ width: SET_COL, textAlign: 'center' }}>{t('activeWorkout.colSet')}</span>
+        <span className="grow">{t('activeWorkout.colPrevious')}</span>
+        <span style={{ width: NUM_COL, textAlign: 'center' }}>{t('activeWorkout.colKg')}</span>
+        <span style={{ width: NUM_COL, textAlign: 'center' }}>{t('activeWorkout.colReps')}</span>
         <span style={{ width: CHECK_COL, textAlign: 'center' }}>✓</span>
       </div>
 
@@ -572,7 +631,7 @@ function ExerciseBlock({
       </div>
 
       <Button size="sm" onClick={addAnother} style={{ marginTop: '0.5rem' }}>
-        Add set {sets.length + 1}
+        {t('activeWorkout.addSet', { n: sets.length + 1 })}
       </Button>
 
       {menu === 'actions' && (
@@ -581,16 +640,17 @@ function ExerciseBlock({
           onClose={() => setMenu('none')}
           options={[
             {
-              label: 'View exercise',
+              label: t('activeWorkout.viewExercise'),
               onSelect: () => {
                 setMenu('none')
                 navigate(`/workouts/exercises/${encodeURIComponent(exerciseKey)}`)
               },
             },
-            { label: 'Set rest timer', onSelect: () => setMenu('rest') },
-            { label: 'Set target RPE', onSelect: () => setMenu('rpe') },
+            { label: t('activeWorkout.setRestTimer'), onSelect: () => setMenu('rest') },
+            { label: t('activeWorkout.setTargetRpe'), onSelect: () => setMenu('rpe') },
+            { label: t('activeWorkout.swapExercise'), onSelect: () => setMenu('swap') },
             {
-              label: 'Remove exercise',
+              label: t('activeWorkout.removeExercise'),
               onSelect: () => {
                 setMenu('none')
                 handleRemove()
@@ -602,7 +662,7 @@ function ExerciseBlock({
 
       {menu === 'rest' && (
         <OptionSheet
-          title="Rest timer"
+          title={t('activeWorkout.restTimerTitle')}
           onClose={() => setMenu('none')}
           options={restOptions().map((o) => ({
             label: o.label,
@@ -614,9 +674,9 @@ function ExerciseBlock({
           }))}
         />
       )}
-            {menu === 'rpe' && (
+      {menu === 'rpe' && (
         <OptionSheet
-          title="Target RPE"
+          title={t('activeWorkout.targetRpeTitle')}
           onClose={() => setMenu('none')}
           options={rpeOptions().map((o) => ({
             label: o.label,
@@ -626,6 +686,26 @@ function ExerciseBlock({
               setMenu('none')
             },
           }))}
+        />
+      )}
+
+      {menu === 'swap' && (
+        <OptionSheet
+          title={t('activeWorkout.swapExercise')}
+          onClose={() => setMenu('none')}
+          options={[
+            ...swapSuggestions.map((ex) => ({
+              label: ex.name,
+              onSelect: () => handleSwap(ex),
+            })),
+            {
+              label: t('activeWorkout.swapSearch'),
+              onSelect: () => {
+                setMenu('none')
+                onSwapSearch(exerciseKey)
+              },
+            },
+          ]}
         />
       )}
     </Card>
@@ -730,7 +810,7 @@ function SetRow({
         className={`btn-plain set-type-${set.type}`}
         style={{ width: SET_COL, textAlign: 'center', fontWeight: 600 }}
         onClick={() => setTypeMenuOpen(true)}
-        aria-label={`Set ${label}, tap to change type or delete`}
+        aria-label={t('activeWorkout.setTypeAria', { label })}
       >
         {label}
       </button>
@@ -739,7 +819,11 @@ function SetRow({
         className="faint grow"
         style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
       >
-        {hint ? (hint.weightKg > 0 ? `${hint.weightKg}kg × ${hint.reps}` : `${hint.reps} reps`) : '–'}
+        {hint
+          ? hint.weightKg > 0
+            ? `${hint.weightKg}kg × ${hint.reps}`
+            : plural(hint.reps, 'activeWorkout.hintReps')
+          : '–'}
       </span>
 
       <input
@@ -770,7 +854,11 @@ function SetRow({
       <button
         className={`check-btn${completed ? ' active' : ''}${showCrown ? ' crown' : ''}`}
         style={{ width: CHECK_COL }}
-        aria-label={completed ? `Mark set ${label} incomplete` : `Mark set ${label} complete`}
+        aria-label={
+          completed
+            ? t('activeWorkout.markIncomplete', { label })
+            : t('activeWorkout.markComplete', { label })
+        }
         onClick={toggleComplete}
       >
         {showCrown ? <Crown size={16} /> : '✓'}
@@ -778,10 +866,10 @@ function SetRow({
 
       {typeMenuOpen && (
         <OptionSheet
-          title="Set type"
+          title={t('activeWorkout.setTypeTitle')}
           onClose={() => setTypeMenuOpen(false)}
           options={[
-            ...SET_TYPES.map((st) => ({
+            ...setTypeOptions().map((st) => ({
               label: st.label,
               active: st.value === set.type,
               className: `set-type-${st.value}`,
@@ -791,7 +879,7 @@ function SetRow({
               },
             })),
             {
-              label: 'Remove set',
+              label: t('activeWorkout.removeSet'),
               onSelect: () => {
                 setTypeMenuOpen(false)
                 if (set.id) deleteSet(set.id)
