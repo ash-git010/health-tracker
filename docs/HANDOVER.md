@@ -3672,6 +3672,74 @@ editing surface at all.
 **Out of scope for all four chunks, deliberately (§12.18):** target-muscle
 breakdown, time-based exercises, gamification.
 
+### 12.20 Phase 1 closed out — changelog.ts and the email templates (2026-08-24, 7th)
+
+**Both remaining Phase 1 items are done. Phase 1 is complete** — the app
+translates end to end, nothing left on the "After workouts" list from §17.
+
+**`changelog.ts` decision: full backfill, not a `changesDe` fallback.** All 27
+releases (back to 0.1) now carry a `changesDe: string[]` alongside `changes`,
+same length, checked with a throwaway Node script before committing (a length
+mismatch would have been a silent bug — one language short a bullet with no
+build-time signal). `AboutScreen.tsx` picks `changesDe` when `useLanguage()`
+is `'de'` and it exists, else falls back to `changes` — so a future release
+shipped without an immediate translation degrades gracefully instead of
+breaking. `version`/`date` stay untranslated by design; they're
+technical/chronological, not prose. Reasoning for full-over-fallback: it
+matches Phase 1's own "translates end to end" bar, and 27 releases of prose
+was a one-sitting cost, not a recurring one — every *future* release still
+needs its own `changesDe` written by hand, same as `en.ts`/`de.ts` for
+everything else.
+
+**The four Supabase auth email templates are bilingual, live in production.**
+Confirm signup, Reset password, Password changed, Email address changed — all
+four edited directly in the Supabase dashboard
+(`/project/xpgvjvtluljbqyywnenl/auth/templates`, and Password
+changed/Email address changed sit under the **Security** section of that same
+Emails page, not the **Authentication** section the other two are under).
+**Nothing here lives in the repo** — same as before this session, and that
+remains a real gap: there is no versioned source of truth for these four
+templates anywhere except the live dashboard and this paragraph. A future
+session wanting to change them needs to pull the current HTML from the
+dashboard first, the same way this one did.
+
+**Why bilingual-in-one-email rather than per-user language:** Supabase auth
+email templates are one global template per project, with no per-user
+language hook. The shape mirrors `LanguageScreen.tsx` — show both languages
+in the one email a reader gets regardless of their app language, rather than
+guessing. Layout: the existing English block is untouched, followed by a
+thin bulletproof-HTML divider (`border-top` on a 1px table cell, not `<hr>` —
+Outlook), followed by a German block. The two code emails duplicate the code
+box in both language blocks (same `{{ .Token }}` merge tag twice) rather than
+sharing one, deliberately — self-contained per-language blocks over
+cross-referencing. Subjects became bilingual too:
+`English text / German text`, mirroring the same pattern.
+
+**A live-content-first approach caught two wrong assumptions before anything
+shipped.** The user pasted the current English HTML for all four templates
+before any drafting started (rather than drafting fresh from the design spec
+in §12.4), and that surfaced that the actual subjects for the two Security
+notifications are `"Your password was changed"` and `"Your email address was
+changed"` — no `"Upkeep"` in either, unlike this session's first guess. Both
+corrected before saving.
+
+**Applied via `window.monaco.editor.getEditors()[0].setValue(html)` through
+Claude in Chrome, not simulated typing.** The dashboard's template body field
+is a Monaco editor; typing raw HTML character-by-character risks
+autoclose-bracket/quote corruption in a code-mode editor. `setValue()` fires
+Monaco's `onDidChangeModelContent`, which the dashboard's own React state
+listens to, so the Save button enabled correctly and each save round-tripped
+through a real page reload to confirm persistence (not just an optimistic UI
+update) before moving to the next template. Subject fields were plain text
+inputs, edited normally (triple-click, select-all, type).
+
+**Tested via the dashboard's own Preview tab only** — the German block,
+divider and duplicated code box all render correctly there for all four. **Not
+tested: an actual received email in a real inbox**, in either language, on
+any client. The handover's own §12.4 note about Supabase's preview blocking
+external images and substituting nothing for merge tags still applies; a real
+send is the only thing that tells you anything more.
+
 ---
 
 ## 13. Known issues and gaps
@@ -4285,6 +4353,7 @@ datacenter's country (it returned `en:netherlands`), not Germany. Use the
 
 | Date | Version | What shipped |
 |---|---|---|
+| 2026-08-24 (7th) | *(unreleased, no version bump; one infra-only change)* | **Phase 1 closed out — both remaining items done.** See §12.20 for full detail. **`changelog.ts`: full German backfill**, decided over a `changesDe`-fallback via `AskUserQuestion` — all 27 releases now carry `changesDe`, length-checked against `changes` with a throwaway Node script before committing. `AboutScreen.tsx` picks `changesDe` when German and present, falls back to `changes` otherwise. One commit (`2a05926`), pushed to `phase-1-i18n`; precache **2,574.23 KiB**, up from 2,564.62. **The four Supabase auth email templates made bilingual and saved live in production** — Confirm signup, Reset password, Password changed, Email address changed. **Infra-only, nothing in this repo changed for it** — edited directly via the Supabase dashboard using Claude in Chrome, `window.monaco.editor.getEditors()[0].setValue()` rather than simulated typing to avoid corrupting HTML in a code-mode editor. The user pasted the live English HTML first rather than drafting from spec, which caught that the two Security-notification subjects don't say "Upkeep" — a wrong assumption fixed before anything shipped. Each save round-tripped through a page reload to confirm persistence. **Untested: an actual received email**, in either language, on any real client — only the dashboard's own Preview tab. **A real gap that remains:** none of the four templates has a versioned copy anywhere except the live dashboard and §12.20's prose — a future change needs to pull current HTML from the dashboard first, same as this session did. |
 | 2026-08-24 (6th) | *(unreleased, no version bump)* | **Body, care routines, and About/Feedback/Install fully translated** — the three blocks listed as "After workouts" in §17, in four commits: **5a** `BodyScreen.tsx` + `MeasurementFormScreen.tsx` (also fixed a pre-existing locale-less `toLocaleDateString` in `shortDate`, the §6 rule); **5b** `RoutineTodayScreen.tsx`, `RoutineManageScreen.tsx`, `CareRoutineFormScreen.tsx` — `careRoutines.ts`'s `TIMES` converted to a `times()` function and `kindLabel()` added as a display-only translation layer over `DEFAULT_KINDS`, which stays English because it's stored verbatim in `CareRoutine.kind` (same reasoning as `commonFoods.ts`); two dormant `t`-shadows found and fixed before they could bite (`TIMES.map((t) => …)` in both screens); **5c** `AboutScreen.tsx`, `FeedbackScreen.tsx`, `InstallScreen.tsx` — `InstallScreen`'s `STEPS`/`LABELS` converted to `installSteps()`/`installLabels()` functions; changelog entries (`release.date`, `release.changes`) deliberately left English, that's the still-open `changelog.ts` decision below, not part of this work. **Then a full-repo audit** (every `.tsx` under `src/features` grepped for a zero `t(` count) **found one real gap the "complete" workout rebuild had missed**: `FolderPicker.tsx` (used by `RoutineFormScreen`, `SaveAsRoutineScreen`, `FinishWorkoutScreen`) had never been touched — fixed as a fifth commit. **Every chunk hand-tested live in both languages** via Claude in Chrome — create/edit/delete flows, confirm dialogs, decimal-comma weight entry, the custom-kind and custom-folder text inputs, all three install-guide platform tabs — not just built. Precache **2,564.62 KiB**, up from 2,551.48. Four commits (`10ce9db` 5a, `c0ad932` 5b, `2bbeb64` 5c, `17103c2` the FolderPicker fix), pushed to `phase-1-i18n`. **What's left of Phase 1: the bilingual Supabase email templates, and the `changelog.ts` decision** — both need the owner's input before starting, neither was touched this session. |
 | 2026-08-24 (5th) | *(unreleased, no version bump)* | **Chunk 4 of the workout rebuild, closing out §12.19's four-chunk arc** — see "Chunk 4 — DONE" in §12.19 for full detail. **4a**: swap-exercise on `ActiveWorkoutScreen.tsx` (stored `substitutes` → `suggestSubstitutes()` → full search fallback), plus the i18n sweep chunk 3 left unfinished — including a "0/3 done" string chunk 3's own sweep missed, caught only by testing in German. **4b**: `RoutineFormScreen.tsx` (previously zero `t()` calls) fully translated, plus a 2-alternate substitutes picker on `ExerciseCard`, round-tripped through Dexie and verified live. **4c**: `ExercisePicker.tsx` translated — the shared component 4a and 4b both depend on. **A correction to §12.19's own plan**: it said the substitutes picker went on `RoutineFormScreen.tsx` *and* `ProgramFormScreen.tsx`'s exercise cards, but the latter has no exercise cards at all; flagged to the owner before writing code, confirmed `RoutineFormScreen` only. **A near-miss caught before committing**: memoizing `ExercisePicker`'s body-part chips with `useMemo(fn, [])` would have frozen them in whichever language was active on mount, despite the rest of the app re-rendering fine on a language switch — fixed to the same un-memoized pattern `rpeOptions()`/`restOptions()` already use. **Two dormant `t`-shadow landmines found and left alone** (not yet bugs — neither file imports `t()` yet): `ExerciseDetailScreen.tsx:75`, `WorkoutDetailScreen.tsx:207`. Precache **2,551.48 KiB**. Three commits (`49b5c73`, `8c63532`, `9bdb796`), pushed to `phase-1-i18n`. **Second-account program sync is still explicitly untested** (§12.16, §13) — unrelated to this chunk's own work but re-flagged since nothing has closed that gap yet. **Next: body, care routines, About/Feedback/Install, then the bilingual email templates and the `changelog.ts` decision** — the remainder of Phase 1. |
 | 2026-08-24 (4th) | *(unreleased, no version bump)* | **Chunk 3 of the workout rebuild** (§12.19): the Log tab rebuilt in two hand-tested sub-chunks — see "Chunk 3 — done" in §12.19 for full detail. **3a**: the no-workout screen forks on `activeProgram()` into an active-program view or a programs-then-routines-then-empty chooser. **3b**: Add-exercise moved into `.workout-sticky`, a routine-notes read-only block, the rest timer moved into a new floating `.rest-bar`, and the PR crown (a 2.5s gold flash on the check button via `isAllTimePR`). **A real bug found by testing**: discarding a workout with its rest timer running left stale timer state that the new floating bar (unlike the old per-card display) rendered into the *next* workout; fixed with an effect keyed on `workout?.id`. `rest.ts`'s `REST_OPTIONS` converted to a function (`restOptions()`), fixing the same untranslated-`'Off'` bug in `RoutineFormScreen.tsx` too. **The session opened by re-verifying Chunk 2 end to end** (the user's explicit request, after the AI's own memory of it felt unreliable) — re-read every diff, re-tested the import/edit/kebab-menu flows live, found nothing wrong with Chunk 2 itself, but surfaced one **pre-existing, app-wide gap**: no screen anywhere ever passes `cancelLabel` to `useConfirm()`, so every confirm dialog's Cancel button is hardcoded English regardless of language — left unfixed, out of scope, flagged for later. Precache **2,542.20 KiB**. Two commits (`1ac2320`, `ea1834a`), pushed to `phase-1-i18n`. **Chunk 4 (swap-exercise, substitutions editor, final i18n sweep) is next.** |
@@ -4553,10 +4622,10 @@ them, do not re-scope. Read §12.19 in full before touching the workout
 section again; do not re-derive its decisions. ~~**Next up, per the "After
 workouts" note below: body, care routines, About/Feedback/Install, then the
 bilingual Supabase email templates and the `changelog.ts` decision** — the
-remainder of Phase 1.~~ **Body, care routines and About/Feedback/Install are
-now DONE too, 2026-08-24 (6th) — see the new §15 row.** What's left of Phase 1
-is only the bilingual Supabase email templates and the `changelog.ts`
-decision. Confirm with the owner before starting either, per usual.
+remainder of Phase 1.~~ **All of it is DONE as of 2026-08-24 (7th) — Phase 1
+is complete.** See the new §15 rows for both the `changelog.ts` full backfill
+and the four bilingual Supabase email templates. **Read §12.20 before touching
+either again.**
 
 **The workout section is the next thing, completely — every screen and all the
 Programs UI — and it comes before the rest of the translation work.** That
@@ -4594,9 +4663,8 @@ and the data layer is built and round-tripped. Do not re-derive any of it.
 
 ~~**After workouts:** body, care routines, About / Feedback / Install, then the
 bilingual Supabase email templates and the `changelog.ts` decision. That is all
-that is left of Phase 1.~~ **DONE 2026-08-24 (6th)**, except the email
-templates and the `changelog.ts` decision — see the new §15 row and the
-updated paragraph above.
+that is left of Phase 1.~~ **ALL DONE, 2026-08-24 (6th and 7th)** — see the
+new §15 rows and the updated paragraph above. **Phase 1 is complete.**
 
 ~~**The next block is the six auth screens.**~~ **DONE 2026-08-22 (2nd).**
 ~~**The next block is meals.**~~ **DONE 2026-08-23 (2nd)** in five tested
