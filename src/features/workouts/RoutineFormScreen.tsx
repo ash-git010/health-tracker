@@ -23,16 +23,21 @@ import { Button, Card, Empty, ScreenHeader } from '../../components/ui'
 import { useConfirm } from '../../components/DialogProvider'
 import type { RoutineSet, SetType, WorkoutSet } from '../../data/types'
 import { parseDecimal } from '../../data/numbers'
+import { t, plural } from '../../data/i18n'
 
 const SET_COL = '1.75rem'
 const NUM_COL = '3.5rem'
 
-const SET_TYPES: { value: SetType; label: string }[] = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'warmup', label: 'Warm-up' },
-  { value: 'drop', label: 'Drop' },
-  { value: 'failure', label: 'Failure' },
-]
+const MAX_SUBSTITUTES = 2
+
+function setTypeOptions(): { value: SetType; label: string }[] {
+  return [
+    { value: 'normal', label: t('setType.normal') },
+    { value: 'warmup', label: t('setType.warmup') },
+    { value: 'drop', label: t('setType.drop') },
+    { value: 'failure', label: t('setType.failure') },
+  ]
+}
 
 // A target may legitimately have no numbers — "3 sets, work out the weight on
 // the day" is a real routine. Empty stays empty all the way to save.
@@ -50,6 +55,7 @@ type ExerciseDraft = {
   rpe?: number
   notes: string
   sets: SetDraft[]
+  substitutes: string[]
 }
 
 function blankSet(): SetDraft {
@@ -80,6 +86,7 @@ export function RoutineFormScreen() {
   const [notes, setNotes] = useState('')
   const [exercises, setExercises] = useState<ExerciseDraft[]>([])
   const [picking, setPicking] = useState(false)
+  const [substituteTarget, setSubstituteTarget] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -98,6 +105,7 @@ export function RoutineFormScreen() {
             rpe: ex.sets?.[0]?.rpe,
             notes: ex.notes ?? '',
             sets: toDraftSets(ex),
+            substitutes: ex.substitutes ?? [],
           }))
         )
         setLoading(false)
@@ -105,7 +113,7 @@ export function RoutineFormScreen() {
     )
   }, [routineId])
 
-  if (loading) return <Empty>Loading…</Empty>
+  if (loading) return <Empty>{t('common.loading')}</Empty>
 
   if (picking) {
     return (
@@ -120,10 +128,31 @@ export function RoutineFormScreen() {
               restSeconds: 90,
               notes: '',
               sets: [blankSet()],
+              substitutes: [],
             },
           ])
           setError(null)
           setPicking(false)
+        }}
+      />
+    )
+  }
+
+  if (substituteTarget !== null) {
+    return (
+      <ExercisePicker
+        onCancel={() => setSubstituteTarget(null)}
+        onPick={(ex) => {
+          const target = exercises[substituteTarget]
+          if (
+            target &&
+            ex.key !== target.exerciseKey &&
+            !target.substitutes.includes(ex.key) &&
+            target.substitutes.length < MAX_SUBSTITUTES
+          ) {
+            updateExercise(substituteTarget, { substitutes: [...target.substitutes, ex.key] })
+          }
+          setSubstituteTarget(null)
         }}
       />
     )
@@ -150,10 +179,10 @@ export function RoutineFormScreen() {
   }
 
   function findProblem(): string | null {
-    if (!name.trim()) return 'Give the routine a name.'
+    if (!name.trim()) return t('routines.form.errName')
 
     for (const ex of exercises) {
-      if (ex.sets.length === 0) return `${ex.exerciseName}: add at least one set.`
+      if (ex.sets.length === 0) return t('routines.form.errNoSets', { name: ex.exerciseName })
     }
 
     return null
@@ -178,6 +207,7 @@ export function RoutineFormScreen() {
       targetSets: ex.sets.filter((s) => s.type !== 'warmup').length,
       restSeconds: ex.restSeconds,
       notes: ex.notes.trim() || undefined,
+      substitutes: ex.substitutes.length > 0 ? ex.substitutes : undefined,
       sets: ex.sets.map((s) => ({
         type: s.type,
         weightKg: s.weightKg === '' ? undefined : Number(s.weightKg),
@@ -205,9 +235,9 @@ export function RoutineFormScreen() {
   async function handleDelete() {
     if (!routineId) return
     const ok = await confirm({
-      title: 'Delete this routine?',
-      message: 'Workouts already logged from it are unaffected.',
-      confirmLabel: 'Delete',
+      title: t('routines.form.deleteTitle'),
+      message: t('routines.form.deleteMessage'),
+      confirmLabel: t('common.delete'),
       destructive: true,
     })
     if (!ok) return
@@ -218,25 +248,25 @@ export function RoutineFormScreen() {
   return (
     <div className="stack">
       <ScreenHeader
-        title={routineId ? 'Edit routine' : 'New routine'}
+        title={routineId ? t('routines.form.editTitle') : t('routines.form.newTitle')}
         onBack={() => navigate('/workouts/routines')}
       />
 
       <TextField
-        label="Name"
+        label={t('routines.form.name')}
         value={name}
         onChange={(v) => {
           setError(null)
           setName(v)
         }}
-        placeholder="Push day"
+        placeholder={t('routines.form.namePlaceholder')}
       />
 
       <label className="field">
-        <span className="field-label">Notes</span>
+        <span className="field-label">{t('routines.form.notes')}</span>
         <textarea
           value={notes}
-          placeholder="Optional notes"
+          placeholder={t('routines.form.notesPlaceholder')}
           rows={2}
           onChange={(e) => setNotes(e.target.value)}
         />
@@ -244,9 +274,9 @@ export function RoutineFormScreen() {
 
       <FolderPicker value={folder} onChange={setFolder} />
 
-      <h3 style={{ marginTop: '1.25rem' }}>Exercises</h3>
+      <h3 style={{ marginTop: '1.25rem' }}>{t('routines.form.exercisesHeading')}</h3>
 
-      {exercises.length === 0 && <Empty>No exercises yet.</Empty>}
+      {exercises.length === 0 && <Empty>{t('routines.form.noExercises')}</Empty>}
 
       {exercises.map((ex, i) => (
         <ExerciseCard
@@ -257,11 +287,12 @@ export function RoutineFormScreen() {
           onChange={(changes) => updateExercise(i, changes)}
           onRemove={() => removeExercise(i)}
           onMove={(dir) => move(i, dir)}
+          onPickSubstitute={() => setSubstituteTarget(i)}
         />
       ))}
 
       <Button block onClick={() => setPicking(true)}>
-        <Plus size={16} /> Add exercise
+        <Plus size={16} /> {t('routines.form.addExercise')}
       </Button>
 
       {error && (
@@ -273,12 +304,12 @@ export function RoutineFormScreen() {
       <div className="form-actions">
         {routineId && (
           <Button variant="ghost" className="btn-warn" onClick={handleDelete}>
-            Delete
+            {t('common.delete')}
           </Button>
         )}
         <span className="grow">
           <Button variant="primary" block onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save routine'}
+            {saving ? t('routines.form.saving') : t('routines.form.save')}
           </Button>
         </span>
       </div>
@@ -293,6 +324,7 @@ function ExerciseCard({
   onChange,
   onRemove,
   onMove,
+  onPickSubstitute,
 }: {
   draft: ExerciseDraft
   isFirst: boolean
@@ -300,12 +332,14 @@ function ExerciseCard({
   onChange: (changes: Partial<ExerciseDraft>) => void
   onRemove: () => void
   onMove: (dir: -1 | 1) => void
+  onPickSubstitute: () => void
 }) {
   const confirm = useConfirm()
   const [equipment, setEquipment] = useState<string | undefined>()
   const [previous, setPrevious] = useState<WorkoutSet[]>([])
   const [menu, setMenu] = useState<'none' | 'actions' | 'rest' | 'rpe'>('none')
   const [typeMenu, setTypeMenu] = useState<number | null>(null)
+  const [substituteNames, setSubstituteNames] = useState<Record<string, string>>({})
 
   useEffect(() => {
     findExercise(draft.exerciseKey).then((e) => setEquipment(e?.equipment))
@@ -314,6 +348,25 @@ function ExerciseCard({
   useEffect(() => {
     lastSetsFor(draft.exerciseKey).then(setPrevious)
   }, [draft.exerciseKey])
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all(draft.substitutes.map((key) => findExercise(key))).then((results) => {
+      if (cancelled) return
+      const map: Record<string, string> = {}
+      results.forEach((ex, i) => {
+        if (ex) map[draft.substitutes[i]] = ex.name
+      })
+      setSubstituteNames(map)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [draft.substitutes])
+
+  function removeSubstitute(key: string) {
+    onChange({ substitutes: draft.substitutes.filter((k) => k !== key) })
+  }
 
   function updateSet(index: number, changes: Partial<SetDraft>) {
     onChange({
@@ -338,9 +391,9 @@ function ExerciseCard({
 
   async function handleRemove() {
     const ok = await confirm({
-      title: `Remove ${draft.exerciseName}?`,
-      message: 'Its sets in this routine will be discarded.',
-      confirmLabel: 'Remove',
+      title: t('activeWorkout.removeExerciseTitle', { name: draft.exerciseName }),
+      message: t('routines.form.removeExerciseMessage'),
+      confirmLabel: t('activeWorkout.removeConfirm'),
       destructive: true,
     })
     if (ok) onRemove()
@@ -371,7 +424,7 @@ function ExerciseCard({
         </strong>
         <button
           className="icon-btn"
-          aria-label={`Options for ${draft.exerciseName}`}
+          aria-label={t('routines.optionsFor', { name: draft.exerciseName })}
           onClick={() => setMenu('actions')}
         >
           ⋮
@@ -381,28 +434,44 @@ function ExerciseCard({
       <input
         type="text"
         value={draft.notes}
-        placeholder="Notes…"
+        placeholder={t('routines.form.exerciseNotesPlaceholder')}
         onChange={(e) => onChange({ notes: e.target.value })}
         style={{ marginTop: '0.5rem' }}
       />
 
       <div className="row rest-row">
         <button className="btn-plain rest-live grow" onClick={() => setMenu('rest')}>
-          ⏱ Rest timer: {formatRestLabel(draft.restSeconds)}
+          ⏱ {t('activeWorkout.restTimer', { label: formatRestLabel(draft.restSeconds) })}
         </button>
       </div>
 
       <div className="row rest-row">
         <button className="btn-plain muted grow" onClick={() => setMenu('rpe')}>
-          ◎ Target RPE: {formatRpe(draft.rpe)}
+          ◎ {t('activeWorkout.targetRpeRow', { value: formatRpe(draft.rpe) })}
         </button>
       </div>
 
+      <div className="faint" style={{ marginTop: '0.5rem' }}>
+        {t('routines.form.substitutesHeading')}
+      </div>
+      <div className="chip-row">
+        {draft.substitutes.map((key) => (
+          <button key={key} className="chip active" onClick={() => removeSubstitute(key)}>
+            {substituteNames[key] ?? key} ×
+          </button>
+        ))}
+        {draft.substitutes.length < MAX_SUBSTITUTES && (
+          <button className="chip" onClick={onPickSubstitute}>
+            <Plus size={12} /> {t('routines.form.addSubstitute')}
+          </button>
+        )}
+      </div>
+
       <div className="row set-header">
-        <span style={{ width: SET_COL, textAlign: 'center' }}>SET</span>
-        <span className="grow">PREVIOUS</span>
-        <span style={{ width: NUM_COL, textAlign: 'center' }}>KG</span>
-        <span style={{ width: NUM_COL, textAlign: 'center' }}>REPS</span>
+        <span style={{ width: SET_COL, textAlign: 'center' }}>{t('activeWorkout.colSet')}</span>
+        <span className="grow">{t('activeWorkout.colPrevious')}</span>
+        <span style={{ width: NUM_COL, textAlign: 'center' }}>{t('activeWorkout.colKg')}</span>
+        <span style={{ width: NUM_COL, textAlign: 'center' }}>{t('activeWorkout.colReps')}</span>
       </div>
 
       {draft.sets.map((set, i) => {
@@ -416,7 +485,7 @@ function ExerciseCard({
               className={`btn-plain set-type-${set.type}`}
               style={{ width: SET_COL, textAlign: 'center', fontWeight: 600 }}
               onClick={() => setTypeMenu(i)}
-              aria-label={`Set ${label}, tap to change type`}
+              aria-label={t('routines.form.setTypeAria', { label })}
             >
               {label}
             </button>
@@ -428,7 +497,7 @@ function ExerciseCard({
               {hint
                 ? hint.weightKg > 0
                   ? `${hint.weightKg}kg × ${hint.reps}`
-                  : `${hint.reps} reps`
+                  : plural(hint.reps, 'activeWorkout.hintReps')
                 : '–'}
             </span>
 
@@ -449,7 +518,7 @@ function ExerciseCard({
       })}
 
       <Button size="sm" onClick={addSet} style={{ marginTop: '0.5rem' }}>
-        <Plus size={14} /> Add set
+        <Plus size={14} /> {t('routines.form.addSet')}
       </Button>
 
       {menu === 'actions' && (
@@ -458,19 +527,19 @@ function ExerciseCard({
           onClose={() => setMenu('none')}
           options={[
             {
-              label: 'Add warm-up set',
+              label: t('routines.form.addWarmup'),
               onSelect: () => {
                 setMenu('none')
                 addWarmup()
               },
             },
-            { label: 'Set rest timer', onSelect: () => setMenu('rest') },
-            { label: 'Set target RPE', onSelect: () => setMenu('rpe') },
+            { label: t('activeWorkout.setRestTimer'), onSelect: () => setMenu('rest') },
+            { label: t('activeWorkout.setTargetRpe'), onSelect: () => setMenu('rpe') },
             ...(isFirst
               ? []
               : [
                   {
-                    label: 'Move up',
+                    label: t('routines.form.moveUp'),
                     onSelect: () => {
                       setMenu('none')
                       onMove(-1)
@@ -481,7 +550,7 @@ function ExerciseCard({
               ? []
               : [
                   {
-                    label: 'Move down',
+                    label: t('routines.form.moveDown'),
                     onSelect: () => {
                       setMenu('none')
                       onMove(1)
@@ -489,7 +558,7 @@ function ExerciseCard({
                   },
                 ]),
             {
-              label: 'Remove exercise',
+              label: t('activeWorkout.removeExercise'),
               onSelect: () => {
                 setMenu('none')
                 handleRemove()
@@ -501,7 +570,7 @@ function ExerciseCard({
 
       {menu === 'rest' && (
         <OptionSheet
-          title="Rest timer"
+          title={t('activeWorkout.restTimerTitle')}
           onClose={() => setMenu('none')}
           options={restOptions().map((o) => ({
             label: o.label,
@@ -516,7 +585,7 @@ function ExerciseCard({
 
       {menu === 'rpe' && (
         <OptionSheet
-          title="Target RPE"
+          title={t('activeWorkout.targetRpeTitle')}
           onClose={() => setMenu('none')}
           options={rpeOptions().map((o) => ({
             label: o.label,
@@ -531,20 +600,20 @@ function ExerciseCard({
 
       {typeMenu !== null && (
         <OptionSheet
-          title="Set type"
+          title={t('activeWorkout.setTypeTitle')}
           onClose={() => setTypeMenu(null)}
           options={[
-            ...SET_TYPES.map((t) => ({
-              label: t.label,
-              active: t.value === draft.sets[typeMenu]?.type,
-              className: `set-type-${t.value}`,
+            ...setTypeOptions().map((st) => ({
+              label: st.label,
+              active: st.value === draft.sets[typeMenu]?.type,
+              className: `set-type-${st.value}`,
               onSelect: () => {
-                updateSet(typeMenu, { type: t.value })
+                updateSet(typeMenu, { type: st.value })
                 setTypeMenu(null)
               },
             })),
             {
-              label: 'Remove set',
+              label: t('activeWorkout.removeSet'),
               onSelect: () => {
                 removeSet(typeMenu)
                 setTypeMenu(null)
