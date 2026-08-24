@@ -3354,8 +3354,9 @@ PR crown`), pushed to `phase-1-i18n`. Do not re-scope, do not redo Chunk 1.**
    `RoutineExercise.notes`.
 3. **Substitutions: `RoutineExercise.substitutes?: string[]`** (exercise
    keys), synced as jsonb on `routine_exercises`
-   (`2026-08-24-substitutes.sql`, applied — **run it against the live
-   Supabase project too**, it has not been). Import resolves
+   (`2026-08-24-substitutes.sql`, applied locally **and to the live
+   Supabase project** — verified via `information_schema.columns` and a
+   count of the 39 existing rows, none left `null`). Import resolves
    `substitution_option_1/2` against the library by fuzzy score; unmatched
    names are dropped.
 4. **Swap mid-workout renames `exerciseKey`/`exerciseName` across every
@@ -3405,10 +3406,26 @@ lower threshold's other failure mode showed up in the same test:
 "Dragon Flag" scores 400 against a seed exercise literally named "Flag",
 which is exactly the kind of false positive a looser threshold invites.
 
-**Not tested:** the UI (none exists yet — that's Chunks 2–4), and the
-`2026-08-24-substitutes.sql` migration has **not been run against the live
-Supabase project** — do that before Chunk 2's import screen is used for real,
-same as any other migration (§9).
+**Not tested:** the UI (none exists yet — that's Chunks 2–4).
+
+**A new trap, worth §11: the Supabase CLI's direct-connection host is
+IPv6-only** (`db.<ref>.supabase.co` resolves only to an AAAA record — no A
+record at all), and this machine has no outbound IPv6 route. `npx supabase
+db query --db-url "postgresql://postgres:...@db.<ref>.supabase.co:5432/..."`
+fails with `hostname resolving error (getaddrinfo ENOTFOUND)`, and
+`--dns-resolver https` doesn't fix it — DoH still can't hand back a usable
+IP. **Use the Session pooler connection string instead**
+(`postgresql://postgres.<ref>:...@aws-0-<region>.pooler.supabase.com:5432/postgres`,
+from the same Settings → Database page), which is IPv4-reachable. **Also**:
+`supabase db query -f <file>` rejects a file with more than one statement —
+`cannot insert multiple commands into a prepared statement` — even a plain
+`begin; …; commit;` wrapper. Every migration file in this repo is written
+with that wrapper for running by hand in the SQL Editor (where it's fine);
+run via the CLI, strip it and pass the single DDL statement as the `sql`
+argument instead. This migration was applied that way, by Claude Code
+directly against the live project with an explicitly-given DB password —
+**a deliberate one-off exception to §9's "run by hand" convention**, done at
+the owner's explicit request, not a new standing practice.
 
 #### Chunk 2 — program creation & management UI — NEXT
 
