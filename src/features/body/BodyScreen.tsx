@@ -13,12 +13,15 @@ import {
 import { formatDay } from '../../data/dates'
 import { Card, Empty, ScreenHeader } from '../../components/ui'
 import { useConfirm } from '../../components/DialogProvider'
+import { t, locale } from '../../data/i18n'
 
-const RANGES = [
-  { days: 30, label: '30d' },
-  { days: 90, label: '90d' },
-  { days: 365, label: '1y' },
-]
+function ranges() {
+  return [
+    { days: 30, label: t('body.range30') },
+    { days: 90, label: t('body.range90') },
+    { days: 365, label: t('body.range365') },
+  ]
+}
 
 export function BodyScreen() {
   const entries = useLiveQuery(() => listMeasurements(), [])
@@ -32,27 +35,25 @@ export function BodyScreen() {
   return (
     <div style={{ paddingBottom: '2rem' }}>
       <ScreenHeader
-        title="Weight"
+        title={t('body.title')}
         action={
           <Link
             to="/body/weight/log"
             className="btn btn-sm btn-primary"
             style={{ textDecoration: 'none' }}
           >
-            <Plus size={16} /> Log
+            <Plus size={16} /> {t('body.log')}
           </Link>
         }
       />
 
-      {entries === undefined && <Empty>Loading…</Empty>}
+      {entries === undefined && <Empty>{t('common.loading')}</Empty>}
 
-      {entries && entries.length === 0 && (
-        <Empty>No measurements yet. Tap Log to record your first weigh-in.</Empty>
-      )}
+      {entries && entries.length === 0 && <Empty>{t('body.empty')}</Empty>}
 
       {latest && (
         <Card style={{ marginBottom: '1.5rem' }}>
-          <div className="faint">Current weight</div>
+          <div className="faint">{t('body.currentWeight')}</div>
           <div className="row" style={{ alignItems: 'baseline', gap: '0.35rem' }}>
             <span className="stat">{latest.weightKg}</span>
             <span className="stat-unit">kg</span>
@@ -63,14 +64,17 @@ export function BodyScreen() {
 
           {(change7 !== null || change30 !== null) && (
             <div className="row" style={{ gap: '1.25rem', marginTop: '1rem' }}>
-              {change7 !== null && <ChangeStat label="7 days" kg={change7} />}
-              {change30 !== null && <ChangeStat label="30 days" kg={change30} />}
+              {change7 !== null && <ChangeStat label={t('body.days7')} kg={change7} />}
+              {change30 !== null && <ChangeStat label={t('body.days30')} kg={change30} />}
             </div>
           )}
 
           {latest.heightCm && (
             <div className="faint" style={{ marginTop: '0.875rem' }}>
-              BMI {bmi(latest.weightKg, latest.heightCm)} · {latest.heightCm}cm
+              {t('body.bmiLine', {
+                bmi: bmi(latest.weightKg, latest.heightCm),
+                height: latest.heightCm,
+              })}
             </div>
           )}
         </Card>
@@ -78,10 +82,10 @@ export function BodyScreen() {
 
       {entries && entries.length >= 2 && (
         <>
-          <h3>Trend</h3>
+          <h3>{t('body.trend')}</h3>
 
           <div className="chip-row">
-            {RANGES.map((r) => (
+            {ranges().map((r) => (
               <button
                 key={r.days}
                 onClick={() => setRange(r.days)}
@@ -114,7 +118,10 @@ export function BodyScreen() {
                     tickLine={false}
                   />
                   <Tooltip
-                    formatter={(v, name) => [`${v} kg`, name === 'trend' ? 'Trend' : 'Weight']}
+                    formatter={(v, name) => [
+                      `${v} kg`,
+                      name === 'trend' ? t('body.chartTrend') : t('body.chartWeight'),
+                    ]}
                     contentStyle={{
                       background: 'var(--bg-elevated)',
                       border: '1px solid var(--border-strong)',
@@ -139,13 +146,13 @@ export function BodyScreen() {
               </ResponsiveContainer>
             </div>
             <p className="faint" style={{ margin: '0.75rem 0 0', textAlign: 'center' }}>
-              Thin line: each weigh-in · Thick line: 7-entry average
+              {t('body.chartNote')}
             </p>
           </Card>
         </>
       )}
 
-      {entries && entries.length > 0 && <h3>History</h3>}
+      {entries && entries.length > 0 && <h3>{t('body.history')}</h3>}
 
       {(entries ?? []).map((e) => (
         <div key={e.id} className="list-item">
@@ -158,13 +165,13 @@ export function BodyScreen() {
           <span className="faint">{formatDay(e.date)}</span>
           <button
             className="icon-btn"
-            aria-label={`Delete entry from ${formatDay(e.date)}`}
+            aria-label={t('body.deleteAriaLabel', { date: formatDay(e.date) })}
             onClick={async () => {
               if (!e.id) return
               const ok = await confirm({
-                title: 'Delete this entry?',
-                message: `Weigh-in from ${formatDay(e.date)}.`,
-                confirmLabel: 'Delete',
+                title: t('body.deleteTitle'),
+                message: t('body.deleteMessage', { date: formatDay(e.date) }),
+                confirmLabel: t('common.delete'),
                 destructive: true,
               })
               if (ok) await deleteMeasurement(e.id)
@@ -196,7 +203,7 @@ function ChangeStat({ label, kg }: { label: string; kg: number }) {
 }
 
 function shortDate(iso: string): string {
-  return new Date(iso + 'T12:00:00').toLocaleDateString(undefined, {
+  return new Date(iso + 'T12:00:00').toLocaleDateString(locale(), {
     day: 'numeric',
     month: 'short',
   })

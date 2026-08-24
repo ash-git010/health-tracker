@@ -5,6 +5,7 @@ import { listMeasurements, saveMeasurement } from '../../data/measurements'
 import { todayISO } from '../../data/dates'
 import { NumberField } from '../../components/NumberField'
 import { Button, ScreenHeader } from '../../components/ui'
+import { t } from '../../data/i18n'
 
 type NumOrEmpty = number | ''
 
@@ -36,16 +37,16 @@ export function MeasurementFormScreen() {
   return (
     <div className="stack">
       <ScreenHeader
-        title="Log weight"
+        title={t('body.logTitle')}
         action={
           <Button size="sm" onClick={() => navigate('/body/weight')}>
-            Cancel
+            {t('common.cancel')}
           </Button>
         }
       />
 
       <label className="field">
-        <span className="field-label">Date</span>
+        <span className="field-label">{t('body.dateLabel')}</span>
         <input
           type="date"
           value={date}
@@ -55,15 +56,18 @@ export function MeasurementFormScreen() {
       </label>
 
       {existing && (
-        <p className="muted">
-          There's already an entry for this date ({existing.weightKg} kg). Saving will
-          replace it.
-        </p>
+        <p className="muted">{t('body.existingEntry', { weight: existing.weightKg })}</p>
       )}
 
-      <NumberField label="Weight" value={weight} onChange={setWeight} suffix="kg" min={0} />
       <NumberField
-        label="Height (optional)"
+        label={t('body.weightLabel')}
+        value={weight}
+        onChange={setWeight}
+        suffix="kg"
+        min={0}
+      />
+      <NumberField
+        label={t('body.heightLabel')}
         value={height}
         onChange={setHeight}
         suffix="cm"
@@ -71,7 +75,7 @@ export function MeasurementFormScreen() {
       />
 
       <Button variant="primary" block onClick={handleSave} disabled={!canSave}>
-        Save
+        {t('common.save')}
       </Button>
     </div>
   )
