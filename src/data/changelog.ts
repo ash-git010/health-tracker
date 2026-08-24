@@ -6,7 +6,29 @@ export interface Release {
 }
 
 export const CHANGELOG: Release[] = [
-    {
+  {
+    version: '2.2',
+    date: '2026-08-24',
+    changes: [
+      'Upkeep is now bilingual — English and German, switch anytime in Settings',
+      'Programs are here — import a multi-week plan from a file, or build one by hand with weeks, scheduled days and rep ranges',
+      "The workout Log tab now shows what's due today from your active program, or offers your routines if you don't have one running",
+      'Swap an exercise mid-workout without losing your sets, or set up alternates ahead of time on a routine',
+      'A gold flash marks the moment you hit an all-time personal record',
+      'The rest timer now floats above the screen instead of living on one exercise card',
+      'Routine notes show on the active workout, not just in the editor',
+    ],
+    changesDe: [
+      'Upkeep ist jetzt zweisprachig — Englisch und Deutsch, umschaltbar jederzeit in den Einstellungen',
+      'Programme sind da — importiere einen mehrwöchigen Plan aus einer Datei oder baue einen von Hand, mit Wochen, geplanten Tagen und Wiederholungsbereichen',
+      'Der Trainieren-Tab zeigt jetzt, was heute laut deinem aktiven Programm ansteht, oder bietet deine Pläne an, wenn keins läuft',
+      'Tausche mitten im Workout eine Übung aus, ohne deine Sätze zu verlieren, oder richte vorab Alternativen für einen Plan ein',
+      'Ein goldenes Aufblitzen markiert den Moment, in dem du einen persönlichen Bestwert aller Zeiten erreichst',
+      'Der Pausentimer schwebt jetzt über dem Bildschirm, statt an einer Übungskarte zu kleben',
+      'Notizen zum Plan werden jetzt auch beim aktiven Workout angezeigt, nicht nur im Editor',
+    ],
+  },
+  {
     version: '2.1.1',
     date: '2026-08-22',
     changes: [
