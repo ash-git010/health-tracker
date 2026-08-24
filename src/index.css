@@ -641,6 +641,9 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .sheet {
   width: 100%;
   max-width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--bg-elevated);
   border-top-left-radius: var(--radius-lg);
   border-top-right-radius: var(--radius-lg);

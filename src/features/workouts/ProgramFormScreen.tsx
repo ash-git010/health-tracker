@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, Copy } from 'lucide-react'
 import {
   getProgram,
   getProgramDays,
@@ -197,16 +197,24 @@ export function ProgramFormScreen() {
           </div>
 
           {week.days.map((routineId, i) => (
-            <button
-              key={i}
-              className="btn-plain grow"
-              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.375rem 0' }}
-              onClick={() => setDayPicker({ week: week.week, dayIndex: i + 1 })}
-            >
-              <span className="faint">{t('programs.form.dayLabel', { n: i + 1 })}</span>
-              {' — '}
-              <span>{routineName(routineId)}</span>
-            </button>
+            <div key={i} className="row" style={{ padding: '0.375rem 0' }}>
+              <button
+                className="btn-plain grow"
+                style={{ display: 'block', textAlign: 'left' }}
+                onClick={() => setDayPicker({ week: week.week, dayIndex: i + 1 })}
+              >
+                <span className="faint">{t('programs.form.dayLabel', { n: i + 1 })}</span>
+                {' — '}
+                <span>{routineName(routineId)}</span>
+              </button>
+              <button
+                className="icon-btn"
+                aria-label={t('programs.form.copyDayAria', { n: i + 1 })}
+                onClick={() => setCopyFrom({ week: week.week, dayIndex: i + 1 })}
+              >
+                <Copy size={15} />
+              </button>
+            </div>
           ))}
         </Card>
       ))}
@@ -262,13 +270,6 @@ export function ProgramFormScreen() {
                 setDayPicker(null)
               },
             })),
-            {
-              label: t('programs.form.copyTo'),
-              onSelect: () => {
-                setCopyFrom(dayPicker)
-                setDayPicker(null)
-              },
-            },
           ]}
         />
       )}
@@ -284,7 +285,7 @@ export function ProgramFormScreen() {
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
             <div className="sheet-title">{t('programs.form.copyToTitle')}</div>
 
-            <div style={{ maxHeight: '50vh', overflowY: 'auto', padding: '0 1rem' }}>
+            <div style={{ padding: '0 1rem' }}>
               {weeks.map((w) => (
                 <div key={w.week} style={{ marginBottom: '0.75rem' }}>
                   <div className="faint" style={{ marginBottom: '0.25rem' }}>
