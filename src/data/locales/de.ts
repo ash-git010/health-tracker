@@ -475,6 +475,15 @@ const de: Record<TKey, string> = {
   'layout.account': 'Konto',
   'layout.settings': 'Einstellungen',
 
+  'activeWorkout.noneTitle': 'Kein Workout läuft gerade.',
+  'activeWorkout.noneLead': 'Starte eins und protokolliere deine Sätze währenddessen.',
+  'activeWorkout.startNew': 'Neues Workout starten',
+  'activeWorkout.startEmpty': 'Leeres Workout starten',
+  'activeWorkout.weekLabel': 'Woche {n}',
+  'activeWorkout.startToday': '{name} starten',
+  'activeWorkout.noWorkoutToday': 'Heute nichts geplant.',
+  'activeWorkout.complete': 'Programm abgeschlossen.',
+
   'programs.import.title': 'Programm importieren',
   'programs.import.chooseFile': 'Programmdatei auswählen',
   'programs.import.parsing': 'Datei wird gelesen…',

@@ -18,17 +18,28 @@ import {
   isSetCompleted,
 } from '../../data/workouts'
 import { listRoutines, startWorkoutFromRoutine } from '../../data/routines'
+import {
+  activeProgram,
+  listPrograms,
+  activateProgram,
+  deactivateProgram,
+  getProgramDays,
+  currentWeekNumber,
+  todaysProgramDay,
+  isProgramComplete,
+} from '../../data/programs'
 import { findExercise } from '../../data/exercises'
 import { playBeep } from '../../data/audio'
 import { ExercisePicker } from './ExercisePicker'
 import { REST_OPTIONS, formatTime, formatRestLabel } from './rest'
 import { EquipmentIcon } from '../../components/EquipmentIcon'
 import { Button, Card, Empty, Fab } from '../../components/ui'
-import type { SetType, WorkoutSet } from '../../data/types'
+import type { SetType, WorkoutSet, Program, ProgramDay, Routine } from '../../data/types'
 import { parseDecimal } from '../../data/numbers'
 import { useConfirm } from '../../components/DialogProvider'
 import { OptionSheet } from '../../components/OptionSheet'
 import { rpeOptions, formatRpe } from './rpe'
+import { t } from '../../data/i18n'
 
 const SET_TYPES: { value: SetType; label: string }[] = [
   { value: 'normal', label: 'Normal' },
@@ -52,6 +63,12 @@ export function ActiveWorkoutScreen() {
   const navigate = useNavigate()
   const workout = useLiveQuery(() => activeWorkout(), [])
   const routines = useLiveQuery(() => listRoutines(), [])
+  const program = useLiveQuery(() => activeProgram(), [])
+  const programs = useLiveQuery(() => listPrograms(), [])
+  const programDays = useLiveQuery(
+    () => (program?.id ? getProgramDays(program.id) : Promise.resolve([])),
+    [program?.id]
+  )
   const [picking, setPicking] = useState(false)
   const [timer, setTimer] = useState<RestTimer | null>(null)
   const [now, setNow] = useState(() => Date.now())
@@ -119,42 +136,16 @@ export function ActiveWorkoutScreen() {
     setTimer((cur) => (cur ? { ...cur, endsAt: cur.endsAt + delta * 1000 } : cur))
   }
 
-  if (workout === undefined) return <Empty>Loading…</Empty>
+  if (workout === undefined) return <Empty>{t('common.loading')}</Empty>
 
   if (!workout) {
     return (
-      <div className="stack">
-        <Card>
-          <p style={{ margin: 0 }}>No workout in progress.</p>
-          <p className="muted" style={{ margin: '0.5rem 0 0' }}>
-            Start one and log your sets as you go.
-          </p>
-        </Card>
-
-        <Button
-          variant="primary"
-          block
-          onClick={async () => {
-            await startWorkout()
-          }}
-        >
-          Start empty workout
-        </Button>
-
-        {(routines ?? []).length > 0 && <h3 style={{ marginTop: '1.25rem' }}>Routines</h3>}
-
-        {(routines ?? []).map((r) => (
-          <Button
-            key={r.id}
-            block
-            onClick={async () => {
-              await startWorkoutFromRoutine(r.id!)
-            }}
-          >
-            {r.name}
-          </Button>
-        ))}
-      </div>
+      <NoWorkoutView
+        program={program}
+        programDays={programDays ?? []}
+        programs={programs ?? []}
+        routines={routines ?? []}
+      />
     )
   }
 
@@ -246,6 +237,144 @@ export function ActiveWorkoutScreen() {
       </div>
 
       <Fab label="Add exercise" onClick={() => setPicking(true)} />
+    </div>
+  )
+}
+
+function NoWorkoutView({
+  program,
+  programDays,
+  programs,
+  routines,
+}: {
+  program: Program | null | undefined
+  programDays: ProgramDay[]
+  programs: Program[]
+  routines: Routine[]
+}) {
+  const [chooserOpen, setChooserOpen] = useState(false)
+
+  if (program === undefined) return <Empty>{t('common.loading')}</Empty>
+
+  if (program) {
+    return <ActiveProgramView program={program} programDays={programDays} routines={routines} />
+  }
+
+  return (
+    <div className="stack">
+      <Card>
+        <p style={{ margin: 0 }}>{t('activeWorkout.noneTitle')}</p>
+        <p className="muted" style={{ margin: '0.5rem 0 0' }}>
+          {t('activeWorkout.noneLead')}
+        </p>
+      </Card>
+
+      <Button variant="primary" block onClick={() => setChooserOpen(true)}>
+        {t('activeWorkout.startNew')}
+      </Button>
+
+      {chooserOpen && (
+        <OptionSheet
+          title={t('activeWorkout.startNew')}
+          onClose={() => setChooserOpen(false)}
+          options={[
+            ...programs.map((p) => ({
+              label: p.name,
+              onSelect: async () => {
+                setChooserOpen(false)
+                await activateProgram(p.id)
+              },
+            })),
+            ...routines.map((r) => ({
+              label: r.name,
+              onSelect: async () => {
+                setChooserOpen(false)
+                await startWorkoutFromRoutine(r.id!)
+              },
+            })),
+            {
+              label: t('activeWorkout.startEmpty'),
+              onSelect: async () => {
+                setChooserOpen(false)
+                await startWorkout()
+              },
+            },
+          ]}
+        />
+      )}
+    </div>
+  )
+}
+
+function ActiveProgramView({
+  program,
+  programDays,
+  routines,
+}: {
+  program: Program
+  programDays: ProgramDay[]
+  routines: Routine[]
+}) {
+  if (isProgramComplete(program, programDays)) {
+    return (
+      <div className="stack">
+        <Card>
+          <button
+            className="btn-plain"
+            style={{ fontWeight: 700, textAlign: 'left' }}
+            onClick={() => deactivateProgram(program.id)}
+          >
+            {program.name}
+          </button>
+          <p className="muted" style={{ margin: '0.5rem 0 0' }}>{t('activeWorkout.complete')}</p>
+        </Card>
+      </div>
+    )
+  }
+
+  const week = currentWeekNumber(program)
+  const day = todaysProgramDay(program, programDays)
+  const routine = day?.routineId ? routines.find((r) => r.id === day.routineId) : undefined
+
+  return (
+    <div className="stack">
+      <Card>
+        <button
+          className="btn-plain"
+          style={{ fontWeight: 700, textAlign: 'left' }}
+          onClick={() => deactivateProgram(program.id)}
+        >
+          {program.name}
+        </button>
+        <p className="muted" style={{ margin: '0.25rem 0 0' }}>
+          {t('activeWorkout.weekLabel', { n: week })}
+        </p>
+      </Card>
+
+      {routine ? (
+        <Button
+          variant="primary"
+          block
+          onClick={async () => {
+            await startWorkoutFromRoutine(routine.id!, day!.id)
+          }}
+        >
+          {t('activeWorkout.startToday', { name: routine.name })}
+        </Button>
+      ) : (
+        <Card>
+          <p className="muted" style={{ margin: 0 }}>{t('activeWorkout.noWorkoutToday')}</p>
+        </Card>
+      )}
+
+      <Button
+        block
+        onClick={async () => {
+          await startWorkout()
+        }}
+      >
+        {t('activeWorkout.startEmpty')}
+      </Button>
     </div>
   )
 }
@@ -606,12 +735,12 @@ function SetRow({
           title="Set type"
           onClose={() => setTypeMenuOpen(false)}
           options={[
-            ...SET_TYPES.map((t) => ({
-              label: t.label,
-              active: t.value === set.type,
-              className: `set-type-${t.value}`,
+            ...SET_TYPES.map((st) => ({
+              label: st.label,
+              active: st.value === set.type,
+              className: `set-type-${st.value}`,
               onSelect: () => {
-                commit({ type: t.value })
+                commit({ type: st.value })
                 setTypeMenuOpen(false)
               },
             })),

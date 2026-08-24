@@ -451,6 +451,15 @@ const en = {
   'layout.account': 'Account',
   'layout.settings': 'Settings',
 
+  'activeWorkout.noneTitle': 'No workout in progress.',
+  'activeWorkout.noneLead': 'Start one and log your sets as you go.',
+  'activeWorkout.startNew': 'Start new workout',
+  'activeWorkout.startEmpty': 'Start empty workout',
+  'activeWorkout.weekLabel': 'Week {n}',
+  'activeWorkout.startToday': 'Start {name}',
+  'activeWorkout.noWorkoutToday': 'Nothing scheduled for today.',
+  'activeWorkout.complete': 'Program complete.',
+
   'programs.import.title': 'Import program',
   'programs.import.chooseFile': 'Choose a program file',
   'programs.import.parsing': 'Reading file…',
