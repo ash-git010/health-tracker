@@ -3336,9 +3336,12 @@ disposable; everything load-bearing is repeated here so this section alone is
 enough to resume from.
 
 **⚠ Start the next session by reading this section, then jump straight to
-Chunk 2 below — Chunk 1 is done and committed
-(`3ffe75a feat: programs data layer, JSON import, swap-exercise, and the
-PR crown`), pushed to `phase-1-i18n`. Do not re-scope, do not redo Chunk 1.**
+Chunk 3 below — Chunks 1 and 2 are done, committed and pushed to
+`phase-1-i18n`. Do not re-scope, do not redo either.**
+
+- Chunk 1: `3ffe75a feat: programs data layer, JSON import, swap-exercise, and the PR crown`
+- Chunk 2: `dbc29cf` (import screen), `0f134e0` (manual editor), `4507142`
+  (routines-screen integration) — see "Chunk 2 — done" below.
 
 #### Design decisions taken while planning — do not re-derive
 
@@ -3427,28 +3430,66 @@ directly against the live project with an explicitly-given DB password —
 **a deliberate one-off exception to §9's "run by hand" convention**, done at
 the owner's explicit request, not a new standing practice.
 
-#### Chunk 2 — program creation & management UI — NEXT
+#### Chunk 2 — program creation & management UI — DONE, committed, pushed
 
-- `RoutineListScreen.tsx` — add a "Programs" section above the folder
-  groups: active/inactive state, activate/deactivate, real delete (decision
-  6). "New program" offers JSON import or the manual editor.
-- **New `ProgramImportScreen.tsx`** — upload, parse via `programImport.ts`,
-  preview (weeks, workouts, **which exercises matched vs. fell back to a
-  custom placeholder**, which substitution names were dropped), confirm to
-  save. **Built first**, per the explicit build-order answer in §12.18.
-- **New `ProgramFormScreen.tsx`** — manual editor: weeks, assign a routine
-  (or rest) per day, a "copy this day to…" week×day picker, a "repeat this
-  week indefinitely" toggle (`Program.repeats`).
-- `App.tsx` routes: `/workouts/programs/new`, `/workouts/programs/import`,
-  `/workouts/programs/:id/edit`.
-- Full `en.ts`/`de.ts` key set for all of the above, written alongside the
-  JSX, not retrofitted — the born-translated mitigation from §12.17.
+Split into three sub-chunks, each built (`npm run build`) and hand-tested
+through the actual dev-server UI (via Claude in Chrome, not just the
+console) before moving to the next — the pattern §12.18's closing note
+asked for.
 
-**Verify:** `npm run build`; import the real JSON through the actual screen
-and compare against Chunk 1's console-tested result; build a small program
-by hand.
+**2a — `ProgramImportScreen.tsx`** (`dbc29cf`), built first per §12.18's
+order. Route `/workouts/programs/import`. `programImport.ts` gained a
+read-only `previewImport()` (shares a new `collectExerciseNames()` helper
+with `importProgram()`) so the screen shows which primary exercises will
+fall back to a custom placeholder and which substitution names will be
+dropped **before** anything is written — the exact gap Chunk 1's real-file
+test found. All of `parseImportJson`'s thrown messages and `buildProgram`'s
+warnings were converted to `t()` in the same pass, since this was their
+first-ever appearance in a screen. **Verified against the real 12-week
+reference file through the screen**: the same unmatched names and the
+Dragon-Flag→Flag false positive Chunk 1 found by hand reproduced in the
+preview; confirming produced 20 content-variant routines with no console
+errors.
 
-#### Chunk 3 — Log tab rebuild
+**2c — `ProgramFormScreen.tsx`** (`0f134e0`), built before 2b so the "New
+program" entry point in 2b would have both destinations to link to. Routes
+`/workouts/programs/new` and `/workouts/programs/:id/edit`. Weeks are cards
+of 7 day slots; tapping a day opens an `OptionSheet` to assign a routine or
+rest, plus a "copy this day to…" action that opens a multi-select week×day
+chip picker (reusing the existing `.chip`/`.chip.active` classes). "Repeat
+indefinitely" is `Program.repeats`, one toggle, not per-week. Edit
+reconstructs weeks/days from `getProgramDays` via `definedWeekCount`.
+**Verified by hand**: created a 2-week program, assigned a routine to Day 1,
+copied it to Days 3 and 5, toggled repeat, saved — `db.programs`/
+`db.programDays` held exactly that shape. Editing reloaded the same state.
+Delete cascaded to the program and all 14 day rows. No console errors.
+
+**2b — `RoutineListScreen.tsx`** (`4507142`) — a "Programs" section above
+the folder groups: name, Active/Inactive (`.success` text class, not an
+inline color — CLAUDE.md bans those), activate/deactivate/edit/delete via a
+kebab `OptionSheet`, and a "New program" `OptionSheet` offering the 2a/2c
+routes. **This file had zero i18n before this touch**, so every existing
+string — folder moves, the routine kebab menu, exercise counts (now
+`plural('routines.exerciseCount')`), the empty states — was converted to
+`t()` in the same pass rather than left for later, per the born-translated
+mitigation (§12.17). **Verified**: activate/deactivate, both "New program"
+destinations, and delete (with its confirm dialog) all round-tripped
+against Dexie. **Re-verified in German through the real Settings language
+switch** — every string, including the plural and empty-state ones,
+rendered correctly. (A first attempt forced the language from the browser
+console via a raw `await import('/src/data/i18n.ts')`, which silently hit a
+*separate* module instance and did nothing — same family of trap as §11's
+Vite-transform-cache one, just via dynamic import in a devtools context
+rather than a stale build. The real UI control is the reliable way to test
+a language switch; a console-forced one is not.)
+
+New shared keys added: `common.delete`, `common.loading` — reusable outside
+the programs/routines namespace, so anything touching a delete button or a
+loading state next should use these rather than inventing another pair.
+
+Precache **2,536.89 KiB**, up from 2,511.90 (Chunk 1) — see §3/§4.
+
+#### Chunk 3 — Log tab rebuild — NEXT
 
 `ActiveWorkoutScreen.tsx` — the no-workout state forks on `activeProgram()`
 into the active-program view (today's day/workout, tap-name-to-deactivate)
@@ -4094,6 +4135,7 @@ datacenter's country (it returned `en:netherlands`), not Germany. Use the
 
 | Date | Version | What shipped |
 |---|---|---|
+| 2026-08-24 (3rd) | *(unreleased, Programs UI, no version bump)* | **Chunk 2 of the workout rebuild** (§12.19): program creation and management UI, in three hand-tested sub-chunks — see "Chunk 2 — done" in §12.19 for the full detail. `ProgramImportScreen.tsx` (preview before writing, built first), `ProgramFormScreen.tsx` (manual weeks/days editor with a copy-to-multiple-days picker and a repeat toggle), and a Programs section wired into `RoutineListScreen.tsx`, which also got its first-ever i18n pass end to end. Two new shared catalogue keys: `common.delete`, `common.loading`. Every screen verified through the actual dev-server UI via Claude in Chrome (not just `npm run build` or the console) — including a German-language pass through the real Settings switch, after a console-forced language change was found to silently hit a separate module instance and do nothing. Precache **2,536.89 KiB**. Three commits (`dbc29cf`, `0f134e0`, `4507142`), pushed to `phase-1-i18n`. **Chunk 3 (the Log tab rebuild) is next.** |
 | 2026-08-24 (2nd) | *(unreleased, no UI yet)* | **The workout section finally scoped, in Claude Code via `AskUserQuestion` one question at a time — §12.18 has all six answers.** A four-chunk build plan followed in plan mode (§12.19), approved, and **Chunk 1 built**: `src/data/programs.ts` (new), `src/data/programImport.ts` (new), `RoutineExercise.substitutes` end to end with its own migration, `swapExerciseInWorkout`, the crown's `isAllTimePR`, `suggestSubstitutes`. **Tested by hand against the dev server, not just the build** — program CRUD, single-active enforcement, cascade delete, the week/day math, and a full import of the real 12-week Min-Max JSON. **A real finding, not a guess**: exercise-name matching against the 1,324-exercise seed missed more than expected on PDF-derived names (Pec Deck, Kelso Shrug, Incline DB Y-Raise had zero match); the custom-exercise fallback handled it safely, and Chunk 2's import preview needs to surface it. Precache **2,511.95 KiB** (data-layer-only delta from 2,511.90). Committed and pushed. **The new migration has not yet been run against the live Supabase project.** |
 | 2026-08-24 | *(no application code)* | **The project moved off GitHub Codespaces onto a local Windows machine, and off claude.ai chat onto Claude Code.** Both branches confirmed clean and pushed first (`git log origin/<branch>` matching local on `main` and `phase-1-i18n`); a third branch, `accounts`, was discovered and is unmentioned anywhere in this document. Cloned to `D:\dev\Projects\upkeep`, installed with **`npm ci`** rather than `npm install` to match Cloudflare's `npm clean-install`, `.env.local` recreated by hand because it is gitignored. **The move was verified by building it**: `index-DaGpoujQ.js` — the identical bundle hash to the last Codespaces build — with precache 2,511.90 KiB against 2,511.87, the 0.03 explained by Windows CRLF checkout (§3). **`CLAUDE.md` written and restored to the repo root** after being deleted in the 2026-08-10 cutover; **this file renamed to `docs/HANDOVER.md`** and the `-17` dropped because git now carries the history; **`PRIVATE-NOTES.md` created and gitignored**, taking §12.11's funding and legal subsection verbatim out of a public repo. **New §19 records the Claude Code session protocol.** **Phone testing now goes through the Cloudflare branch preview**, not a forwarded port — localhost cannot serve the camera over a LAN IP. **No application code was touched, no version bump, nothing deployed.** |
 | 2026-08-23 (2nd) | *(Phase 1 on a branch, no version bump)* | **The entire meals section translated, in five tested chunks**, all on `phase-1-i18n`: `TodayScreen` + `AddEntry`; `FoodListScreen` + `FoodSearch`; `FoodForm`; the barcode scanner pair; `GoalsScreen` + `ChartsScreen`. Each built, tested in both languages at 360px and committed before the next was written, and **no German string needed shortening** — unlike the auth block. **Decision 17 answered: `commonFoods.ts` keeps English names, German lives in `keywords`** — not on the exercise seed's search argument, which does not apply, but because a common food's name becomes a `Food` row and then a permanent `logEntry.foodName` snapshot, so a German name would persist rather than render (§12.13). `MEAL_KEYS` + `mealLabel()` added to `log.ts`; `macro.*` keys scoped separately and now shared by three screens; `plural()` used for the first time in anger, in `ChartsScreen`. **Two non-i18n bugs fixed in passing**: `FoodSearch` hardcoded `g` where it should have used `food.unit`, and **`BarcodeScanner.tsx` carried the `t()` shadow twice** — the §14 trap that produces no error at all. Four files in the section turned out to hold no user-facing strings. **Then the priority changed**: the workout section is to be finished completely, UI included, before the rest of Phase 1 — **§18's first non-negotiable ordering, consciously overridden**, with the cost and the mitigation recorded in the new **§12.17**. **`main` was then merged into the branch** ahead of that work: one conflict, in `adopt.ts`, exactly as §4 predicted, resolved to `tableLabels()` with the two Programs entries and two new catalogue keys; `db.ts` auto-merged silently. Branch built clean at **2,511.87 KiB** — the first tree holding both the i18n layer and the Programs data layer. **The workout section itself was never scoped** — the session ended first, and the six questions to open the next one are at the foot of §12.17. |
@@ -4352,9 +4394,11 @@ Assume there is a new one anyway.
 
 **⚠ SCOPING IS DONE — READ §12.19, NOT THE QUESTIONS BELOW.** The six
 questions this section used to open with are answered in §12.18, and a
-four-chunk build plan is written and approved in §12.19. **Chunk 1 (the data
-layer) is built, tested by hand, and committed** — do not redo it, do not
-re-scope. **Start the next session at §12.19's "Chunk 2" heading.**
+four-chunk build plan is written and approved in §12.19. **Chunks 1 and 2
+(the data layer, then program import/management/manual-editor UI) are
+built, hand-tested through the actual UI, and committed** — do not redo
+either, do not re-scope. **Start the next session at §12.19's "Chunk 3"
+heading.**
 
 **The workout section is the next thing, completely — every screen and all the
 Programs UI — and it comes before the rest of the translation work.** That
