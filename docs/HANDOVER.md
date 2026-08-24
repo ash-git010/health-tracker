@@ -3489,26 +3489,80 @@ loading state next should use these rather than inventing another pair.
 
 Precache **2,536.89 KiB**, up from 2,511.90 (Chunk 1) — see §3/§4.
 
-#### Chunk 3 — Log tab rebuild — NEXT
+#### Chunk 3 — Log tab rebuild — DONE, committed, pushed
 
-`ActiveWorkoutScreen.tsx` — the no-workout state forks on `activeProgram()`
-into the active-program view (today's day/workout, tap-name-to-deactivate)
-vs. the "Start new workout" chooser (decision 5); the crown on set-tick using
-`isAllTimePR`; Add-exercise moved from the floating Fab into
-`.workout-sticky`, left of Discard/Finish; routine-notes read-only block at
-the top, sourced from the first set's `WorkoutSet.notes`; the floating
-rest-timer bar (new fixed-position element in `src/index.css`, the per-card
-row keeps only the "set the duration" button). Every string in this file
-converts to `t()` as it's touched — it currently has zero i18n.
+Split into two sub-chunks, each built and hand-tested through the actual
+dev-server UI (via Claude in Chrome) before moving to the next.
 
-**Verify:** `npm run build`; full walkthrough on the Cloudflare branch
-preview (camera/timer behavior needs a real device, not the dev server, per
-§4) — start from a routine, from a program day, from empty; trigger a crown;
-background the phone during a rest timer and confirm the chime still fires
-(§11 already documents the backgrounded-PWA timer limit — this should not
-make it worse, it isn't expected to fix it).
+**3a — no-workout state fork** (`1ac2320`). `ActiveWorkoutScreen.tsx`'s
+"no workout" branch now checks `activeProgram()`: with none active, a single
+"Start new workout" button opens an `OptionSheet` chooser — programs, then
+routines, then "Start empty workout" (decision 5), and picking a program
+calls `activateProgram()` and the live query flips the screen to the other
+view. With one active: today's week/day via `currentWeekNumber` and
+`todaysProgramDay`, tap-name-to-deactivate (no confirm dialog — matches the
+precedent already in `RoutineListScreen`'s kebab menu), and three states —
+a Start button for today's routine (stamping `programDayId`), a
+"nothing scheduled" message for a rest day or an undefined day, and
+"program complete" once `isProgramComplete()` is true. New `activeWorkout.*`
+catalogue keys, written with `t()` from the start. A pre-existing `t` shadow
+in the set-type `OptionSheet` map (`(t) => ...`) was found and fixed while
+grepping per §5/§17's standing check, before it could bite later. **Verified
+against the real dev-server UI**: created a program through the manual
+editor, activated it from the chooser, confirmed the started workout's
+`programDayId` via a console read, and forced `startedOn` back via console
+to exercise the rest-day and program-complete branches — all three render
+correctly in German.
 
-#### Chunk 4 — swap-exercise, substitutions editor, final sweep
+**3b — sticky bar, notes block, floating rest bar, crown** (`ea1834a`).
+Add-exercise moved out of the floating `Fab` into `.workout-sticky`, left of
+Discard/Finish — the `Fab` import is gone from this screen. A read-only
+notes block appears at the top of the workout, sourced from
+`sets[0]?.notes` — the first exercise's carried-over per-exercise note,
+since `Routine.notes` itself still isn't copied anywhere (that stays an
+open item, see below). The rest timer moved from an inline per-exercise-card
+display into a new floating `.rest-bar` (fixed position, the slot the `Fab`
+used to occupy) visible regardless of which exercise is scrolled into view;
+each exercise card's rest row now always shows the "set duration" button.
+The crown: `isAllTimePR` is checked (via `getAllSets`) right after a set is
+ticked complete, excluding the set's own prior value; a true result flashes
+the check button gold with a `Crown` icon for 2.5s — the same flash-and-clear
+idiom `SetRow` already used for the missing-reps warning, not a persistent
+badge. `rest.ts`'s `REST_OPTIONS` (a module-level array holding the
+untranslated `'Off'` label) converted to `restOptions()`, a function,
+matching `rpe.ts`'s `rpeOptions()` — this also fixed the same latent bug in
+`RoutineFormScreen.tsx`, which imports it too.
+
+**A real bug found by testing, not by inspection**: discarding a workout
+while its rest timer was running left the timer's local React state alive.
+Invisible under the old per-exercise-card display (no card, no render) but
+the new workout-level floating bar rendered it unconditionally, so the
+*next* workout — including a brand new empty one — inherited a stale,
+ticking countdown with working +15s/Skip controls attached to nothing.
+Fixed with an effect that clears `timer` whenever `workout?.id` changes.
+**Verified**: reproduced the bug in-session (ticked a set, started its
+timer, discarded the workout, started a fresh empty one — stale bar
+appeared), then confirmed the fix with the same sequence. The crown was
+confirmed via a scripted click + immediate DOM poll (`check-btn active
+crown` with the Crown SVG), since the 2.5s flash kept racing the
+screenshot tool. No console errors; all strings verified in German.
+
+**Not done, deliberately out of scope for Chunk 3**: `SET_TYPES`, the
+set-type sheet, `Target RPE: …`, and the other strings in this file chunks
+3a/3b didn't touch — left for Chunk 4's sweep, as originally planned.
+
+**A pre-existing, app-wide finding, unrelated to any chunk**: no screen
+anywhere in the codebase ever passes `cancelLabel` to `useConfirm()`, so
+every confirm dialog's Cancel button falls back to `DialogProvider.tsx`'s
+hardcoded English `'Cancel'` — including in screens translated weeks before
+Programs existed (`SettingsScreen.tsx`, `AccountScreen.tsx`). Confirmed by
+grepping the whole `src/` tree. Cheap to fix (default `cancelLabel` to
+`t('common.cancel')` in one place) but deliberately left alone this
+session — it's shared infrastructure, not workout-rebuild scope.
+
+Precache **2,542.20 KiB**, up from 2,536.89 (Chunk 2).
+
+#### Chunk 4 — swap-exercise, substitutions editor, final sweep — NEXT
 
 Swap added to the exercise `OptionSheet` in `ActiveWorkoutScreen.tsx`
 (routine's stored `substitutes` first, then `suggestSubstitutes()`, then a
@@ -4135,6 +4189,7 @@ datacenter's country (it returned `en:netherlands`), not Germany. Use the
 
 | Date | Version | What shipped |
 |---|---|---|
+| 2026-08-24 (4th) | *(unreleased, no version bump)* | **Chunk 3 of the workout rebuild** (§12.19): the Log tab rebuilt in two hand-tested sub-chunks — see "Chunk 3 — done" in §12.19 for full detail. **3a**: the no-workout screen forks on `activeProgram()` into an active-program view or a programs-then-routines-then-empty chooser. **3b**: Add-exercise moved into `.workout-sticky`, a routine-notes read-only block, the rest timer moved into a new floating `.rest-bar`, and the PR crown (a 2.5s gold flash on the check button via `isAllTimePR`). **A real bug found by testing**: discarding a workout with its rest timer running left stale timer state that the new floating bar (unlike the old per-card display) rendered into the *next* workout; fixed with an effect keyed on `workout?.id`. `rest.ts`'s `REST_OPTIONS` converted to a function (`restOptions()`), fixing the same untranslated-`'Off'` bug in `RoutineFormScreen.tsx` too. **The session opened by re-verifying Chunk 2 end to end** (the user's explicit request, after the AI's own memory of it felt unreliable) — re-read every diff, re-tested the import/edit/kebab-menu flows live, found nothing wrong with Chunk 2 itself, but surfaced one **pre-existing, app-wide gap**: no screen anywhere ever passes `cancelLabel` to `useConfirm()`, so every confirm dialog's Cancel button is hardcoded English regardless of language — left unfixed, out of scope, flagged for later. Precache **2,542.20 KiB**. Two commits (`1ac2320`, `ea1834a`), pushed to `phase-1-i18n`. **Chunk 4 (swap-exercise, substitutions editor, final i18n sweep) is next.** |
 | 2026-08-24 (3rd) | *(unreleased, Programs UI, no version bump)* | **Chunk 2 of the workout rebuild** (§12.19): program creation and management UI, in three hand-tested sub-chunks — see "Chunk 2 — done" in §12.19 for the full detail. `ProgramImportScreen.tsx` (preview before writing, built first), `ProgramFormScreen.tsx` (manual weeks/days editor with a copy-to-multiple-days picker and a repeat toggle), and a Programs section wired into `RoutineListScreen.tsx`, which also got its first-ever i18n pass end to end. Two new shared catalogue keys: `common.delete`, `common.loading`. Every screen verified through the actual dev-server UI via Claude in Chrome (not just `npm run build` or the console) — including a German-language pass through the real Settings switch, after a console-forced language change was found to silently hit a separate module instance and do nothing. Precache **2,536.89 KiB**. Three commits (`dbc29cf`, `0f134e0`, `4507142`), pushed to `phase-1-i18n`. **Chunk 3 (the Log tab rebuild) is next.** |
 | 2026-08-24 (2nd) | *(unreleased, no UI yet)* | **The workout section finally scoped, in Claude Code via `AskUserQuestion` one question at a time — §12.18 has all six answers.** A four-chunk build plan followed in plan mode (§12.19), approved, and **Chunk 1 built**: `src/data/programs.ts` (new), `src/data/programImport.ts` (new), `RoutineExercise.substitutes` end to end with its own migration, `swapExerciseInWorkout`, the crown's `isAllTimePR`, `suggestSubstitutes`. **Tested by hand against the dev server, not just the build** — program CRUD, single-active enforcement, cascade delete, the week/day math, and a full import of the real 12-week Min-Max JSON. **A real finding, not a guess**: exercise-name matching against the 1,324-exercise seed missed more than expected on PDF-derived names (Pec Deck, Kelso Shrug, Incline DB Y-Raise had zero match); the custom-exercise fallback handled it safely, and Chunk 2's import preview needs to surface it. Precache **2,511.95 KiB** (data-layer-only delta from 2,511.90). Committed and pushed. **The new migration has not yet been run against the live Supabase project.** |
 | 2026-08-24 | *(no application code)* | **The project moved off GitHub Codespaces onto a local Windows machine, and off claude.ai chat onto Claude Code.** Both branches confirmed clean and pushed first (`git log origin/<branch>` matching local on `main` and `phase-1-i18n`); a third branch, `accounts`, was discovered and is unmentioned anywhere in this document. Cloned to `D:\dev\Projects\upkeep`, installed with **`npm ci`** rather than `npm install` to match Cloudflare's `npm clean-install`, `.env.local` recreated by hand because it is gitignored. **The move was verified by building it**: `index-DaGpoujQ.js` — the identical bundle hash to the last Codespaces build — with precache 2,511.90 KiB against 2,511.87, the 0.03 explained by Windows CRLF checkout (§3). **`CLAUDE.md` written and restored to the repo root** after being deleted in the 2026-08-10 cutover; **this file renamed to `docs/HANDOVER.md`** and the `-17` dropped because git now carries the history; **`PRIVATE-NOTES.md` created and gitignored**, taking §12.11's funding and legal subsection verbatim out of a public repo. **New §19 records the Claude Code session protocol.** **Phone testing now goes through the Cloudflare branch preview**, not a forwarded port — localhost cannot serve the camera over a LAN IP. **No application code was touched, no version bump, nothing deployed.** |
@@ -4394,11 +4449,11 @@ Assume there is a new one anyway.
 
 **⚠ SCOPING IS DONE — READ §12.19, NOT THE QUESTIONS BELOW.** The six
 questions this section used to open with are answered in §12.18, and a
-four-chunk build plan is written and approved in §12.19. **Chunks 1 and 2
-(the data layer, then program import/management/manual-editor UI) are
-built, hand-tested through the actual UI, and committed** — do not redo
-either, do not re-scope. **Start the next session at §12.19's "Chunk 3"
-heading.**
+four-chunk build plan is written and approved in §12.19. **Chunks 1, 2 and 3
+(the data layer; program import/management/manual-editor UI; the Log tab
+rebuild) are built, hand-tested through the actual UI, and committed** — do
+not redo any of them, do not re-scope. **Start the next session at §12.19's
+"Chunk 4" heading.**
 
 **The workout section is the next thing, completely — every screen and all the
 Programs UI — and it comes before the rest of the translation work.** That
