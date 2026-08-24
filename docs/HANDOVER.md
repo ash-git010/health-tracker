@@ -3262,6 +3262,208 @@ needs re-deriving, only taking:
 `ChartsScreen`. Use it rather than adding more `n === 1 ? …` ternaries, of which
 these screens already carry several.
 
+### 12.18 The workout scoping conversation, answered (2026-08-24)
+
+**Answers to the six questions §12.16 and §12.17 both left open. Read this
+before opening any file for the workout rebuild — it is the current scope, not
+§12.16's original list.**
+
+**1. What's wrong today.** No notable bugs found. What's wanted is the feature
+list already sitting in §12.16 and §18 Phase 7 — nothing new, nothing stale to
+strike. Confirmed against the example JSON at
+`docs/examples/min_max_program_12_weeks.json` (gitignored, read from disk this
+session): 12 weeks in two blocks of six, five workouts per week, no rest-day
+rows in the file itself. Matches §12.16's model exactly — the `block` label is
+still dropped, nothing else about that decision changes.
+
+**2. Workouts → Log tab, program active vs not.**
+- **Active:** shows only that program's days for the current week and their
+  workouts. No routine list. Tapping the program name **deactivates** it
+  (`isActive: false`) and drops back to the no-program Log screen — it does
+  **not** delete the program. Deletion happens from the routines/programs list
+  screen, the same place routines are deleted today.
+- **No active program:** unchanged from today, except **"Start new workout" now
+  asks first** — choose a program, or one of the general saved routines.
+
+**3. Program creation.** Both paths wanted. **JSON import is built first**,
+the manual editor second.
+- **JSON import** — upload a file shaped like the Min-Max example, the program
+  builds automatically. Maps through §12.16's field-gap table (`rep_range` →
+  `repsMin`/`repsMax`, `warm_up_sets` → minimum of the range, `set_N_rir` → RPE
+  via 10 − RIR, `rest` → flattened to a number, `notes` →
+  `RoutineExercise.notes`). **Substitution options are not dropped** — see
+  decision 4.
+- **Manual editor** — choose weeks and days, assign a workout to each day, with
+  a "copy this day to other days/weeks" shortcut for reuse. A "repeat this week
+  indefinitely" toggle covers a single static split — this is `programs.repeats`,
+  already built in §12.16.
+
+**4. Scope for this pass — reversed once mid-conversation; this is the version
+that stands.**
+- **In:** JSON import, the manual program editor, **substitutions +
+  swap-exercise built together with the program architecture, not deferred**
+  (explicitly reversed from an earlier answer in the same conversation — the
+  reasoning given was that building it once alongside the data model beats
+  separating it out later), the crown, Add-exercise moved left of
+  discard/finish, routine-notes display on the active workout screen, the
+  floating rest-timer bar.
+- **Out, backlog for later:** target-muscle breakdown, time-based exercises
+  (planks/holds — still blocked on "what does volume mean", §12.16/§12.10).
+
+**5. Gamification.** Deferred, comes "very later." Spec lives in
+`docs/workout_meal_gamification_architecture.md` (not read in detail this
+session — out of scope for this pass). When it is picked up: visually
+pleasing, rank names at certain levels, icons/images. **Do not build anything
+toward this now.**
+
+**6. Anything else.** Nothing further — confirmed with no additional items.
+
+**Note on session shape.** Explicit instruction: split this phase into as many
+sessions/chunks as needed for token efficiency. This is what §19's "one chunk
+at a time, build and confirm before starting the next" already calls for — the
+upcoming plan should lean toward more, smaller chunks rather than fewer, large
+ones.
+
+**Not yet decided:** the build order of the six in-scope items, and the
+screen-by-screen file plan. That is the next conversation, not this one.
+
+### 12.19 The build plan, and Chunk 1 — done (2026-08-24, 2nd)
+
+**A four-chunk plan was written and approved for §12.18's scope.** The full
+plan, with its worked design decisions, is also saved locally at
+`C:\Users\aswin\.claude\plans\async-mixing-gray.md` — but treat that file as
+disposable; everything load-bearing is repeated here so this section alone is
+enough to resume from.
+
+**⚠ Start the next session by reading this section, then jump straight to
+Chunk 2 below — Chunk 1 is done and committed
+(`3ffe75a feat: programs data layer, JSON import, swap-exercise, and the
+PR crown`), pushed to `phase-1-i18n`. Do not re-scope, do not redo Chunk 1.**
+
+#### Design decisions taken while planning — do not re-derive
+
+1. **Import creates one Routine per distinct workout CONTENT, not one per
+   week.** A week's workout is diffed against the last Routine minted for
+   that workout name; identical content reuses it, changed content mints a
+   new one. Verified on the real file: 12 weeks × 5 workouts produced **20
+   routines** (4 content-variants per workout), not the 2 a first read of the
+   file suggested — RIR progresses within each 6-week block, not only at the
+   block boundary, so content changes more often than just the block switch.
+2. **`last_set_intensity_technique` has no field of its own** (not in §12.16's
+   field-gap table). Where present and not `N/A`, it's appended into that
+   `RoutineExercise.notes`.
+3. **Substitutions: `RoutineExercise.substitutes?: string[]`** (exercise
+   keys), synced as jsonb on `routine_exercises`
+   (`2026-08-24-substitutes.sql`, applied — **run it against the live
+   Supabase project too**, it has not been). Import resolves
+   `substitution_option_1/2` against the library by fuzzy score; unmatched
+   names are dropped.
+4. **Swap mid-workout renames `exerciseKey`/`exerciseName` across every
+   `WorkoutSet` row for that exercise** and zeroes weight/reps/completed.
+   `swapExerciseInWorkout()` in `workouts.ts`. No special case needed in
+   `diffWorkoutAgainstRoutine` — it already reads this as "removed X, added Y".
+5. **The no-active-program Log screen's routine list becomes one "Start new
+   workout" action**, opening a chooser: your programs, then routines, then
+   "Start empty workout" — replacing today's flat per-routine button list.
+   Picking a program activates it and the screen becomes the active-program
+   view.
+6. **Programs are managed on the existing `/workouts/routines` screen**, not
+   a new tab — confirmed by the answer to Q2 in §12.18 ("removing from
+   routine tab is what removes it").
+
+#### Chunk 1 — data layer only, no UI — DONE, committed, not yet pushed to verify on a device
+
+Built: `src/data/programs.ts` (new — CRUD, single-active enforcement,
+`currentWeekNumber`/`scheduleWeekFor`/`currentDayIndex`/`todaysProgramDay`,
+reconcile-by-`(week,dayIndex)` `setProgramDays`), `src/data/programImport.ts`
+(new — pure `parseImportJson`/`buildProgram` plus the async
+database-touching `importProgram`), `RoutineExercise.substitutes` end to end
+(`types.ts`, `sync.ts`, the new migration), `swapExerciseInWorkout` in
+`workouts.ts`, `isAllTimePR` (the crown check) in `workoutStats.ts`,
+`suggestSubstitutes` in `exercises.ts`.
+
+**Tested by hand against the dev server**, not just `npm run build`: program
+CRUD, single-active enforcement (activating one deactivates the other),
+`setProgramDays` reconcile-and-delete, cascade soft-delete on
+`deleteProgram`, the week/day math against a synthetic 10-days-ago
+`startedOn` (week 2, day 4 — correct), `scheduleWeekFor`'s repeat-wrap
+(climbing week 5 against a 1-week repeating program reads week 1 — correct),
+and a **full import of the real `docs/examples/min_max_program_12_weeks.json`**
+through `importProgram` end to end.
+
+**A real finding from that last test, not a guess:** exercise-name matching
+against the 1,324-exercise seed is weaker than assumed. "Pec Deck", "Kelso
+Shrug" and "Incline DB Y-Raise" matched nothing at all; "Barbell Incline
+Press" scored 275 against "Barbell Incline Bench Press" with a 300 threshold
+— just under. The custom-exercise fallback (bodyPart/equipment/target
+`'other'`) handled every miss safely and nothing broke, but **the Chunk 2
+import preview must show which primary exercises fell back to a custom
+placeholder**, not only which substitution names were dropped, so a person
+can fix a mismatch by hand before confirming. `MATCH_THRESHOLD` (300, in
+`programImport.ts`) was deliberately left as-is rather than lowered — a
+lower threshold's other failure mode showed up in the same test:
+"Dragon Flag" scores 400 against a seed exercise literally named "Flag",
+which is exactly the kind of false positive a looser threshold invites.
+
+**Not tested:** the UI (none exists yet — that's Chunks 2–4), and the
+`2026-08-24-substitutes.sql` migration has **not been run against the live
+Supabase project** — do that before Chunk 2's import screen is used for real,
+same as any other migration (§9).
+
+#### Chunk 2 — program creation & management UI — NEXT
+
+- `RoutineListScreen.tsx` — add a "Programs" section above the folder
+  groups: active/inactive state, activate/deactivate, real delete (decision
+  6). "New program" offers JSON import or the manual editor.
+- **New `ProgramImportScreen.tsx`** — upload, parse via `programImport.ts`,
+  preview (weeks, workouts, **which exercises matched vs. fell back to a
+  custom placeholder**, which substitution names were dropped), confirm to
+  save. **Built first**, per the explicit build-order answer in §12.18.
+- **New `ProgramFormScreen.tsx`** — manual editor: weeks, assign a routine
+  (or rest) per day, a "copy this day to…" week×day picker, a "repeat this
+  week indefinitely" toggle (`Program.repeats`).
+- `App.tsx` routes: `/workouts/programs/new`, `/workouts/programs/import`,
+  `/workouts/programs/:id/edit`.
+- Full `en.ts`/`de.ts` key set for all of the above, written alongside the
+  JSX, not retrofitted — the born-translated mitigation from §12.17.
+
+**Verify:** `npm run build`; import the real JSON through the actual screen
+and compare against Chunk 1's console-tested result; build a small program
+by hand.
+
+#### Chunk 3 — Log tab rebuild
+
+`ActiveWorkoutScreen.tsx` — the no-workout state forks on `activeProgram()`
+into the active-program view (today's day/workout, tap-name-to-deactivate)
+vs. the "Start new workout" chooser (decision 5); the crown on set-tick using
+`isAllTimePR`; Add-exercise moved from the floating Fab into
+`.workout-sticky`, left of Discard/Finish; routine-notes read-only block at
+the top, sourced from the first set's `WorkoutSet.notes`; the floating
+rest-timer bar (new fixed-position element in `src/index.css`, the per-card
+row keeps only the "set the duration" button). Every string in this file
+converts to `t()` as it's touched — it currently has zero i18n.
+
+**Verify:** `npm run build`; full walkthrough on the Cloudflare branch
+preview (camera/timer behavior needs a real device, not the dev server, per
+§4) — start from a routine, from a program day, from empty; trigger a crown;
+background the phone during a rest timer and confirm the chime still fires
+(§11 already documents the backgrounded-PWA timer limit — this should not
+make it worse, it isn't expected to fix it).
+
+#### Chunk 4 — swap-exercise, substitutions editor, final sweep
+
+Swap added to the exercise `OptionSheet` in `ActiveWorkoutScreen.tsx`
+(routine's stored `substitutes` first, then `suggestSubstitutes()`, then a
+full search fallback), calling `swapExerciseInWorkout`. A small substitutes
+picker added to `RoutineFormScreen.tsx` and `ProgramFormScreen.tsx`'s
+exercise cards. Full i18n sweep of anything chunks 2–4 missed inline, plus
+the `t`-shadow grep (§5/§17) over everything touched. Final handover update
+for the whole four-chunk arc, including whether second-account program sync
+(§12.16, still explicitly untested) has been tested yet.
+
+**Out of scope for all four chunks, deliberately (§12.18):** target-muscle
+breakdown, time-based exercises, gamification.
+
 ---
 
 ## 13. Known issues and gaps
@@ -3875,6 +4077,7 @@ datacenter's country (it returned `en:netherlands`), not Germany. Use the
 
 | Date | Version | What shipped |
 |---|---|---|
+| 2026-08-24 (2nd) | *(unreleased, no UI yet)* | **The workout section finally scoped, in Claude Code via `AskUserQuestion` one question at a time — §12.18 has all six answers.** A four-chunk build plan followed in plan mode (§12.19), approved, and **Chunk 1 built**: `src/data/programs.ts` (new), `src/data/programImport.ts` (new), `RoutineExercise.substitutes` end to end with its own migration, `swapExerciseInWorkout`, the crown's `isAllTimePR`, `suggestSubstitutes`. **Tested by hand against the dev server, not just the build** — program CRUD, single-active enforcement, cascade delete, the week/day math, and a full import of the real 12-week Min-Max JSON. **A real finding, not a guess**: exercise-name matching against the 1,324-exercise seed missed more than expected on PDF-derived names (Pec Deck, Kelso Shrug, Incline DB Y-Raise had zero match); the custom-exercise fallback handled it safely, and Chunk 2's import preview needs to surface it. Precache **2,511.95 KiB** (data-layer-only delta from 2,511.90). Committed and pushed. **The new migration has not yet been run against the live Supabase project.** |
 | 2026-08-24 | *(no application code)* | **The project moved off GitHub Codespaces onto a local Windows machine, and off claude.ai chat onto Claude Code.** Both branches confirmed clean and pushed first (`git log origin/<branch>` matching local on `main` and `phase-1-i18n`); a third branch, `accounts`, was discovered and is unmentioned anywhere in this document. Cloned to `D:\dev\Projects\upkeep`, installed with **`npm ci`** rather than `npm install` to match Cloudflare's `npm clean-install`, `.env.local` recreated by hand because it is gitignored. **The move was verified by building it**: `index-DaGpoujQ.js` — the identical bundle hash to the last Codespaces build — with precache 2,511.90 KiB against 2,511.87, the 0.03 explained by Windows CRLF checkout (§3). **`CLAUDE.md` written and restored to the repo root** after being deleted in the 2026-08-10 cutover; **this file renamed to `docs/HANDOVER.md`** and the `-17` dropped because git now carries the history; **`PRIVATE-NOTES.md` created and gitignored**, taking §12.11's funding and legal subsection verbatim out of a public repo. **New §19 records the Claude Code session protocol.** **Phone testing now goes through the Cloudflare branch preview**, not a forwarded port — localhost cannot serve the camera over a LAN IP. **No application code was touched, no version bump, nothing deployed.** |
 | 2026-08-23 (2nd) | *(Phase 1 on a branch, no version bump)* | **The entire meals section translated, in five tested chunks**, all on `phase-1-i18n`: `TodayScreen` + `AddEntry`; `FoodListScreen` + `FoodSearch`; `FoodForm`; the barcode scanner pair; `GoalsScreen` + `ChartsScreen`. Each built, tested in both languages at 360px and committed before the next was written, and **no German string needed shortening** — unlike the auth block. **Decision 17 answered: `commonFoods.ts` keeps English names, German lives in `keywords`** — not on the exercise seed's search argument, which does not apply, but because a common food's name becomes a `Food` row and then a permanent `logEntry.foodName` snapshot, so a German name would persist rather than render (§12.13). `MEAL_KEYS` + `mealLabel()` added to `log.ts`; `macro.*` keys scoped separately and now shared by three screens; `plural()` used for the first time in anger, in `ChartsScreen`. **Two non-i18n bugs fixed in passing**: `FoodSearch` hardcoded `g` where it should have used `food.unit`, and **`BarcodeScanner.tsx` carried the `t()` shadow twice** — the §14 trap that produces no error at all. Four files in the section turned out to hold no user-facing strings. **Then the priority changed**: the workout section is to be finished completely, UI included, before the rest of Phase 1 — **§18's first non-negotiable ordering, consciously overridden**, with the cost and the mitigation recorded in the new **§12.17**. **`main` was then merged into the branch** ahead of that work: one conflict, in `adopt.ts`, exactly as §4 predicted, resolved to `tableLabels()` with the two Programs entries and two new catalogue keys; `db.ts` auto-merged silently. Branch built clean at **2,511.87 KiB** — the first tree holding both the i18n layer and the Programs data layer. **The workout section itself was never scoped** — the session ended first, and the six questions to open the next one are at the foot of §12.17. |
 | 2026-08-23 | *(unreleased, nothing user-visible)* | **Every open Programs decision taken, and the entire data layer built.** Migration `2026-08-23-programs.sql` applied to the live project: `programs` and `program_days` with composite keys and RLS policies, plus `workouts.program_day_id` and `workout_sets.notes`. Verified by the constraint query, a `pg_policies` check, and a full push-and-pull round trip — `week_notes` survived as jsonb, `started_on` did not shift from UTC+1, `is_active` pulled back as `false` rather than `undefined`. **Decisions (§12.16):** weeks are an integer column; blocks dropped entirely; days are 1–7 anchored on `startedOn`; `workouts.programDayId` links a workout to its scheduled day; rep ranges are reference-only with `repsMin` prefill; the crown is an all-time PR by weight-then-reps; routine notes shown read-only rather than copied. **Client:** Dexie `version(2)` — the first schema bump since launch — two sync mappers, `weekNotes()` coercion, `adopt.ts` and `backup.ts` extended (both would have failed silently), `startWorkoutFromRoutine` prefilling `repsMin` and copying notes, range restoration in `diffWorkoutAgainstRoutine`. **§12.16's routine-notes bug fixed** — `WorkoutSet.notes` now exists and is written, though nothing displays it yet. **`audit.json` was tracked and is now removed and gitignored.** Most of the session went on a phantom bug: Vite's transform cache served the app pre-edit `routines.ts` across a restart while console imports got the real file — two new §14 entries, and a fifth cause found only after running the UI path and the direct call side by side. **No UI, deliberately** — those screens should be born translated, so they wait for Phase 1. **No version bump; nothing here is visible to a user.** |
@@ -4130,12 +4333,11 @@ Assume there is a new one anyway.
 
 **⚠ THE PRIORITY CHANGED ON 2026-08-23 (2nd). READ §12.17 BEFORE §18.**
 
-**⚠ AND START BY ASKING THE SIX QUESTIONS AT THE FOOT OF §12.17.** The workout
-section is the next thing and **it has not been scoped**. The session that set
-the priority ended before describing what "the way I want it" means. Do not open
-a file or propose a plan until that conversation has happened — §17's own
-standing advice, and it produced §12.10, §12.11 and §12.14 on three previous
-occasions.
+**⚠ SCOPING IS DONE — READ §12.19, NOT THE QUESTIONS BELOW.** The six
+questions this section used to open with are answered in §12.18, and a
+four-chunk build plan is written and approved in §12.19. **Chunk 1 (the data
+layer) is built, tested by hand, and committed** — do not redo it, do not
+re-scope. **Start the next session at §12.19's "Chunk 2" heading.**
 
 **The workout section is the next thing, completely — every screen and all the
 Programs UI — and it comes before the rest of the translation work.** That
