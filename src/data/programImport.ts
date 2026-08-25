@@ -25,6 +25,7 @@ import { createProgram, setProgramDays } from './programs'
 import { createRoutine, setRoutineExercises, type RoutineExerciseInput } from './routines'
 import { allExercises, addCustomExercise, type ExerciseOption } from './exercises'
 import { fuzzyScore } from './search'
+import { classifyExerciseName } from './exerciseClassifier'
 import { t } from './i18n'
 import type { RoutineSet } from './types'
 
@@ -399,6 +400,24 @@ export async function previewImport(raw: unknown): Promise<ImportPreview> {
   return { built, matches }
 }
 
+/**
+ * Mints a custom exercise for a name that didn't confidently match the seed
+ * library. Runs it through classifyExerciseName() first so the muscle-balance
+ * chart (WorkoutProgressScreen) has something better than "Other" to show —
+ * only a name that matches no known movement pattern falls back to blank.
+ */
+async function mintCustomExercise(name: string): Promise<string> {
+  const guess = classifyExerciseName(name)
+  return addCustomExercise({
+    name,
+    bodyPart: guess?.bodyPart ?? 'other',
+    equipment: guess?.equipment ?? 'other',
+    target: guess?.target ?? 'other',
+    secondary: guess?.secondary ?? [],
+    steps: [],
+  })
+}
+
 /** The only part of this file that touches the database. */
 export async function importProgram(raw: unknown): Promise<{ programId: string; warnings: string[] }> {
   const parsed = parseImportJson(raw)
@@ -414,16 +433,8 @@ export async function importProgram(raw: unknown): Promise<{ programId: string; 
       continue
     }
     // No confident match — mint a custom exercise so the import never leaves
-    // a dangling exerciseKey. Bucketed as 'other'; groupFor() already treats
-    // an unrecognised muscle name as 'Other' rather than throwing.
-    const id = await addCustomExercise({
-      name,
-      bodyPart: 'other',
-      equipment: 'other',
-      target: 'other',
-      secondary: [],
-      steps: [],
-    })
+    // a dangling exerciseKey.
+    const id = await mintCustomExercise(name)
     resolved.set(name, { key: `custom:${id}`, name })
   }
 
@@ -438,14 +449,7 @@ export async function importProgram(raw: unknown): Promise<{ programId: string; 
     // name: a suggestion the swap UI can't select isn't useful, but neither
     // is silently losing one of the two explicit substitutes the program
     // author wrote down. Minted the same way as an unmatched primary.
-    const id = await addCustomExercise({
-      name,
-      bodyPart: 'other',
-      equipment: 'other',
-      target: 'other',
-      secondary: [],
-      steps: [],
-    })
+    const id = await mintCustomExercise(name)
     resolved.set(name, { key: `custom:${id}`, name })
   }
 
